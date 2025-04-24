@@ -1,26 +1,27 @@
-import { useLocation } from "react-router-dom";
-import { useEffect } from "react";
 
-const NotFound = () => {
-  const location = useLocation();
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import MainLayout from '@/components/layout/MainLayout';
 
-  useEffect(() => {
-    console.error(
-      "404 Error: User attempted to access non-existent route:",
-      location.pathname
-    );
-  }, [location.pathname]);
-
+const NotFound: React.FC = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">404</h1>
-        <p className="text-xl text-gray-600 mb-4">Oops! Page not found</p>
-        <a href="/" className="text-blue-500 hover:text-blue-700 underline">
-          Return to Home
-        </a>
+    <MainLayout>
+      <div className="container mx-auto py-20 px-4 text-center">
+        <div className="max-w-md mx-auto">
+          <h1 className="text-9xl font-bold text-talendeur-red mb-6">404</h1>
+          <h2 className="text-3xl font-bold mb-4">Page Not Found</h2>
+          <p className="text-muted-foreground mb-8">
+            The page you are looking for doesn't exist or has been moved.
+          </p>
+          <Link to="/">
+            <Button className="bg-talendeur-red hover:bg-talendeur-darkred">
+              Return Home
+            </Button>
+          </Link>
+        </div>
       </div>
-    </div>
+    </MainLayout>
   );
 };
 

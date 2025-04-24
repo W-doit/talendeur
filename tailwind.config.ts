@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -52,6 +53,14 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
+				talendeur: {
+					red: '#8B0000',
+					darkred: '#5C0000',
+					orange: '#FF5722',
+					lightorange: '#FF7F50',
+					dark: '#1E1E1E',
+					light: '#F8F8F8',
+				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',
@@ -84,11 +93,31 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'swipe-right': {
+					'0%': { transform: 'translateX(0) rotate(0deg)', opacity: '1' },
+					'100%': { transform: 'translateX(150%) rotate(15deg)', opacity: '0' }
+				},
+				'swipe-left': {
+					'0%': { transform: 'translateX(0) rotate(0deg)', opacity: '1' },
+					'100%': { transform: 'translateX(-150%) rotate(-15deg)', opacity: '0' }
+				},
+				'fade-in': {
+					'0%': { opacity: '0' },
+					'100%': { opacity: '1' }
+				},
+				'float': {
+					'0%, 100%': { transform: 'translateY(0)' },
+					'50%': { transform: 'translateY(-10px)' }
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'swipe-right': 'swipe-right 0.5s forwards',
+				'swipe-left': 'swipe-left 0.5s forwards',
+				'fade-in': 'fade-in 0.5s ease-out',
+				'float': 'float 3s ease-in-out infinite'
 			}
 		}
 	},
