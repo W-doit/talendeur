@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useAuth, JobSeekerProfile, OrganizationProfile } from './AuthContext';
 import { useToast } from "@/components/ui/use-toast";
@@ -300,8 +299,25 @@ export const MatchProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       setCurrentPotential(null);
     }
     
-    // Remove the current potential from the list
-    setPotentialMatches(prev => prev.filter(p => p.id !== currentPotential?.id));
+    // Fix the type issue by ensuring we return the same type as input
+    setPotentialMatches((prev) => {
+      // Check what kind of profiles we're dealing with
+      if (prev.length > 0) {
+        // If the array is not empty, filter out the current potential
+        if ('profilePic' in prev[0]) {
+          // We have JobSeekerProfile[]
+          return (prev as JobSeekerProfile[]).filter(
+            p => p.id !== currentPotential?.id
+          );
+        } else {
+          // We have OrganizationProfile[]
+          return (prev as OrganizationProfile[]).filter(
+            p => p.id !== currentPotential?.id
+          );
+        }
+      }
+      return prev;
+    });
   };
 
   const loadMorePotentials = async () => {
