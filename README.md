@@ -254,15 +254,4 @@ CREATE TABLE public.matches (
 - Add calendar integration for scheduling interviews
 - Create notification system for new matches
 
-## Known Issues
 
-- TypeScript error in `src/contexts/MatchContext.tsx` file.
-
-```
-src/contexts/MatchContext.tsx(304,25): error TS2345: Argument of type '(prev: JobSeekerProfile[] | OrganizationProfile[]) => (JobSeekerProfile | OrganizationProfile)[]' is not assignable to parameter of type 'SetStateAction<JobSeekerProfile[] | OrganizationProfile[]>'.
-  Type '(prev: JobSeekerProfile[] | OrganizationProfile[]) => (JobSeekerProfile | OrganizationProfile)[]' is not assignable to type '(prevState: JobSeekerProfile[] | OrganizationProfile[]) => JobSeekerProfile[] | OrganizationProfile[]'.
-    Type '(JobSeekerProfile | OrganizationProfile)[]' is not assignable to type 'JobSeekerProfile[] | OrganizationProfile[]'.
-      Type '(JobSeekerProfile | OrganizationProfile)[]' is not assignable to type 'JobSeekerProfile[]'.
-        Type 'JobSeekerProfile | OrganizationProfile' is not assignable to type 'JobSeekerProfile'.
-          Type 'OrganizationProfile' is missing the following properties from type 'JobSeekerProfile': profilePic, cv, interests, skills, bio
-```
