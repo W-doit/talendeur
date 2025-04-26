@@ -1,73 +1,231 @@
-# Welcome to your Lovable project
 
-## Project info
+# Talendeur - Job Matching Web Application
 
-**URL**: https://lovable.dev/projects/22cd9506-c719-456b-a4fa-709d72e3ea39
+## Overview
 
-## How can I edit this code?
+Talendeur is a comprehensive web application designed to connect job seekers with organizations. It features a Tinder-like interface for matching, profile creation, and user authentication.
 
-There are several ways of editing your application.
+## Project Structure
 
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/22cd9506-c719-456b-a4fa-709d72e3ea39) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```
+Talendeur
+├── src/
+│   ├── components/
+│   │   ├── layout/
+│   │   │   ├── MainLayout.tsx (Page wrapper with navbar/footer)
+│   │   │   ├── Navbar.tsx (Navigation)
+│   │   │   └── Footer.tsx (Site footer)
+│   │   ├── matching/
+│   │   │   ├── MatchCard.tsx (Tinder-like card for swiping)
+│   │   │   ├── MatchList.tsx (List of successful matches)
+│   │   │   └── MatchDetail.tsx (Detailed view of a match)
+│   │   ├── profile/
+│   │   │   ├── JobSeekerProfileForm.tsx (Form for job seekers)
+│   │   │   └── OrganizationProfileForm.tsx (Form for organizations)
+│   │   └── ui/ (shadcn UI components)
+│   ├── contexts/
+│   │   ├── AuthContext.tsx (Authentication state)
+│   │   └── MatchContext.tsx (Matching logic)
+│   ├── pages/
+│   │   ├── Home.tsx (Landing page)
+│   │   ├── Login.tsx (Login page)
+│   │   ├── Register.tsx (Registration page)
+│   │   ├── Profile.tsx (User profile page)
+│   │   ├── FindMatches.tsx (Swiping interface)
+│   │   ├── Matches.tsx (Match results page)
+│   │   └── NotFound.tsx (404 page)
+│   ├── integrations/
+│   │   └── supabase/
+│   │       ├── client.ts (Supabase connection)
+│   │       └── types.ts (Database types)
+│   ├── App.tsx (Main app component with routing)
+│   └── main.tsx (Entry point)
 ```
 
-**Edit a file directly in GitHub**
+## Tech Stack
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+- **Frontend Framework**: React with TypeScript
+- **State Management**: Context API (AuthContext, MatchContext)
+- **Routing**: React Router DOM
+- **UI Components**: shadcn/ui (accessible UI components)
+- **Styling**: Tailwind CSS
+- **Data Fetching**: TanStack React Query
+- **Icons**: Lucide React
+- **Charts**: Recharts
+- **Backend**: Supabase (to be implemented)
+- **Authentication**: Currently mocked, to be replaced with Supabase Auth
+- **Database**: Supabase PostgreSQL (to be implemented)
+- **Storage**: Supabase Storage (to be implemented for CV uploads)
 
-**Use GitHub Codespaces**
+## Application Flow Diagram
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```
+┌─────────────┐       ┌─────────────┐       ┌─────────────┐
+│   Landing   │──────▶│  Register/  │──────▶│   Profile   │
+│    Page     │       │    Login    │       │    Setup    │
+└─────────────┘       └─────────────┘       └──────┬──────┘
+                                                  │
+                                                  ▼
+┌─────────────┐       ┌─────────────┐       ┌─────────────┐
+│    Match    │◀─────▶│    Find     │◀─────▶│   Profile   │
+│    List     │       │   Matches   │       │    View     │
+└─────────────┘       └─────────────┘       └─────────────┘
+```
 
-## What technologies are used for this project?
+## Hardcoded Credentials (for testing)
 
-This project is built with:
+### Job Seekers:
+1. **Alex Morgan**
+   - Email: alex@example.com
+   - Password: any password works
+   - Skills: Soft (85%), Hard (92%), Feedback (78%), Learning (90%)
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+2. **Jamie Rivera**
+   - Email: jamie@example.com
+   - Password: any password works
+   - Skills: Soft (95%), Hard (83%), Feedback (90%), Learning (87%)
 
-## How can I deploy this project?
+### Organizations:
+1. **TechVision Inc.**
+   - Email: hr@techvision.com
+   - Password: any password works
 
-Simply open [Lovable](https://lovable.dev/projects/22cd9506-c719-456b-a4fa-709d72e3ea39) and click on Share -> Publish.
+2. **CreativeWorks Studio**
+   - Email: talent@creativeworks.com
+   - Password: any password works
 
-## Can I connect a custom domain to my Lovable project?
+## Skills Scoring Algorithm (Conceptual)
 
-Yes, you can!
+```typescript
+// Skills scoring algorithm (to be implemented)
+function calculateSkillScore(profile: JobSeekerProfile, criteria: SkillCriteria): number {
+  // Base weights for different skill categories
+  const weights = {
+    soft: 0.25,
+    hard: 0.35,
+    feedback: 0.20,
+    learning: 0.20
+  };
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+  // Calculate weighted score
+  const weightedScore =
+    (profile.skills.soft * weights.soft) +
+    (profile.skills.hard * weights.hard) +
+    (profile.skills.feedback * weights.feedback) +
+    (profile.skills.learning * weights.learning);
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+  // Apply organization's preference adjustments
+  const adjustedScore = applyPreferenceAdjustments(weightedScore, criteria);
+
+  // Normalize to 0-100 scale
+  return Math.min(Math.max(adjustedScore, 0), 100);
+}
+
+// Apply organization-specific preferences
+function applyPreferenceAdjustments(score: number, criteria: SkillCriteria): number {
+  let adjustedScore = score;
+
+  // Boost score if interests match organization needs
+  const interestMatchBonus = calculateInterestMatchBonus(criteria.interests);
+  adjustedScore += interestMatchBonus;
+
+  // Apply industry-specific adjustments
+  if (criteria.industryFocus) {
+    adjustedScore = applyIndustryAdjustments(adjustedScore, criteria.industryFocus);
+  }
+
+  return adjustedScore;
+}
+```
+
+## Next Steps
+
+### 1. Supabase Database Integration
+- Create database tables for:
+  - `profiles`: Store user profile information
+  - `organizations`: Store organization information
+  - `matches`: Track match status between users and organizations
+  - `skills`: Store skill ratings and evaluation data
+
+Here's a sample SQL schema to implement:
+
+```sql
+-- Users profiles table
+CREATE TABLE public.profiles (
+  id UUID PRIMARY KEY REFERENCES auth.users(id),
+  name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  profile_pic TEXT,
+  cv_url TEXT,
+  bio TEXT,
+  user_type TEXT NOT NULL CHECK (user_type IN ('jobseeker', 'organization'))
+);
+
+-- Job seeker specific info
+CREATE TABLE public.jobseeker_details (
+  profile_id UUID PRIMARY KEY REFERENCES public.profiles(id),
+  interests TEXT[],
+  soft_skills INTEGER CHECK (soft_skills >= 0 AND soft_skills <= 100),
+  hard_skills INTEGER CHECK (hard_skills >= 0 AND hard_skills <= 100),
+  feedback_score INTEGER CHECK (feedback_score >= 0 AND feedback_score <= 100),
+  learning_score INTEGER CHECK (learning_score >= 0 AND learning_score <= 100)
+);
+
+-- Organization specific info
+CREATE TABLE public.organization_details (
+  profile_id UUID PRIMARY KEY REFERENCES public.profiles(id),
+  logo TEXT,
+  website TEXT,
+  about TEXT,
+  needs TEXT[]
+);
+
+-- Matches table
+CREATE TABLE public.matches (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  jobseeker_id UUID REFERENCES public.profiles(id),
+  organization_id UUID REFERENCES public.profiles(id),
+  jobseeker_approved BOOLEAN DEFAULT FALSE,
+  organization_approved BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  UNIQUE(jobseeker_id, organization_id)
+);
+```
+
+### 2. Supabase Authentication
+- Replace mock authentication with Supabase Auth
+- Set up email verification and password reset
+- Create triggers to populate user profiles on signup
+
+### 3. Storage Implementation
+- Configure Supabase Storage for CV uploads
+- Implement file upload components
+- Add security policies for file access
+
+### 4. Matching Algorithm Refinement
+- Implement personalized matching algorithm
+- Add filtering options based on skills and needs
+- Create analytics for match quality
+
+### 5. UI/UX Improvements
+- Improve the swiping animation
+- Add a guided onboarding process
+- Create a dashboard with insights
+
+### 6. Advanced Features
+- Implement a messaging system between matches
+- Add calendar integration for scheduling interviews
+- Create notification system for new matches
+
+## Known Issues
+
+- TypeScript error in `src/contexts/MatchContext.tsx` file.
+
+```
+src/contexts/MatchContext.tsx(304,25): error TS2345: Argument of type '(prev: JobSeekerProfile[] | OrganizationProfile[]) => (JobSeekerProfile | OrganizationProfile)[]' is not assignable to parameter of type 'SetStateAction<JobSeekerProfile[] | OrganizationProfile[]>'.
+  Type '(prev: JobSeekerProfile[] | OrganizationProfile[]) => (JobSeekerProfile | OrganizationProfile)[]' is not assignable to type '(prevState: JobSeekerProfile[] | OrganizationProfile[]) => JobSeekerProfile[] | OrganizationProfile[]'.
+    Type '(JobSeekerProfile | OrganizationProfile)[]' is not assignable to type 'JobSeekerProfile[] | OrganizationProfile[]'.
+      Type '(JobSeekerProfile | OrganizationProfile)[]' is not assignable to type 'JobSeekerProfile[]'.
+        Type 'JobSeekerProfile | OrganizationProfile' is not assignable to type 'JobSeekerProfile'.
+          Type 'OrganizationProfile' is missing the following properties from type 'JobSeekerProfile': profilePic, cv, interests, skills, bio
+```
