@@ -1,5 +1,42 @@
-
 # Talendeur - Job Matching Web Application
+
+## Getting Started
+
+### Prerequisites
+- Node.js 18.0.0 or higher
+- npm or yarn package manager
+
+### Installation
+
+1. Clone the repository
+```bash
+git clone https://github.com/yourusername/talendeur.git
+cd talendeur
+```
+
+2. Install dependencies
+```bash
+npm install
+# or
+yarn install
+```
+
+3. Start the development server
+```bash
+npm run dev
+# or
+yarn dev
+```
+
+4. Open your browser and navigate to `http://localhost:8080`
+
+### Environment Setup
+
+Create a `.env` file in the root directory with the following variables (to be updated once Supabase is integrated):
+```env
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
 
 ## Overview
 
