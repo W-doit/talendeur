@@ -32,7 +32,7 @@ yarn dev
 
 ### Environment Setup
 
-Create a `.env` file in the root directory with the following variables (to be updated once Supabase is integrated):
+Create a `.env` file in the root directory with the following variables (to be updated once Supabase is integrated-in progress):
 ```env
 VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
