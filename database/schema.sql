@@ -63,7 +63,7 @@ url TEXT
 
 -- Jobseeker skills portion
 CREATE TABLE public.jobseeker_skill_rating (
-  user_id UUID PRIMARY KEY REFERENCES public.profile(raw_user_meta_dataid),
+  user_id UUID PRIMARY KEY REFERENCES public.profile(user_id),
   interests TEXT[],
   soft_skills INTEGER CHECK (soft_skills >= 0 AND soft_skills <= 100),
   hard_skills INTEGER CHECK (hard_skills >= 0 AND hard_skills <= 100),
