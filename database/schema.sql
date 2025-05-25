@@ -1,6 +1,6 @@
 -- Jobseeker profile information
-CREATE TABLE public.profiles (
-  id UUID PRIMARY KEY REFERENCES auth.users(id),
+CREATE TABLE public.profile (
+  user_id UUID PRIMARY KEY REFERENCES auth.users(id),
   first_name VARCHAR(55) NOT NULL,
   surname VARCHAR(55) NOT NULL,
   email VARCHAR(100) UNIQUE NOT NULL,
@@ -13,7 +13,7 @@ CREATE TABLE public.profiles (
 -- Jobseeker education history
 CREATE TABLE education_hisotry (
 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-profile_id UUID REFERENCES public.profiles(id),
+user_id UUID REFERENCES public.profile(user_id),
 institution TEXT,
 qualification_type TEXT,
 subject TEXT,
@@ -25,7 +25,7 @@ still_studying BOOLEAN
 -- Jobseeker work history
 CREATE TABLE work_experience (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  profile_id UUID REFERENCES public.profiles(id),
+  user_id UUID REFERENCES public.profile(user_id),
   job_title TEXT,
   company TEXT,
   start_date DATE,
@@ -36,7 +36,7 @@ CREATE TABLE work_experience (
 -- Jobseeker certifications history
 CREATE TABLE certifications (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  profile_id UUID REFERENCES public.profiles(id),
+  user_id UUID REFERENCES public.profile(user_id),
   course_name TEXT,
   certification_type TEXT,
   date_attained DATE,
@@ -46,7 +46,7 @@ CREATE TABLE certifications (
 -- Jobseeker references
 CREATE TABLE reference (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  profile_id UUID REFERENCES public.profiles(id),
+  user_id UUID REFERENCES public.profile(user_id),
   relationship VARCHAR(55),
   email VARCHAR(100),
   CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'),
@@ -56,14 +56,14 @@ CREATE TABLE reference (
 -- Jobseeker social media links 
 CREATE TABLE socials (
 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-profile_id UUID REFERENCES public.profiles(id),
+user_id UUID REFERENCES public.profile(user_id),
 platform TEXT,
 url TEXT
 );
 
 -- Jobseeker skills portion
-CREATE TABLE public.jobseeker_details (
-  profile_id UUID PRIMARY KEY REFERENCES public.profiles(id),
+CREATE TABLE public.jobseeker_skill_rating (
+  user_id UUID PRIMARY KEY REFERENCES public.profile(raw_user_meta_dataid),
   interests TEXT[],
   soft_skills INTEGER CHECK (soft_skills >= 0 AND soft_skills <= 100),
   hard_skills INTEGER CHECK (hard_skills >= 0 AND hard_skills <= 100),
@@ -73,7 +73,7 @@ CREATE TABLE public.jobseeker_details (
 
 -- Hiring company details
 CREATE TABLE public.organization_details (
-  id UUID PRIMARY KEY REFERENCES auth.users(id),
+  organization_id UUID PRIMARY KEY REFERENCES auth.users(id),
   logo TEXT,
   company_name TEXT NOT NULL,
   website TEXT,
@@ -84,10 +84,10 @@ CREATE TABLE public.organization_details (
 -- Matches table
 CREATE TABLE public.matches (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  jobseeker_id UUID NOT NULL REFERENCES public.profiles(id),
-  organization_id UUID NOT NULL REFERENCES public.profiles(id),
-  jobseeker_approved BOOLEAN DEFAULT FALSE,
+  user_id UUID NOT NULL REFERENCES public.profile(user_id),
+  organization_id UUID NOT NULL REFERENCES public.organization_details(organization_id),
+  user_approved BOOLEAN DEFAULT FALSE,
   organization_approved BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-  UNIQUE(jobseeker_id, organization_id)
+  UNIQUE(user_id, organization_id)
 );
