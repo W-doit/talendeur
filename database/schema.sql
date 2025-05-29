@@ -11,7 +11,7 @@ CREATE TABLE public.profile (
   user_type TEXT NOT NULL CHECK (user_type IN ('jobseeker', 'organization'))
 );
 -- Jobseeker education history
-CREATE TABLE education_hisotry (
+CREATE TABLE education_history (
 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 user_id UUID REFERENCES public.profile(user_id),
 institution TEXT,
