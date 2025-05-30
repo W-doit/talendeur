@@ -91,7 +91,7 @@ Talendeur
 - **Charts**: Recharts
 - **Backend**: Supabase (to be implemented)
 - **Authentication**: Currently mocked, to be replaced with Supabase Auth
-- **Database**: Supabase PostgreSQL (to be implemented)
+- **Database**: Supabase PostgreSQL
 - **Storage**: Supabase Storage (to be implemented for CV uploads)
 
 ## Application Flow Diagram
