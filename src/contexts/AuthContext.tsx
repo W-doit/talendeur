@@ -1,6 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 // Types
 export type UserType = 'jobseeker' | 'organization';
@@ -191,19 +192,27 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setLoading(true);
     
     try {
-      // Mock registration process (in reality would call an API)
-      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      const { data, error } = await supabase.auth.signUp({
+        email: email,
+        password: password,
+      });
       
+      if (error){
+        throw error
+      };
+
       // Create a new user with empty profile
       const newUser: AuthUser = {
-        id: Math.random().toString(36).substr(2, 9),
-        email,
+        id: data?.user?.id || '',
+        email: data?.user.email || email,
         userType,
         profile: null
       };
       
       setUser(newUser);
       localStorage.setItem('talendeur-user', JSON.stringify(newUser));
+      // switch to supabase.auth.getSession() or onAuthStateChange??
       
       toast({
         title: "Registration successful",
