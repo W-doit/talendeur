@@ -139,8 +139,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     try {
       // Mock login process (in reality would call an API)
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+     const { data, error } = await supabase.auth.signInWithPassword({
+       email: email,
+       password: password,
+     });
+
+     if(error || !data.user){
+      throw error
+     }
+
       let foundUser: AuthUser | null = null;
       
       // Check if user exists in our mock job seekers
