@@ -72,6 +72,14 @@ TO authenticated
 USING (user_id = auth.uid())
 WITH CHECK (user_id = auth.uid());
 
+-- Added to specify individual controls, will update others later 
+-- This allows the user to SELECT their own profile
+CREATE POLICY "Users can read their own profile"
+ON profile
+FOR SELECT
+USING (auth.uid() = user_id);
+
+
 -- Reference
 CREATE policy "Organizations can view users reference details"
 ON "public"."reference"

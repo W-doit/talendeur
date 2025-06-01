@@ -133,15 +133,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setLoading(false);
   }, []);
 
-  // Mock login function
+  // Login function
   const login = async (email: string, password: string) => {
     setLoading(true);
     
     try {
-      // Mock login process (in reality would call an API)
+      // Login process with supabaseAuth
      const { data, error } = await supabase.auth.signInWithPassword({
        email: email,
-       password: password,
+       password: password
      });
 
      if(error || !data.user){
@@ -160,6 +160,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           profile: jobSeeker
         };
       }
+      // Trying to swap over mock jobseeker logic, not yet functioning 
+    //   const {data: jobSeekerProfile, error: profileError } = await supabase
+    //   .from('profile')
+    //   .select('*')
+    //   .eq('email', email)
+    //   .single();
+
+    //   if (jobSeekerProfile) {
+    //   foundUser = {
+    //     id: data.user.id,
+    //     email: data.user.email ?? '',
+    //     userType: 'jobseeker',
+    //     profile: jobSeekerProfile,
+    //   };
+    // }
       
       // Check if user exists in our mock organizations
       const organization = mockOrganizations.find(org => org.email === email);
@@ -180,7 +195,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           description: `Welcome back to Talendeur!`,
         });
       } else {
-        throw new Error('Invalid credentials');
+        throw new Error('Authenticated but user not found in mock data');
       }
     } catch (error) {
       toast({
