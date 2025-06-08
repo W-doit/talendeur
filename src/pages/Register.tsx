@@ -9,6 +9,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MainLayout from '@/components/layout/MainLayout';
 
 const Register: React.FC = () => {
+  // Adding states for the mandatory fields to submit to backend
+  const [firstName, setFirstName] = useState('');
+  const [surname, setSurname] = useState('');
+  const [companyName, setCompanyName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -72,11 +76,46 @@ const Register: React.FC = () => {
                   <p className="text-sm text-muted-foreground mb-4">
                     Create your job seeker profile to showcase your skills and connect with organizations
                   </p>
+                  {/* JOBSEEKER SPECIFIC FIELDS */}
+                   <div className="space-y-2">
+        <label htmlFor="firstName" className="text-sm font-medium">First Name</label>
+        <Input
+          id="firstName"
+          placeholder="Your first name"
+          type="text"
+          value={firstName}
+          onChange={(e) => setFirstName(e.target.value)}
+          required={userType === 'jobseeker'}
+        />
+      </div>
+      <div className="space-y-2">
+        <label htmlFor="surname" className="text-sm font-medium">Surname</label>
+        <Input
+          id="surname"
+          placeholder="Your surname"
+          type="text"
+          value={surname}
+          onChange={(e) => setSurname(e.target.value)}
+          required={userType === 'jobseeker'}
+        />
+      </div>
                 </TabsContent>
                 <TabsContent value="organization" className="pt-4">
                   <p className="text-sm text-muted-foreground mb-4">
                     Create your organization profile to find the perfect talent for your team
                   </p>
+                  {/* ORGANISATION SPECIFIC DETAILS */}
+                  <div className="space-y-2">
+        <label htmlFor="companyName" className="text-sm font-medium">Company Name</label>
+        <Input
+          id="companyName"
+          placeholder="Your company name"
+          type="text"
+          value={companyName}
+          onChange={(e) => setCompanyName(e.target.value)}
+          required={userType === 'organization'}
+        />
+      </div>
                 </TabsContent>
               </Tabs>
               
