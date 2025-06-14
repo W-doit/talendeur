@@ -234,8 +234,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         throw error || new Error("No user returned from signUp");
       }
 
-      const userId = data.user.id;
-      console.log
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+  email,
+  password,
+});
+
+      if (signInError) {
+        throw signInError;
+      } 
+
+
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+if (sessionError || !session?.user?.id) {
+  throw sessionError || new Error("No session or user ID available");
+}
+
+const userId = session.user.id;  
 
       //  Inserting into the correct profile table
       if (userType === "jobseeker") {
