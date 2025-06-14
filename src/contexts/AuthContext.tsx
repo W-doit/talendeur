@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -43,7 +42,13 @@ interface AuthContextType {
   user: AuthUser | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, userType: UserType) => Promise<void>;
+  // Register function now includes userType and extra fields
+  register: (
+    email: string,
+    password: string,
+    userType: UserType,
+    extraFields: { firstName: string; surname: string; companyName: string }
+  ) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (profileData: Partial<JobSeekerProfile> | Partial<OrganizationProfile>) => Promise<void>;
 }
@@ -209,33 +214,70 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  // Mock register function
-  const register = async (email: string, password: string, userType: UserType) => {
+  // Register function
+  const register = async (
+    email: string,
+    password: string,
+    userType: UserType,
+    extraFields?: { firstName: string; surname: string; companyName: string }
+  ) => {
     setLoading(true);
-    
+
     try {
-
+      // 1. Register with Supabase Auth
       const { data, error } = await supabase.auth.signUp({
-        email: email,
-        password: password,
+        email,
+        password,
       });
-      
-      if (error){
-        throw error
+
+      if (error || !data.user) {
+        throw error || new Error("No user returned from signUp");
+      }
+
+      const userId = data.user.id;
+      console.log
+
+      //  Inserting into the correct profile table
+      if (userType === "jobseeker") {
+        const { firstName = "", surname = "" } = extraFields || {};
+        const { error: profileError } = await supabase
+          .from("profile")
+          .insert([
+            {
+              user_id: userId,
+              first_name: firstName.trim(),
+              surname : surname.trim(),
+              email: email,
+             
+            },
+          ]);
+        if (profileError) throw profileError;
+      } else if (userType === "organization") {
+        const { companyName = "" } = extraFields || {};
+        const { error: orgError } = await supabase
+          .from("organization_details")
+          .insert([
+            {
+              id: userId,
+              name: companyName,
+              email,
+            
+            },
+          ]);
+        if (orgError) throw orgError;
+      }
+
+     
+      const newUser: AuthUser = {
+        id: userId,
+        email,
+        userType,
+        profile: null,
       };
 
-      // Create a new user with empty profile
-      const newUser: AuthUser = {
-        id: data?.user?.id || '',
-        email: data?.user.email || email,
-        userType,
-        profile: null
-      };
-      
       setUser(newUser);
-      localStorage.setItem('talendeur-user', JSON.stringify(newUser));
-      // switch to supabase.auth.getSession() or onAuthStateChange??
-      
+      localStorage.setItem("talendeur-user", JSON.stringify(newUser));
+
       toast({
         title: "Registration successful",
         description: "Your account has been created. Please complete your profile.",

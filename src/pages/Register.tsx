@@ -22,6 +22,13 @@ const Register: React.FC = () => {
   const navigate = useNavigate();
   const { register } = useAuth();
 
+  // Declaring value of extraFields for registration
+   const extraFields = {
+    firstName: firstName,  
+    surname: surname,      
+    companyName: companyName  
+  };
+
   const validatePassword = () => {
     if (password !== confirmPassword) {
       setPasswordError("Passwords don't match");
@@ -31,25 +38,64 @@ const Register: React.FC = () => {
     return true;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // const handleSubmit = async (e: React.FormEvent) => {
+  //   e.preventDefault();
     
-    if (!validatePassword()) {
+  //   if (!validatePassword()) {
+  //     return;
+  //   }
+    
+  //   setIsSubmitting(true);
+
+  //   try {
+  //     await register(email, password, userType);
+  //     navigate('/profile');
+  //   } catch (error) {
+  //     // Error is handled in the auth context
+  //     console.error('Registration error:', error);
+  //   } finally {
+  //     setIsSubmitting(false);
+  //   }
+  // };
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  // Validate password match
+  if (!validatePassword()) {
+    return;
+  }
+    // Additional validation for required fields
+  if (userType === 'jobseeker') {
+    if (!firstName.trim() || !surname.trim()) {
+      setPasswordError('First name and surname are required for job seekers.');
       return;
     }
-    
-    setIsSubmitting(true);
-
-    try {
-      await register(email, password, userType);
-      navigate('/profile');
-    } catch (error) {
-      // Error is handled in the auth context
-      console.error('Registration error:', error);
-    } finally {
-      setIsSubmitting(false);
+  }
+  if (userType === 'organization') {
+    if (!companyName.trim()) {
+      setPasswordError('Company name is required for organizations.');
+      return;
     }
-  };
+  }
+
+  setPasswordError('');
+  setIsSubmitting(true);
+
+  try {
+   
+    await register(
+      email,
+      password,
+      userType,
+      extraFields
+    );
+    navigate('/profile');
+  } catch (error) {
+    console.error('Registration error:', error);
+  } finally {
+    setIsSubmitting(false);
+  } 
+};
 
   return (
     <MainLayout>
