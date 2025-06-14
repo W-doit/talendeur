@@ -258,8 +258,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           .from("organization_details")
           .insert([
             {
-              id: userId,
-              name: companyName,
+              organization_id: userId,
+              company_name: companyName,
               email,
             
             },
