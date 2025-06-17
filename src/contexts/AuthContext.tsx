@@ -263,7 +263,7 @@ const userId = session.user.id;
               first_name: firstName.trim(),
               surname : surname.trim(),
               email: email,
-             
+              user_type: userType
             },
           ]);
         if (profileError) throw profileError;

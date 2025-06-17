@@ -87,7 +87,7 @@ const handleSubmit = async (e: React.FormEvent) => {
       email,
       password,
       userType,
-      extraFields
+      extraFields,
     );
     navigate('/profile');
   } catch (error) {
