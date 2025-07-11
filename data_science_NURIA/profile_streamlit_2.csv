@@ -1,0 +1,67 @@
+,candidate_id,first_name,last_name,top_degree,hel_code,arts_design_media,business_finance_mgmt,culinary_hospitality,education_training,health_medical,humanities_social,law_politics,marketing_sales,stem,skilled_trades,veterinary_science,last_job_title,total_exp_years,avg_years_job,total_certs,cert_business_mgmt,cert_arts_design,cert_education,cert_engineering,cert_finance,cert_health,cert_hospitality,cert_humanities,cert_languages,cert_law_security,cert_marketing,cert_proj_mgmt,cert_skilled_trades,cert_tech_it
+0,1,John,Smith,Bachelor's Degree,3,0,0,0,0,0,0,0,0,3,0,0,Lead Developer,10.959616700889802,2.7399041752224504,3,0,0,0,0,0,0,0,0,1,0,0,0,0,2
+2,2,Sarah,Johnson,Bachelor's Degree,3,0,0,0,0,0,0,0,3,0,0,0,Marketing Manager,9.015742642026009,3.005247547342003,3,0,0,0,0,0,0,0,0,1,0,1,1,0,0
+4,3,Michael,Brown,PhD,6,0,0,0,0,0,0,0,0,6,0,0,Senior AI Researcher,12.0,4.0,3,0,0,0,0,0,0,0,0,1,0,0,1,0,1
+7,4,Jennifer,Davis,Bachelor's Degree,3,3,0,0,0,0,0,0,0,0,0,0,Senior UX Designer,7.008898015058179,2.336299338352726,3,0,2,0,0,0,0,0,0,1,0,0,0,0,0
+9,5,Robert,Wilson,Master's Degree,5,0,5,0,0,0,0,0,0,0,0,0,Senior Project Manager,15.97262149212868,3.99315537303217,4,0,0,0,0,0,0,0,0,1,0,0,3,0,0
+12,6,Lisa,Anderson,Master's Degree,5,0,5,0,0,0,0,0,0,0,0,0,Finance Manager,11.96167008898015,2.9904175222450373,3,0,0,0,0,2,0,0,0,0,0,0,1,0,0
+15,7,David,Martinez,Bachelor's Degree,3,0,0,0,0,0,0,0,0,3,0,0,Senior DevOps Engineer,9.713894592744696,3.237964864248232,3,0,0,0,0,0,0,0,0,1,0,0,0,0,2
+18,8,Emma,Taylor,MBA,5,0,5,0,0,0,0,0,0,3,0,0,Product Manager,10.93223819301848,3.644079397672827,3,0,0,0,0,0,0,0,0,1,0,0,2,0,0
+20,9,Christopher,Moore,Master's Degree,5,0,0,0,0,0,0,0,0,5,0,0,Senior Security Consultant,12.711841204654348,4.237280401551449,4,0,0,0,0,0,0,0,0,1,0,0,1,0,2
+23,10,Amanda,Garcia,Bachelor's Degree,3,0,3,0,0,0,0,0,1,0,0,0,Sales Manager,10.00684462696783,3.3356148756559434,3,0,0,0,0,0,0,0,0,1,0,1,1,0,0
+25,11,Ryan,Thompson,Bachelor's Degree,3,0,0,0,0,0,0,0,0,3,0,0,Senior Mobile Developer,9.015742642026009,3.005247547342003,4,0,0,0,0,0,0,0,0,1,0,0,0,0,3
+28,12,Ashley,White,Bachelor's Degree,3,0,3,0,0,0,0,0,0,0,0,0,HR Manager,8.008213552361397,2.669404517453799,3,0,0,0,0,0,0,0,0,0,0,0,3,0,0
+30,13,Kevin,Clark,Bachelor's Degree,3,0,3,0,0,0,0,0,0,0,0,0,Data Analytics Manager,7.017111567419576,2.3390371891398587,3,0,0,0,0,0,0,0,0,1,0,0,0,0,2
+32,14,Michelle,Lewis,Bachelor's Degree,3,0,0,0,0,0,3,0,1,0,0,0,Marketing Communications Manager,10.009582477754964,3.336527492584988,3,0,0,0,0,0,0,0,0,0,0,3,0,0,0
+34,15,Daniel,Walker,Bachelor's Degree,3,0,0,0,0,0,0,0,0,3,0,0,Senior QA Engineer,7.978097193702943,2.659365731234314,3,0,0,0,0,0,0,0,0,1,0,0,0,0,2
+36,16,Nicole,Hall,Bachelor's Degree,3,0,3,0,0,0,0,0,0,0,0,0,Operations Manager,10.924024640657084,3.641341546885695,3,0,0,0,0,0,0,0,0,1,0,0,2,0,0
+38,17,Brian,Young,Bachelor's Degree,3,0,0,0,0,0,0,0,0,3,0,0,Senior Network Engineer,9.007529089664612,3.002509696554871,3,0,0,0,0,0,0,0,0,0,0,0,1,0,2
+41,18,Stephanie,King,Bachelor's Degree,3,3,0,0,0,0,0,0,0,0,0,0,Art Director,8.005475701574264,2.6684919005247547,3,0,2,0,0,0,0,0,0,0,0,1,0,0,0
+43,19,Anthony,Wright,Bachelor's Degree,3,0,0,0,0,0,0,0,0,3,0,0,Database Architect,10.00958247775496,3.336527492584987,3,0,0,0,0,0,0,0,0,0,0,0,1,0,2
+46,20,Rachel,Lopez,Bachelor's Degree,3,0,3,0,0,0,0,0,0,0,0,0,Customer Success Manager,7.049965776865161,3.5249828884325805,3,0,0,0,0,0,0,0,0,0,0,1,2,0,0
+48,21,Matthew,Hill,Bachelor's Degree,3,0,0,0,0,0,3,0,0,1,0,0,Documentation Manager,8.016427104722792,2.6721423682409307,3,0,0,0,0,0,0,0,0,2,0,0,0,0,1
+50,22,Lauren,Green,Bachelor's Degree,3,0,3,0,0,0,0,0,0,0,0,0,Supply Chain Manager,9.00479123887748,3.0015970796258267,3,0,0,0,0,0,0,0,0,1,0,0,2,0,0
+52,23,Jason,Adams,Bachelor's Degree,3,0,0,0,0,0,0,0,0,3,0,0,Principal Cloud Architect,10.924024640657084,3.641341546885695,4,0,0,0,0,0,0,0,0,0,0,0,1,0,3
+56,24,Crystal,Baker,Bachelor's Degree,3,0,0,3,0,0,0,0,0,0,0,0,Event Operations Manager,8.016427104722792,2.6721423682409307,3,0,0,0,0,0,0,2,0,0,0,0,1,0,0
+58,25,Tyler,Gonzalez,Bachelor's Degree,3,0,0,0,0,0,0,0,3,0,0,0,Social Media Manager,6.050650239561945,3.0253251197809723,3,0,0,0,0,0,0,0,0,0,0,3,0,0,0
+60,26,Samantha,Nelson,PhD,6,0,0,0,0,0,0,0,0,6,0,0,Principal Research Scientist,13.965776865160848,4.655258955053616,3,0,0,0,2,0,0,0,0,0,0,0,1,0,0
+63,27,Jordan,Carter,Master's Degree,5,0,0,0,5,0,0,0,0,0,0,0,Education Director,12.848733744010952,4.282911248003651,3,0,0,2,0,0,0,0,0,1,0,0,0,0,0
+66,28,Victoria,Mitchell,JD,4,0,0,0,0,0,0,4,0,0,0,0,Senior Attorney,9.007529089664612,3.002509696554871,3,0,0,0,0,0,0,0,0,0,2,0,1,0,0
+69,29,Gregory,Perez,Bachelor's Degree,3,0,3,0,0,0,0,0,0,0,0,0,Logistics Manager,8.016427104722792,2.6721423682409307,3,0,0,0,0,0,0,0,0,1,0,0,2,0,0
+71,30,Melissa,Roberts,Bachelor's Degree,3,3,0,0,0,0,0,0,0,0,0,0,Design Manager,11.00889801505818,3.66963267168606,3,0,2,0,1,0,0,0,0,0,0,0,0,0,0
+73,31,Stephen,Turner,Bachelor's Degree,3,1,0,0,0,0,0,0,0,3,0,0,Senior Design Engineer,11.978097193702943,3.992699064567648,3,0,0,0,3,0,0,0,0,0,0,0,0,0,0
+75,32,Angela,Phillips,Bachelor's Degree,3,0,0,0,0,0,3,0,0,0,0,0,Director of Communications,9.007529089664612,3.002509696554871,3,0,0,0,0,0,0,0,0,1,0,2,0,0,0
+77,33,Eric,Campbell,Bachelor's Degree,3,3,0,0,0,0,0,0,0,0,0,0,Creative Director,10.00684462696783,3.3356148756559434,3,0,3,0,0,0,0,0,0,0,0,0,0,0,0
+79,34,Sharon,Parker,Bachelor's Degree,3,0,3,0,0,0,0,0,0,0,0,0,Accounting Manager,11.00889801505818,3.66963267168606,3,0,0,0,0,2,0,0,0,1,0,0,0,0,0
+81,35,Nathan,Evans,Doctorate,6,0,0,0,0,6,0,0,0,0,0,0,Clinic Director,8.421629021218344,2.807209673739448,3,0,0,0,0,0,2,0,0,1,0,0,0,0,0
+84,36,Deborah,Edwards,Bachelor's Degree,3,0,3,0,0,0,0,0,0,0,0,0,Underwriting Manager,10.00684462696783,3.3356148756559434,3,0,0,0,0,3,0,0,0,0,0,0,0,0,0
+86,37,Carlos,Collins,Bachelor's Degree,3,0,0,0,0,0,0,0,0,3,0,0,Environmental Engineering Manager,9.007529089664612,3.002509696554871,3,0,0,0,2,0,0,0,0,1,0,0,0,0,0
+88,38,Patricia,Stewart,Master's Degree,5,0,0,0,0,5,0,0,0,0,0,0,Senior Nurse Practitioner,15.471594798083505,5.157198266027835,3,0,0,0,0,0,2,0,0,1,0,0,0,0,0
+91,39,Benjamin,Sanchez,Master's Degree,5,0,0,0,0,0,0,0,0,5,0,0,Enterprise Architect,18.00684462696783,6.00228154232261,3,0,0,0,0,0,0,0,0,0,0,0,1,0,2
+94,40,Cynthia,Morris,MBA,5,0,5,0,0,0,0,0,0,0,0,0,Finance Director,13.00479123887748,4.33493041295916,3,0,0,0,0,3,0,0,0,0,0,0,0,0,0
+96,41,Harold,Rogers,Bachelor's Degree,3,0,0,0,0,0,0,0,0,0,3,0,General Contractor,16.922655715263517,5.6408852384211725,3,0,0,0,0,0,0,0,0,1,0,0,0,2,0
+98,42,Katherine,Reed,Bachelor's Degree,3,0,0,0,0,0,0,0,3,1,0,0,Research Manager,8.008213552361397,2.669404517453799,3,0,0,0,0,0,0,0,0,0,0,2,0,0,1
+100,43,Dennis,Cook,Bachelor's Degree,3,0,1,0,0,0,0,0,0,3,0,0,Operations Manager,10.009582477754964,3.336527492584988,3,0,0,0,1,0,0,0,0,0,0,0,2,0,0
+103,44,Helen,Bailey,PharmD,4,0,0,0,0,4,0,0,0,3,0,0,Pharmacy Manager,11.017111567419576,3.672370522473192,3,0,0,0,0,0,2,0,0,1,0,0,0,0,0
+106,45,Lawrence,Rivera,Bachelor's Degree,3,0,0,0,0,0,0,0,0,3,0,0,Senior Telecommunications Engineer,11.00889801505818,3.66963267168606,3,0,0,0,2,0,0,0,0,1,0,0,0,0,0
+109,46,Teresa,Cooper,Bachelor's Degree,3,0,0,0,0,1,0,0,0,3,0,0,Director of Clinical Research,9.007529089664612,3.002509696554871,3,0,0,0,0,0,3,0,0,0,0,0,0,0,0
+111,47,Gerald,Peterson,Bachelor's Degree,3,0,3,0,0,0,0,0,0,0,0,0,Real Estate Investment Manager,13.092402464065708,4.3641341546885695,3,2,0,0,0,0,0,0,0,1,0,0,0,0,0
+114,48,Sandra,Richardson,Master's Degree,5,0,0,0,5,0,0,0,0,0,0,0,Assistant Principal,13.467488021902806,4.489162673967602,3,0,0,2,0,0,0,0,0,1,0,0,0,0,0
+116,49,Kenneth,Cox,Associate Degree,2,0,0,2,0,0,0,0,0,0,0,0,Executive Chef,12.008213552361395,4.002737850787132,3,0,0,0,0,0,0,3,0,0,0,0,0,0,0
+118,50,Donna,Ward,DVM,4,0,0,0,0,0,0,0,0,0,0,4,Veterinary Director,10.978781656399727,3.659593885466576,3,0,0,0,0,0,2,0,0,1,0,0,0,0,0
+121,51,Arthur,Torres,Bachelor's Degree,3,0,0,0,0,0,0,0,0,3,0,0,Senior Power Systems Engineer,13.007529089664612,4.335843029888204,3,0,0,0,2,0,0,0,0,1,0,0,0,0,0
+124,52,Cheryl,Peterson,Master's Degree,5,0,0,0,0,0,5,0,0,0,0,0,Director of Social Services,11.468856947296374,3.8229523157654577,3,0,0,0,0,0,2,0,0,1,0,0,0,0,0
+127,53,Ralph,Gray,Bachelor's Degree,3,0,0,0,0,0,0,3,0,0,0,0,Detective Sergeant,15.93429158110883,5.3114305270362765,3,0,0,0,0,0,0,0,0,1,2,0,0,0,0
+130,54,Janice,Ramirez,Bachelor's Degree,3,0,0,0,0,0,0,0,3,0,0,0,Marketing Automation Specialist,7.049965776865161,3.5249828884325805,3,0,0,0,0,0,0,0,0,1,0,2,0,0,0
+132,55,Wayne,James,Certificate,1,0,0,0,0,0,0,0,0,0,1,0,Transportation Manager,20.0082135523614,6.669404517453799,3,0,0,0,0,0,0,0,0,1,0,0,0,2,0
+134,56,Gloria,Watson,Associate Degree,2,0,2,0,0,0,0,0,0,0,0,0,Operations Coordinator,13.015742642026009,4.3385808806753365,3,0,0,0,0,0,0,0,0,1,0,0,1,0,1
+136,57,Roy,Brooks,Associate Degree,2,0,0,0,0,0,0,0,0,0,2,0,HVAC Service Manager,14.00958247775496,4.66986082591832,3,0,0,0,1,0,0,0,0,1,0,0,0,1,0
+139,58,Frances,Kelly,Master's Degree,5,0,0,0,0,0,5,0,0,0,0,0,Information Services Manager,10.510609171800136,5.255304585900069,3,0,0,0,0,0,0,0,3,0,0,0,0,0,0
+141,59,Eugene,Sanders,Certificate,1,0,0,0,0,1,0,0,0,0,1,0,Fire Captain,17.75770020533881,5.919233401779604,3,0,0,0,0,0,1,0,0,1,1,0,0,0,0
+144,60,Marie,Price,Master's Degree,5,0,0,0,0,5,3,0,0,0,0,0,Athletic Director,11.468856947296372,3.822952315765457,3,0,0,0,0,0,2,0,0,1,0,0,0,0,0
+147,61,Louis,Bennett,Associate Degree,2,0,0,0,0,0,0,0,0,0,2,0,Welding Supervisor,18.00958247775496,6.003194159251653,3,0,0,0,0,0,0,0,0,1,0,0,0,2,0
+150,62,Doris,Wood,Associate Degree,2,0,0,0,0,2,0,0,0,0,0,0,Senior Dental Hygienist,9.133470225872689,4.566735112936344,3,0,0,0,0,0,2,0,0,1,0,0,0,0,0
+152,63,Albert,Barnes,Associate Degree,2,0,0,0,0,0,0,0,0,0,2,0,Construction Foreman,22.00684462696783,7.335614875655943,3,0,0,0,0,0,0,0,0,1,0,0,0,2,0
+154,64,Lillian,Ross,Associate Degree,2,0,2,0,0,0,0,0,0,0,0,0,Branch Operations Supervisor,8.97741273100616,2.9924709103353866,3,1,0,0,0,1,0,0,0,1,0,0,0,0,0
+156,65,Jose,Henderson,Associate Degree,2,0,0,0,0,0,0,0,0,0,2,0,Service Manager,15.00889801505818,5.002966005019393,3,0,0,0,0,0,0,0,0,1,0,0,0,2,0
+159,66,Annie,Coleman,Associate Degree,2,0,1,0,0,0,0,0,0,0,2,0,Salon Owner,16.008213552361397,5.336071184120466,3,0,1,0,0,0,0,0,0,0,0,0,1,1,0
