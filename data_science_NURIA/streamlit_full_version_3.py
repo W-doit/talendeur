@@ -6,6 +6,12 @@ from plotly.subplots import make_subplots
 import numpy as np
 import io as io
 import base64
+import matplotlib.pyplot as plt
+from wordcloud import WordCloud
+import nltk
+from nltk.corpus import stopwords
+import string
+import re
 from pathlib import Path
 
 #Page configuration
@@ -60,11 +66,14 @@ st.title("Candidate Analysis Dashboard")
 
 #Load the data
 # Note: Ensure the path to your CSV file is correct.
-df = pd.read_csv(r'C:\Escritorio\talendeur\data_science_NURIA\profile_streamlit_2.csv',index_col=0)
+df = pd.read_csv(r'C:\Escritorio\talendeur\data_science_NURIA\profile_streamlit_7.csv',index_col=0)
 
 # Assign df to df_candidate for further use
 df_candidate = df
 # Display the first few rows of the dataframe
+#st.write("Data loaded successfully. Here are the first few rows of the dataframe:")
+#st.dataframe(df_candidate.head())"
+
 
 
 #Candidate selection as side bar
@@ -90,27 +99,26 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+
 #select candidate
 #Side note: we are using only the candidate_id column for selection to ensure anonimity.
 # If you want to use other columns, you can modify this part accordingly. Remember to change from int to str if you add the name.
-candidate_id= st.sidebar.selectbox(
-    "Select Candidate",df_candidate["candidate_id"].to_list())
+candidate_id = st.sidebar.selectbox("Select Candidate", df_candidate['candidate_id'].to_list())
 # Filter the dataframe based on the selected candidate
 
 df_candidate_selected = df_candidate[df_candidate["candidate_id"] == candidate_id]
 
-#dataoverview
-st.header("Data Overview") 
-# Display the first few rows of the dataframe for the selected candidate
-st.dataframe(df_candidate_selected, use_container_width=True)
+
 
 
 #Key metrics
 st.header("Key Metrics")
 # Display key metrics for the selected candidate
-col1, col2 = st.columns(2)
-col1.metric("Total experience (years)",round( df_candidate_selected.iloc[0]["total_exp_years"]))
-col2.metric("Top_degree", df_candidate_selected.iloc[0]["top_degree"])
+col1, col2,col3= st.columns(3)
+col1.metric("Top_degree", df_candidate_selected.iloc[0]["highest_qualification"])
+col2.metric("Total experience (years)",round( df_candidate_selected.iloc[0]["total_years_experience"]))
+col3.metric("Avg_years", int(df_candidate_selected.iloc[0]["avg_years_per_job"]))
+
 
 
 #Create Leadership Index
@@ -120,10 +128,10 @@ st.header("Leadership Index")
 def calculate_leadership_index(row):
     score = 0
     #Check if the top_degree is an MBA
-    if str(row['top_degree']).lower() == 'mba':
+    if str(row['highest_qualification']).lower() == 'mba':
         score += 4
     #Check if the last_job_title is a leadership position
-    job_title=str(row['last_job_title']).strip().lower() 
+    job_title=str(row['total_years_experience']).strip().lower() 
     if 'director' in job_title:
         score += 4
     elif 'manager' in job_title:
@@ -145,7 +153,9 @@ leadership_individual_value= calculate_leadership_index(df_candidate_selected.il
 st.metric("Leadership Index", f"{leadership_individual_value} / 10")
 #Create a progress bar to visualize the leadership index
 max_leadership_score=10
-bar_color=value_to_color = (leadership_individual_value,max_leadership_score,px.colors.sequential.Sunset)
+#bar_color=value_to_color = (leadership_individual_value,max_leadership_score,px.colors.sequential.Sunset)
+bar_color = px.colors.sequential.Sunset[4]
+
 fig = go.Figure(go.Bar(
     x=[leadership_individual_value],y=['Leadership Index'],
     orientation='h',marker=dict(
@@ -157,6 +167,34 @@ fig.update_layout(
     title='Leadership Index Progress Bar',xaxis=dict(range=[0, max_leadership_score],title='Score',showticklabels=False,visible=False),yaxis=dict(showticklabels=False,visible=False),height=100,margin=dict(l=0, r=0, t=0, b=0),showlegend=False)
 st.plotly_chart(fig, use_container_width=True)
 
+#Create a gauge chart to visualize the agile profifciency
+st.header("Agile Proficiency")
+#We will create a gauge chart to visualize the agile proficiency of the selected candidate.
+#define the agile proficiency value
+agile_score= df_candidate_selected.iloc[0]['agile']
+
+fig= go.Figure(go.Indicator(
+    mode="gauge+number",
+    value=agile_score,
+    title={'text': "Agile Proficiency"},
+    gauge={
+        'axis': {'range': [0,3]},
+        'bar': {'color': "mediumorchid"},
+        'steps': [
+            {'range': [0,1], 'color': "lightgray"},
+            {'range': [1, 2], 'color': "lightgrey"},
+            {'range': [2, 3], 'color': "lightgrey"}
+        ],
+        'threshold': {
+            'line': {'color': "black", 'width': 4},
+            'thickness': 0.75,
+            'value': agile_score
+        }
+    }
+))
+#Graph the figure 'gauge' chart
+fig.update_layout(height=300, width=600, margin=dict(l=20, r=20, t=20, b=20))
+st.plotly_chart(fig, use_container_width=True)
 
 #Create a bar chart for the top 5 certifications areas
 st.header("Top Certifications Areas")
@@ -228,12 +266,12 @@ else:
 #Chosing most relevant areas of knowledge to show in the rose radial chart
 st.header("Education Areas of Knowledge")
 edu_columns=[
-    "arts_design_media",
-    "business_finance_mgmt",
-    "education_training",
-    "marketing_sales",
-    "stem","humanities_social","law_politics",
-    "health_medical"
+    "Arts_Design_Media",
+    "Business_Finance_Management",
+    "Education_Training",
+    "Marketing_Sales",
+    "STEM_Science_Technology_Engineering_Mathematics","Humanities_Social_Science","Law_Political_Science",
+    "Health_Medical_Sciences","Culinary_Hospitality"
 ]
 
 #Define areas of knowledge to use in the rose radial chart
@@ -266,8 +304,8 @@ fig.update_layout(
     ),
     showlegend=True,
     title='Education Areas of Knowledge',
-    height=800, 
-    width=800,
+    height=600, 
+    width=600,
 )
 
 
@@ -275,3 +313,48 @@ fig.update_layout(
 
 st.plotly_chart(fig, use_container_width=True)
 st.markdown("""This chart shows the areas of knowledge for the selected candidate. The values represent the level of expertise in each area.""")
+
+#Create a word cloud for the candidate's biography
+st.header("Candidate's Bio")
+
+nltk.download('stopwords')
+#set stopwords to English
+stop_words = set(stopwords.words('english'))
+#Add some custom stopwords
+#These are repetitive words that do not add value to the word cloud but are not in the nltk stopwords list.
+custom_stopwords = {'candidate', 'profile', 'experience', 'years', 'work', 'job', 'skills', 'knowledge'}
+stop_words.update(custom_stopwords)
+all_stopwords = stop_words.union(set(custom_stopwords))
+
+#define a function to clean the text
+def clean_text(text):
+    # Remove punctuation
+    text = re.sub(r'[^\w\s]', '', text)
+    # Remove numbers
+    text = re.sub(r'\d+', '', text)
+    # Remove extra whitespace
+    text = re.sub(r'\s+', ' ', text).strip()
+    # Convert to lowercase
+    text = text.lower()
+    # Remove stopwords
+    text = ' '.join([word for word in text.split() if word not in all_stopwords])
+    return text
+#Apply the clean_text function to the biography column of the selected candidate
+cleaned_text=clean_text(df_candidate_selected.iloc[0]['bio'])
+# Generate the word cloud
+wordcloud = WordCloud(
+    width=600,
+    height=300,
+    background_color='white',
+    colormap='twilight',
+    stopwords=all_stopwords,
+    min_font_size=10
+).generate(cleaned_text)
+
+# Display the word cloud
+fig, ax = plt.subplots(figsize=(10, 5))
+ax.imshow(wordcloud, interpolation='bilinear')
+ax.axis('off')  # Hide the axes
+st.pyplot(fig)
+
+
