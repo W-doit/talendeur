@@ -54,9 +54,9 @@ export default {
 					foreground: 'hsl(var(--card-foreground))'
 				},
 				talendeur: {
-					red: '#8B0000',
+					red: '#D1163E',
 					darkred: '#5C0000',
-					orange: '#FF5722',
+					orange: '#FF9F14',
 					lightorange: '#FF7F50',
 					dark: '#1E1E1E',
 					light: '#F8F8F8',

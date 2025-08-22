@@ -139,14 +139,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     try {
       // Login process with supabaseAuth
-     const { data, error } = await supabase.auth.signInWithPassword({
+     /* const { data, error } = await supabase.auth.signInWithPassword({
        email: email,
        password: password
      });
 
      if(error || !data.user){
       throw error
-     }
+     } */
 
       let foundUser: AuthUser | null = null;
       

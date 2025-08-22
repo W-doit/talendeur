@@ -26,13 +26,13 @@ const Profile: React.FC = () => {
   return (
     <MainLayout>
       <div className="container max-w-4xl mx-auto py-12 px-4">
-        <h1 className="text-3xl font-bold mb-2">{user.profile?.name || 'My Profile'}</h1>
+        {/* <h1 className="text-3xl font-bold mb-2">{user.profile?.name || 'My Profile'}</h1>
         <p className="text-muted-foreground mb-8">
           {user.userType === 'jobseeker' 
             ? 'Showcase your skills and experience to potential employers' 
             : 'Highlight your organization to attract the best talent'
           }
-        </p>
+        </p> */}
         
         {!user.profile ? (
           <Card>
@@ -67,15 +67,15 @@ const Profile: React.FC = () => {
                   />
                 </div>
                 <div className="flex-1 text-center md:text-left">
-                  <h2 className="text-2xl font-bold">{user.profile.name}</h2>
+                  <h2 className="text-2xl font-bold">Hello, {user.profile.name}</h2>
                   <p className="text-white/80">{user.email}</p>
                   <div className="mt-4">
-                    <Button 
+                    {/* <Button 
                       onClick={() => navigate('/find')}
                       className="bg-white text-talendeur-red hover:bg-white/90"
                     >
                       Find {user.userType === 'jobseeker' ? 'Organizations' : 'Talent'}
-                    </Button>
+                    </Button> */}
                   </div>
                 </div>
               </div>
