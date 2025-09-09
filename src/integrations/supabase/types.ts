@@ -9,7 +9,99 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      profile: {
+        Row: {
+          user_id: string
+          first_name: string
+          surname: string
+          email: string
+          profile_pic: string | null
+          cv_url: string | null
+          bio: string | null
+          user_type: string
+        }
+        Insert: {
+          user_id: string
+          first_name: string
+          surname: string
+          email: string
+          profile_pic?: string | null
+          cv_url?: string | null
+          bio?: string | null
+          user_type: string
+        }
+        Update: {
+          user_id?: string
+          first_name?: string
+          surname?: string
+          email?: string
+          profile_pic?: string | null
+          cv_url?: string | null
+          bio?: string | null
+          user_type?: string
+        }
+      }
+      organization_details: {
+        Row: {
+          organization_id: string
+          logo: string | null
+          company_name: string
+          website: string | null
+          about: string | null
+          needs: string[] | null
+          email: string | null
+        }
+        Insert: {
+          organization_id: string
+          logo?: string | null
+          company_name: string
+          website?: string | null
+          about?: string | null
+          needs?: string[] | null
+          email?: string | null
+        }
+        Update: {
+          organization_id?: string
+          logo?: string | null
+          company_name?: string
+          website?: string | null
+          about?: string | null
+          needs?: string[] | null
+          email?: string | null
+        }
+      }
+      jobseeker_skill_rating: {
+        Row: {
+          user_id: string
+          interests: string[] | null
+          soft_skills: number | null
+          hard_skills: number | null
+          feedback_score: number | null
+          learning_score: number | null
+        }
+        Insert: {
+          user_id: string
+          interests?: string[] | null
+          soft_skills?: number | null
+          hard_skills?: number | null
+          feedback_score?: number | null
+          learning_score?: number | null
+        }
+        Update: {
+          user_id?: string
+          interests?: string[] | null
+          soft_skills?: number | null
+          hard_skills?: number | null
+          feedback_score?: number | null
+          learning_score?: number | null
+        }
+      }
+      // Add other tables as needed
+      [_: string]: {
+        Row: { [_: string]: unknown }
+        Insert: { [_: string]: unknown }
+        Update: { [_: string]: unknown }
+      }
     }
     Views: {
       [_ in never]: never

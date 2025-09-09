@@ -12,7 +12,7 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, resetPassword, checkUserStatus } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,6 +26,35 @@ const Login: React.FC = () => {
       console.error('Login error:', error);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      alert('Please enter your email address first');
+      return;
+    }
+
+    try {
+      await resetPassword(email);
+    } catch (error) {
+      console.error('Password reset error:', error);
+    }
+  };
+
+  const handleCheckUserStatus = async () => {
+    if (!email) {
+      alert('Please enter your email address first');
+      return;
+    }
+
+    try {
+      const result = await checkUserStatus(email);
+      console.log('User status check result:', result);
+      alert(`User status: ${result.message}`);
+    } catch (error) {
+      console.error('User status check error:', error);
+      alert('Error checking user status');
     }
   };
 
@@ -72,6 +101,22 @@ const Login: React.FC = () => {
               >
                 {isSubmitting ? 'Signing in...' : 'Sign In'}
               </Button>
+              <div className="text-sm text-center text-muted-foreground">
+                <button
+                  type="button"
+                  onClick={handleForgotPassword}
+                  className="text-talendeur-orange hover:underline mr-2"
+                >
+                  Forgot password?
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCheckUserStatus}
+                  className="text-blue-500 hover:underline ml-2"
+                >
+                  Check user status
+                </button>
+              </div>
               <div className="text-sm text-center text-muted-foreground">
                 Don't have an account?{" "}
                 <Link to="/register" className="text-talendeur-orange hover:underline">
