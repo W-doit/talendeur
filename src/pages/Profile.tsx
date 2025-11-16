@@ -53,9 +53,12 @@ const Profile: React.FC = () => {
       if (success) {
         // Reload the page to fetch the newly created profile
         window.location.reload();
+      } else {
+        alert('Failed to create profile. Please try again.');
       }
     } catch (error) {
       console.error('Failed to create profile:', error);
+      alert('An error occurred while creating your profile.');
     } finally {
       setIsCreatingProfile(false);
     }

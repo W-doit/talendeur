@@ -192,11 +192,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const { data: { user: supabaseUser } } = await supabase.auth.getUser();
       
       if (!supabaseUser) {
+        console.error('No authenticated user found');
         throw new Error('No authenticated user');
       }
 
+      console.log('Creating profile for user:', supabaseUser.id, 'Type:', userType);
+
       // Create profile record
-      const { error: profileError } = await supabase
+      const { data: profileData, error: profileError } = await supabase
         .from('profile')
         .insert({
           user_id: supabaseUser.id,
@@ -207,12 +210,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           bio: '',
           profile_pic: '',
           cv_url: '',
-        });
+        })
+        .select()
+        .single();
 
       if (profileError) {
         console.error('Profile creation error:', profileError);
         throw profileError;
       }
+
+      console.log('Profile created successfully:', profileData);
 
       if (userType === 'jobseeker') {
         // Create jobseeker skill rating
@@ -229,6 +236,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         if (skillError) {
           console.error('Skill rating creation error:', skillError);
+          // Don't throw - skill rating is optional
+        } else {
+          console.log('Skill rating created successfully');
         }
       } else {
         // Create organization details
@@ -242,9 +252,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         if (orgError) {
           console.error('Organization details creation error:', orgError);
+          // Don't throw - org details can be added later
+        } else {
+          console.log('Organization details created successfully');
         }
       }
 
+      console.log('Profile creation completed successfully');
       return true;
     } catch (error) {
       console.error('Create profile error:', error);
