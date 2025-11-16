@@ -37,7 +37,7 @@ const FindMatches: React.FC = () => {
         <div className="flex flex-col items-center justify-center">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-16">
-              <div className="w-16 h-16 border-4 border-talendeur-red border-t-transparent rounded-full animate-spin"></div>
+              <div className="w-16 h-16 border-4 border-talendeur-primary border-t-transparent rounded-full animate-spin"></div>
               <p className="mt-4 text-lg">Loading potential matches...</p>
             </div>
           ) : currentPotential ? (
@@ -54,7 +54,7 @@ const FindMatches: React.FC = () => {
               </p>
               <Button 
                 onClick={loadMorePotentials}
-                className="bg-talendeur-red hover:bg-talendeur-darkred"
+                className="bg-talendeur-primary hover:bg-talendeur-primary-dark"
                 disabled={loading}
               >
                 <RefreshCw className="mr-2 h-4 w-4" />

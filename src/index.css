@@ -5,65 +5,73 @@
 
 @layer base {
   :root {
-    --background: 0 0% 97%;
-    --foreground: 0 0% 12%;
+    /* Talendeur Brand Colors - Light Mode */
+    --background: 0 0% 98%;
+    --foreground: 248 75% 8%;
 
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 12%;
+    --card-foreground: 248 75% 8%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 12%;
+    --popover-foreground: 248 75% 8%;
 
-    --primary: 354 71% 28%;
-    --primary-foreground: 0 0% 98%;
+    /* Primary: Talendeur Burnt Orange #D1163E */
+    --primary: 348 79% 46%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 24 100% 60%;
-    --secondary-foreground: 0 0% 12%;
+    /* Secondary: Talendeur Orange #FF9F14 */
+    --secondary: 34 100% 54%;
+    --secondary-foreground: 248 75% 8%;
 
     --muted: 0 0% 90%;
-    --muted-foreground: 0 0% 45%;
+    --muted-foreground: 0 0% 40%;
 
-    --accent: 15 95% 55%;
-    --accent-foreground: 0 0% 98%;
+    /* Accent: Talendeur Pink #E30F68 */
+    --accent: 337 87% 48%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 85%;
-    --input: 0 0% 85%;
-    --ring: 354 71% 28%;
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 348 79% 46%;
 
     --radius: 0.75rem;
   }
 
   .dark {
-    --background: 0 0% 12%;
-    --foreground: 0 0% 97%;
+    /* Talendeur Brand Colors - Dark Mode */
+    --background: 248 75% 8%;
+    --foreground: 0 0% 98%;
 
-    --card: 0 0% 17%;
-    --card-foreground: 0 0% 97%;
+    --card: 248 65% 12%;
+    --card-foreground: 0 0% 98%;
 
-    --popover: 0 0% 17%;
-    --popover-foreground: 0 0% 97%;
+    --popover: 248 65% 12%;
+    --popover-foreground: 0 0% 98%;
 
-    --primary: 354 71% 28%;
-    --primary-foreground: 0 0% 98%;
+    /* Primary: Talendeur Burnt Orange (slightly brighter for dark mode) */
+    --primary: 348 79% 52%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 24 100% 60%;
-    --secondary-foreground: 0 0% 12%;
+    /* Secondary: Talendeur Orange */
+    --secondary: 34 100% 54%;
+    --secondary-foreground: 248 75% 8%;
 
-    --muted: 0 0% 25%;
+    --muted: 248 45% 20%;
     --muted-foreground: 0 0% 70%;
 
-    --accent: 15 95% 55%;
-    --accent-foreground: 0 0% 12%;
+    /* Accent: Talendeur Pink */
+    --accent: 337 87% 55%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive: 0 62% 45%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 25%;
-    --input: 0 0% 25%;
-    --ring: 354 71% 38%;
+    --border: 248 45% 25%;
+    --input: 248 45% 25%;
+    --ring: 348 79% 52%;
   }
 }
 
@@ -72,25 +80,56 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-raleway;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-raleway font-bold;
+  }
+  h1 {
+    @apply font-extrabold;
   }
 }
 
-/* Specific classes for our application */
+/* Talendeur Brand Components */
 @layer components {
   .card-swipe {
     @apply transition-all duration-300;
   }
   
+  /* Gradient text using brand colors: Primary (#D1163E) to Orange (#FF9F14) */
   .gradient-text {
-    @apply bg-gradient-to-r from-talendeur-red to-talendeur-orange bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-talendeur-primary to-talendeur-orange bg-clip-text text-transparent font-semibold;
   }
   
+  /* Branded button with gradient from burnt orange to orange */
   .talendeur-button {
-    @apply bg-gradient-to-r from-talendeur-red to-talendeur-orange hover:from-talendeur-darkred hover:to-talendeur-orange text-white font-medium py-2 px-6 rounded-full transition-all duration-300;
+    @apply bg-gradient-to-r from-talendeur-primary to-talendeur-orange 
+           hover:from-talendeur-primary-dark hover:to-talendeur-primary 
+           text-white font-semibold py-3 px-8 rounded-lg 
+           transition-all duration-300 shadow-md hover:shadow-lg
+           transform hover:scale-105;
   }
   
+  /* Branded card with clean minimal background */
   .talendeur-card {
-    @apply bg-white dark:bg-talendeur-dark rounded-2xl shadow-lg border border-muted dark:border-talendeur-darkred/20 p-6;
+    @apply bg-white dark:bg-talendeur-dark rounded-xl shadow-lg 
+           border border-gray-200 dark:border-talendeur-navy/30 p-6
+           transition-all duration-300;
+  }
+  
+  /* Futuristic accent border */
+  .talendeur-border {
+    @apply border-2 border-transparent bg-clip-padding
+           bg-gradient-to-r from-talendeur-primary via-talendeur-pink to-talendeur-orange;
+  }
+  
+  /* Brand gradient background */
+  .talendeur-gradient-bg {
+    @apply bg-gradient-to-r from-talendeur-primary to-talendeur-orange;
+  }
+  
+  /* Multi-color gradient for special accents */
+  .talendeur-gradient-full {
+    @apply bg-gradient-to-r from-talendeur-primary via-talendeur-pink to-talendeur-orange;
   }
 }

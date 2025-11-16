@@ -9,10 +9,16 @@ const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
 
   return (
-    <nav className="bg-gradient-to-r from-talendeur-red to-talendeur-orange px-6 py-4 shadow-md">
+    <nav className="bg-gradient-to-r from-talendeur-primary to-talendeur-orange px-6 py-4 shadow-md">
       <div className="max-w-7xl mx-auto flex justify-between items-center">
         <Link to="/" className="flex items-center space-x-2">
-          <span className="text-2xl font-bold text-white">Talendeur</span>
+          <div className="bg-white rounded-lg px-3 py-2 shadow-md">
+            <img 
+              src="/Talendeur_logo.png" 
+              alt="Talendeur" 
+              className="h-12 w-auto object-contain"
+            />
+          </div>
         </Link>
         
         <div className="flex items-center space-x-4">
@@ -34,7 +40,7 @@ const Navbar: React.FC = () => {
                 </Button>
               </Link>
               <Link to="/find">
-                <Button variant="outline" className="bg-white text-talendeur-red hover:bg-white/90">
+                <Button variant="outline" className="bg-white text-talendeur-primary hover:bg-white/90">
                   Find {user.userType === 'jobseeker' ? 'Organizations' : 'Talent'}
                 </Button>
               </Link>
@@ -54,7 +60,7 @@ const Navbar: React.FC = () => {
                 </Button>
               </Link>
               <Link to="/register">
-                <Button variant="outline" className="bg-white text-talendeur-red hover:bg-white/90">
+                <Button variant="outline" className="bg-white text-talendeur-primary hover:bg-white/90">
                   Register
                 </Button>
               </Link>

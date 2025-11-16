@@ -5,8 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
+import ImageUpload from '@/components/ui/image-upload';
+import { uploadProfilePicture } from '@/lib/supabase-storage';
 
-const OrganizationProfileForm: React.FC = () => {
+interface OrganizationProfileFormProps {
+  onSaveComplete?: () => void;
+}
+
+const OrganizationProfileForm: React.FC<OrganizationProfileFormProps> = ({ onSaveComplete }) => {
   const { user, updateProfile } = useAuth();
   const profile = user?.profile as OrganizationProfile | null;
   
@@ -20,6 +26,8 @@ const OrganizationProfileForm: React.FC = () => {
   
   const [needInput, setNeedInput] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -47,12 +55,50 @@ const OrganizationProfileForm: React.FC = () => {
     }));
   };
 
+  const handleLogoChange = (file: File) => {
+    setLogoFile(file);
+  };
+
+  const handleLogoRemove = () => {
+    setLogoFile(null);
+    setFormData(prev => ({
+      ...prev,
+      logo: ''
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     
     try {
-      await updateProfile(formData);
+      let logoUrl = formData.logo;
+
+      // Upload logo if a new one was selected
+      if (logoFile && user?.id) {
+        setUploadingLogo(true);
+        try {
+          logoUrl = await uploadProfilePicture(logoFile, user.id);
+        } catch (uploadError) {
+          console.error('Logo upload error:', uploadError);
+          throw new Error('Failed to upload logo');
+        } finally {
+          setUploadingLogo(false);
+        }
+      }
+
+      // Update profile with the logo URL
+      await updateProfile({
+        ...formData,
+        logo: logoUrl
+      });
+
+      setLogoFile(null);
+      
+      // Call the onSaveComplete callback if provided
+      if (onSaveComplete) {
+        onSaveComplete();
+      }
     } catch (error) {
       console.error('Profile update error:', error);
     } finally {
@@ -101,23 +147,15 @@ const OrganizationProfileForm: React.FC = () => {
             </div>
             
             <div>
-              <label htmlFor="logo" className="block text-sm font-medium mb-1">Logo URL</label>
-              <Input
-                id="logo"
-                name="logo"
-                value={formData.logo}
-                onChange={handleChange}
-                placeholder="URL to your organization's logo"
+              <label className="block text-sm font-medium mb-3">Organization Logo</label>
+              <ImageUpload
+                currentImageUrl={formData.logo}
+                onImageChange={handleLogoChange}
+                onImageRemove={handleLogoRemove}
+                uploading={uploadingLogo}
+                size="lg"
+                fallbackText={formData.name?.charAt(0).toUpperCase() || 'O'}
               />
-              {formData.logo && (
-                <div className="mt-2 flex justify-center">
-                  <img 
-                    src={formData.logo} 
-                    alt="Logo preview" 
-                    className="h-32 w-32 object-contain border-2 border-muted rounded-lg p-2"
-                  />
-                </div>
-              )}
             </div>
             
             <div>
@@ -161,10 +199,10 @@ const OrganizationProfileForm: React.FC = () => {
       <div className="flex justify-end">
         <Button 
           type="submit" 
-          className="bg-talendeur-red hover:bg-talendeur-darkred"
-          disabled={isSubmitting}
+          className="bg-talendeur-primary hover:bg-talendeur-primary-dark"
+          disabled={isSubmitting || uploadingLogo}
         >
-          {isSubmitting ? 'Saving...' : 'Save Profile'}
+          {uploadingLogo ? 'Uploading logo...' : isSubmitting ? 'Saving...' : 'Save Profile'}
         </Button>
       </div>
     </form>

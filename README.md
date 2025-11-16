@@ -1,5 +1,33 @@
 # Talendeur - Job Matching Web Application
 
+## Brand Guidelines
+
+### Color Palette
+Talendeur uses a modern, futuristic color system aligned with our brand identity:
+
+- **Primary Brand Color**: `#D1163E` (Burnt Orange) - Main brand color for buttons, CTAs, and key elements
+- **Accent Colors**:
+  - Pink: `#E30F68` - Used in gradients and special accents
+  - Orange: `#FF9F14` - Secondary accent and gradient endpoints
+  - Navy: `#180D51` - Dark accent for contrast
+- **Gradients**: Primary to Orange (`from-talendeur-primary to-talendeur-orange`)
+- **Neutral Colors**:
+  - Light: `#FAFAFA` - Background
+  - Gray: `#E5E5E5` - Borders and dividers
+  - Dark: `#0F0A1F` - Dark mode backgrounds
+
+### Typography
+- **Font Family**: Raleway (all weights: Light 300, Regular 400, Semi Bold 600, Bold 700, Extra Bold 800)
+- **Headings**: Raleway Bold/Extra Bold
+- **Body**: Raleway Regular
+- **Buttons**: Raleway Semi Bold
+
+### UI Components
+- **Buttons**: Gradient background (primary to orange), rounded-lg, shadow-md, hover scale effect
+- **Cards**: Clean white/dark backgrounds, rounded-xl, shadow with hover effect
+- **Inputs**: Rounded-lg with 2px borders, focus ring in primary color
+- **Brand Gradient**: Used in navbar, hero sections, and key CTAs
+
 ## Getting Started
 
 ### Prerequisites

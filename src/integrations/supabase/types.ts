@@ -9,7 +9,246 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      certifications: {
+        Row: {
+          id: string
+          user_id: string | null
+          course_name: string | null
+          certification_type: string | null
+          date_attained: string | null
+          details: string | null
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          course_name?: string | null
+          certification_type?: string | null
+          date_attained?: string | null
+          details?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          course_name?: string | null
+          certification_type?: string | null
+          date_attained?: string | null
+          details?: string | null
+        }
+      }
+      education_history: {
+        Row: {
+          id: string
+          user_id: string | null
+          institution: string | null
+          qualification_type: string | null
+          subject: string | null
+          start_date: string | null
+          end_date: string | null
+          still_studying: boolean | null
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          institution?: string | null
+          qualification_type?: string | null
+          subject?: string | null
+          start_date?: string | null
+          end_date?: string | null
+          still_studying?: boolean | null
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          institution?: string | null
+          qualification_type?: string | null
+          subject?: string | null
+          start_date?: string | null
+          end_date?: string | null
+          still_studying?: boolean | null
+        }
+      }
+      jobseeker_skill_rating: {
+        Row: {
+          user_id: string
+          interests: string[] | null
+          soft_skills: number | null
+          hard_skills: number | null
+          feedback_score: number | null
+          learning_score: number | null
+        }
+        Insert: {
+          user_id: string
+          interests?: string[] | null
+          soft_skills?: number | null
+          hard_skills?: number | null
+          feedback_score?: number | null
+          learning_score?: number | null
+        }
+        Update: {
+          user_id?: string
+          interests?: string[] | null
+          soft_skills?: number | null
+          hard_skills?: number | null
+          feedback_score?: number | null
+          learning_score?: number | null
+        }
+      }
+      matches: {
+        Row: {
+          id: string
+          user_id: string
+          organization_id: string
+          user_approved: boolean | null
+          organization_approved: boolean | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          organization_id: string
+          user_approved?: boolean | null
+          organization_approved?: boolean | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          organization_id?: string
+          user_approved?: boolean | null
+          organization_approved?: boolean | null
+          created_at?: string | null
+        }
+      }
+      organization_details: {
+        Row: {
+          organization_id: string
+          logo: string | null
+          company_name: string
+          website: string | null
+          about: string | null
+          needs: string[]
+        }
+        Insert: {
+          organization_id: string
+          logo?: string | null
+          company_name: string
+          website?: string | null
+          about?: string | null
+          needs: string[]
+        }
+        Update: {
+          organization_id?: string
+          logo?: string | null
+          company_name?: string
+          website?: string | null
+          about?: string | null
+          needs?: string[]
+        }
+      }
+      profile: {
+        Row: {
+          user_id: string
+          first_name: string
+          surname: string
+          email: string
+          profile_pic: string | null
+          cv_url: string | null
+          bio: string | null
+          user_type: string
+        }
+        Insert: {
+          user_id: string
+          first_name: string
+          surname: string
+          email: string
+          profile_pic?: string | null
+          cv_url?: string | null
+          bio?: string | null
+          user_type: string
+        }
+        Update: {
+          user_id?: string
+          first_name?: string
+          surname?: string
+          email?: string
+          profile_pic?: string | null
+          cv_url?: string | null
+          bio?: string | null
+          user_type?: string
+        }
+      }
+      reference: {
+        Row: {
+          id: string
+          user_id: string | null
+          relationship: string | null
+          email: string | null
+          number: number | null
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          relationship?: string | null
+          email?: string | null
+          number?: number | null
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          relationship?: string | null
+          email?: string | null
+          number?: number | null
+        }
+      }
+      socials: {
+        Row: {
+          id: string
+          user_id: string | null
+          platform: string | null
+          url: string | null
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          platform?: string | null
+          url?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          platform?: string | null
+          url?: string | null
+        }
+      }
+      work_experience: {
+        Row: {
+          id: string
+          user_id: string | null
+          job_title: string | null
+          company: string | null
+          start_date: string | null
+          end_date: string | null
+          still_work_here: boolean | null
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          job_title?: string | null
+          company?: string | null
+          start_date?: string | null
+          end_date?: string | null
+          still_work_here?: boolean | null
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          job_title?: string | null
+          company?: string | null
+          start_date?: string | null
+          end_date?: string | null
+          still_work_here?: boolean | null
+        }
+      }
     }
     Views: {
       [_ in never]: never

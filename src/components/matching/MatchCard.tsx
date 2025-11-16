@@ -64,7 +64,7 @@ const MatchCard: React.FC<MatchCardProps> = ({ profile, onApprove, onReject }) =
                   </div>
                   <div className="w-full bg-muted rounded-full h-2">
                     <div 
-                      className="bg-gradient-to-r from-talendeur-red to-talendeur-orange h-2 rounded-full" 
+                      className="bg-gradient-to-r from-talendeur-primary to-talendeur-orange h-2 rounded-full" 
                       style={{ width: `${value}%` }}
                     />
                   </div>

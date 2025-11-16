@@ -78,7 +78,7 @@ const MatchDetail: React.FC<MatchDetailProps> = ({ matchId, onBack }) => {
                       </div>
                       <div className="w-full bg-muted rounded-full h-2">
                         <div 
-                          className="bg-gradient-to-r from-talendeur-red to-talendeur-orange h-2 rounded-full" 
+                          className="bg-gradient-to-r from-talendeur-primary to-talendeur-orange h-2 rounded-full" 
                           style={{ width: `${value}%` }}
                         />
                       </div>
@@ -141,7 +141,7 @@ const MatchDetail: React.FC<MatchDetailProps> = ({ matchId, onBack }) => {
               <h3 className="font-semibold mb-4">Contact Information</h3>
               <a 
                 href={`mailto:${profile.email}`}
-                className="flex items-center bg-talendeur-red text-white font-medium py-2 px-4 rounded-lg hover:bg-talendeur-darkred transition-colors w-fit"
+                className="flex items-center bg-talendeur-primary text-white font-medium py-2 px-4 rounded-lg hover:bg-talendeur-primary-dark transition-colors w-fit"
               >
                 <Mail className="h-5 w-5 mr-2" />
                 {profile.email}

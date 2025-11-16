@@ -120,7 +120,7 @@ const Register: React.FC = () => {
             <CardFooter className="flex flex-col space-y-4">
               <Button 
                 type="submit" 
-                className="w-full bg-talendeur-red hover:bg-talendeur-darkred"
+                className="w-full bg-talendeur-primary hover:bg-talendeur-primary-dark"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? 'Creating account...' : 'Create account'}

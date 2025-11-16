@@ -12,14 +12,21 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, user } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     try {
+      console.log('Login form submitted');
       await login(email, password);
+      console.log('Login completed');
+      
+      // Wait a brief moment for the profile to load in the background
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Navigate to profile page - the profile page will handle showing view or edit mode
       navigate('/profile');
     } catch (error) {
       // Error is handled in the auth context
@@ -67,7 +74,7 @@ const Login: React.FC = () => {
             <CardFooter className="flex flex-col space-y-4">
               <Button 
                 type="submit" 
-                className="w-full bg-talendeur-red hover:bg-talendeur-darkred"
+                className="w-full bg-talendeur-primary hover:bg-talendeur-primary-dark"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? 'Signing in...' : 'Sign In'}

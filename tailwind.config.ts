@@ -19,6 +19,17 @@ export default {
 			}
 		},
 		extend: {
+			fontFamily: {
+				sans: ['Raleway', 'sans-serif'],
+				raleway: ['Raleway', 'sans-serif'],
+			},
+			fontWeight: {
+				light: '300',
+				normal: '400',
+				semibold: '600',
+				bold: '700',
+				extrabold: '800',
+			},
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
@@ -53,13 +64,19 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
+				// Talendeur Brand Colors
 				talendeur: {
-					red: '#8B0000',
-					darkred: '#5C0000',
-					orange: '#FF5722',
-					lightorange: '#FF7F50',
-					dark: '#1E1E1E',
-					light: '#F8F8F8',
+					primary: '#D1163E',      // Burnt Orange (Primary Brand)
+					pink: '#E30F68',         // Pink Accent
+					orange: '#FF9F14',       // Orange Accent
+					navy: '#180D51',         // Navy Accent
+					// Gradient variations
+					'primary-dark': '#A01130',
+					'primary-light': '#E92A54',
+					// Neutral backgrounds
+					dark: '#0F0A1F',
+					light: '#FAFAFA',
+					gray: '#E5E5E5',
 				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',

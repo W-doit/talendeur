@@ -1,6 +1,7 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useToast } from "@/components/ui/use-toast";
+import { supabase } from '@/integrations/supabase/client';
+import type { User } from '@supabase/supabase-js';
 
 // Types
 export type UserType = 'jobseeker' | 'organization';
@@ -10,7 +11,7 @@ export interface JobSeekerProfile {
   name: string;
   email: string;
   profilePic: string;
-  cv: string; // URL to CV
+  cv: string;
   interests: string[];
   skills: {
     soft: number;
@@ -45,9 +46,9 @@ interface AuthContextType {
   register: (email: string, password: string, userType: UserType) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (profileData: Partial<JobSeekerProfile> | Partial<OrganizationProfile>) => Promise<void>;
+  createProfile: (userType: UserType) => Promise<boolean>;
 }
 
-// Default context
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
@@ -55,164 +56,300 @@ const AuthContext = createContext<AuthContextType>({
   register: async () => {},
   logout: async () => {},
   updateProfile: async () => {},
+  createProfile: async () => false,
 });
 
-// Mock data for two job seekers
-const mockJobSeekers: JobSeekerProfile[] = [
-  {
-    id: '1',
-    name: 'Alex Morgan',
-    email: 'alex@example.com',
-    profilePic: 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?q=80&w=1000&auto=format&fit=crop',
-    cv: '/mock-cv-alex.pdf',
-    interests: ['Full-stack Development', 'AI Research', 'Cloud Architecture'],
-    skills: {
-      soft: 85,
-      hard: 92,
-      feedback: 78,
-      learning: 90
-    },
-    bio: 'Full-stack developer with 5+ years of experience in React, Node.js, and cloud technologies. Passionate about creating intuitive user experiences and solving complex problems.'
-  },
-  {
-    id: '2',
-    name: 'Jamie Rivera',
-    email: 'jamie@example.com',
-    profilePic: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=1000&auto=format&fit=crop',
-    cv: '/mock-cv-jamie.pdf',
-    interests: ['UX/UI Design', 'Product Management', 'Data Visualization'],
-    skills: {
-      soft: 95,
-      hard: 83,
-      feedback: 90,
-      learning: 87
-    },
-    bio: 'UX/UI designer with a background in cognitive psychology. I create human-centered designs that balance business needs with user satisfaction.'
-  }
-];
-
-// Mock data for organizations
-const mockOrganizations: OrganizationProfile[] = [
-  {
-    id: '1',
-    name: 'TechVision Inc.',
-    email: 'hr@techvision.com',
-    logo: 'https://images.unsplash.com/photo-1567095761054-7a02e69e5c43?q=80&w=1000&auto=format&fit=crop',
-    website: 'https://techvision.example.com',
-    about: 'Leading software development company specializing in AI solutions and cloud architecture.',
-    needs: ['Full-stack Developer', 'AI Engineer', 'UX Designer']
-  },
-  {
-    id: '2',
-    name: 'CreativeWorks Studio',
-    email: 'talent@creativeworks.com',
-    logo: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?q=80&w=1000&auto=format&fit=crop',
-    website: 'https://creativeworks.example.com',
-    about: 'Design-focused agency working with global brands to create memorable digital experiences.',
-    needs: ['UX/UI Designer', 'Frontend Developer', 'Product Manager']
-  }
-];
-
-// Provider component
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const { toast } = useToast();
 
-  // Simulating auth state check
-  useEffect(() => {
-    const storedUser = localStorage.getItem('talendeur-user');
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (error) {
-        console.error('Error parsing stored user:', error);
+  // Load user profile from Supabase
+  const loadUserProfile = async (supabaseUser: User) => {
+    try {
+      // Get profile from database
+      const { data: profileData, error: profileError } = await supabase
+        .from('profile')
+        .select('*')
+        .eq('user_id', supabaseUser.id)
+        .maybeSingle(); // Use maybeSingle instead of single to avoid error if no rows
+
+      if (profileError) {
+        console.error('Error loading profile:', profileError);
+        return null;
       }
+
+      if (!profileData) {
+        console.log('No profile found for user:', supabaseUser.id);
+        return null;
+      }
+
+      const userType = profileData.user_type as UserType;
+      let fullProfile: JobSeekerProfile | OrganizationProfile | null = null;
+
+      if (userType === 'jobseeker') {
+        // Load jobseeker skill ratings
+        const { data: skillData } = await supabase
+          .from('jobseeker_skill_rating')
+          .select('*')
+          .eq('user_id', supabaseUser.id)
+          .maybeSingle();
+
+        fullProfile = {
+          id: profileData.user_id,
+          name: `${profileData.first_name} ${profileData.surname}`.trim(),
+          email: profileData.email,
+          profilePic: profileData.profile_pic || '',
+          cv: profileData.cv_url || '',
+          interests: skillData?.interests || [],
+          skills: {
+            soft: skillData?.soft_skills || 70,
+            hard: skillData?.hard_skills || 70,
+            feedback: skillData?.feedback_score || 70,
+            learning: skillData?.learning_score || 70,
+          },
+          bio: profileData.bio || '',
+        };
+      } else {
+        // Load organization details
+        const { data: orgData } = await supabase
+          .from('organization_details')
+          .select('*')
+          .eq('organization_id', supabaseUser.id)
+          .maybeSingle();
+
+        fullProfile = {
+          id: profileData.user_id,
+          name: orgData?.company_name || '',
+          email: profileData.email,
+          logo: orgData?.logo || '',
+          website: orgData?.website || '',
+          about: orgData?.about || '',
+          needs: orgData?.needs || [],
+        };
+      }
+
+      return {
+        id: supabaseUser.id,
+        email: supabaseUser.email!,
+        userType,
+        profile: fullProfile,
+      };
+    } catch (error) {
+      console.error('Error loading user profile:', error);
+      return null;
     }
-    setLoading(false);
+  };
+
+  // Check auth state on mount
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        loadUserProfile(session.user).then((userData) => {
+          if (!userData || !userData.profile) {
+            // User authenticated but no profile
+            setUser({
+              id: session.user.id,
+              email: session.user.email!,
+              userType: 'jobseeker',
+              profile: null,
+            });
+          } else {
+            setUser(userData);
+          }
+        });
+      }
+      setLoading(false);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session?.user) {
+        const userData = await loadUserProfile(session.user);
+        if (!userData || !userData.profile) {
+          setUser({
+            id: session.user.id,
+            email: session.user.email!,
+            userType: 'jobseeker',
+            profile: null,
+          });
+        } else {
+          setUser(userData);
+        }
+      } else {
+        setUser(null);
+      }
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  // Mock login function
-  const login = async (email: string, password: string) => {
-    setLoading(true);
-    
+  // Create profile in database
+  const createProfile = async (userType: UserType): Promise<boolean> => {
     try {
-      // Mock login process (in reality would call an API)
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const { data: { user: supabaseUser } } = await supabase.auth.getUser();
       
-      let foundUser: AuthUser | null = null;
-      
-      // Check if user exists in our mock job seekers
-      const jobSeeker = mockJobSeekers.find(js => js.email === email);
-      if (jobSeeker) {
-        foundUser = {
-          id: jobSeeker.id,
-          email: jobSeeker.email,
-          userType: 'jobseeker',
-          profile: jobSeeker
-        };
+      if (!supabaseUser) {
+        throw new Error('No authenticated user');
       }
-      
-      // Check if user exists in our mock organizations
-      const organization = mockOrganizations.find(org => org.email === email);
-      if (organization) {
-        foundUser = {
-          id: organization.id,
-          email: organization.email,
-          userType: 'organization',
-          profile: organization
-        };
-      }
-      
-      if (foundUser) {
-        setUser(foundUser);
-        localStorage.setItem('talendeur-user', JSON.stringify(foundUser));
-        toast({
-          title: "Login successful",
-          description: `Welcome back to Talendeur!`,
+
+      // Create profile record
+      const { error: profileError } = await supabase
+        .from('profile')
+        .insert({
+          user_id: supabaseUser.id,
+          first_name: '',
+          surname: '',
+          email: supabaseUser.email!,
+          user_type: userType,
+          bio: '',
+          profile_pic: '',
+          cv_url: '',
         });
-      } else {
-        throw new Error('Invalid credentials');
+
+      if (profileError) {
+        console.error('Profile creation error:', profileError);
+        throw profileError;
       }
+
+      if (userType === 'jobseeker') {
+        // Create jobseeker skill rating
+        const { error: skillError } = await supabase
+          .from('jobseeker_skill_rating')
+          .insert({
+            user_id: supabaseUser.id,
+            interests: [],
+            soft_skills: 70,
+            hard_skills: 70,
+            feedback_score: 70,
+            learning_score: 70,
+          });
+
+        if (skillError) {
+          console.error('Skill rating creation error:', skillError);
+        }
+      } else {
+        // Create organization details
+        const { error: orgError } = await supabase
+          .from('organization_details')
+          .insert({
+            organization_id: supabaseUser.id,
+            company_name: '',
+            needs: [],
+          });
+
+        if (orgError) {
+          console.error('Organization details creation error:', orgError);
+        }
+      }
+
+      return true;
     } catch (error) {
-      toast({
-        title: "Login failed",
-        description: "Invalid email or password",
-        variant: "destructive",
-      });
-      throw error;
-    } finally {
-      setLoading(false);
+      console.error('Create profile error:', error);
+      return false;
     }
   };
 
-  // Mock register function
-  const register = async (email: string, password: string, userType: UserType) => {
-    setLoading(true);
+  // Login
+  const login = async (email: string, password: string) => {
+    console.log('Login function called for:', email);
     
     try {
-      // Mock registration process (in reality would call an API)
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log('Calling Supabase signInWithPassword...');
       
-      // Create a new user with empty profile
-      const newUser: AuthUser = {
-        id: Math.random().toString(36).substr(2, 9),
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
-        userType,
-        profile: null
+        password,
+      });
+
+      console.log('Supabase response received:', { hasData: !!data, hasError: !!error });
+
+      if (error) {
+        console.error('Supabase auth error:', error);
+        toast({
+          title: "Login failed",
+          description: error.message || "Invalid email or password",
+          variant: "destructive",
+        });
+        throw error;
+      }
+
+      if (!data.user) {
+        console.error('No user in response data');
+        toast({
+          title: "Login failed",
+          description: "No user data returned",
+          variant: "destructive",
+        });
+        throw new Error('No user data returned');
+      }
+
+      console.log('Login successful, user ID:', data.user.id);
+
+      // Set basic user data immediately
+      const basicUser = {
+        id: data.user.id,
+        email: data.user.email!,
+        userType: 'jobseeker' as UserType,
+        profile: null,
       };
       
-      setUser(newUser);
-      localStorage.setItem('talendeur-user', JSON.stringify(newUser));
+      console.log('Setting user state with basic data');
+      setUser(basicUser);
       
-      toast({
-        title: "Registration successful",
-        description: "Your account has been created. Please complete your profile.",
+      // Try to load profile in background (non-blocking)
+      loadUserProfile(data.user).then((userData) => {
+        if (userData && userData.profile) {
+          console.log('Profile loaded successfully');
+          setUser(userData);
+        } else {
+          console.log('No profile found - user needs to create one');
+        }
+      }).catch(err => {
+        console.error('Error loading profile (non-blocking):', err);
       });
-    } catch (error) {
+      
+      console.log('Showing success toast');
+      toast({
+        title: "Login successful",
+        description: "Welcome to Talendeur!",
+      });
+      
+      console.log('Login function completed successfully');
+    } catch (error: any) {
+      console.error('Login error caught:', error);
+      throw error;
+    }
+  };
+
+  // Register
+  const register = async (email: string, password: string, userType: UserType) => {
+    setLoading(true);
+
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+
+      if (data.user) {
+        // Create profile
+        await createProfile(userType);
+
+        toast({
+          title: "Registration successful",
+          description: "Please check your email to confirm your account.",
+        });
+      }
+    } catch (error: any) {
+      console.error('Registration error:', error);
       toast({
         title: "Registration failed",
-        description: "Could not create your account. Please try again.",
+        description: error.message || "Could not create your account",
         variant: "destructive",
       });
       throw error;
@@ -221,21 +358,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  // Mock logout function
+  // Logout
   const logout = async () => {
     setLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await supabase.auth.signOut();
       setUser(null);
-      localStorage.removeItem('talendeur-user');
       toast({
         title: "Logged out",
         description: "You have been successfully logged out",
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Logout failed",
-        description: "Could not log out. Please try again.",
+        description: error.message || "Could not log out",
         variant: "destructive",
       });
     } finally {
@@ -243,61 +379,115 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  // Mock profile update function
+  // Update profile
   const updateProfile = async (profileData: Partial<JobSeekerProfile> | Partial<OrganizationProfile>) => {
     if (!user) {
       toast({
         title: "Update failed",
-        description: "You must be logged in to update your profile",
+        description: "You must be logged in",
         variant: "destructive",
       });
       return;
     }
 
     setLoading(true);
-    
+
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const updatedUser = {
-        ...user,
-        profile: {
-          ...user.profile,
-          ...profileData
-        }
+      // Update profile table
+      const profileUpdate: any = {
+        bio: (profileData as any).bio,
+        profile_pic: (profileData as any).profilePic || (profileData as any).logo,
       };
-      
-      setUser(updatedUser);
-      localStorage.setItem('talendeur-user', JSON.stringify(updatedUser));
-      
+
+      if ('name' in profileData && profileData.name) {
+        const names = profileData.name.split(' ');
+        profileUpdate.first_name = names[0] || '';
+        profileUpdate.surname = names.slice(1).join(' ') || '';
+      }
+
+      if ('cv' in profileData) {
+        profileUpdate.cv_url = profileData.cv;
+      }
+
+      const { error: profileError } = await supabase
+        .from('profile')
+        .update(profileUpdate)
+        .eq('user_id', user.id);
+
+      if (profileError) throw profileError;
+
+      // Update type-specific tables
+      if (user.userType === 'jobseeker' && 'skills' in profileData) {
+        const skillUpdate = {
+          interests: (profileData as JobSeekerProfile).interests,
+          soft_skills: profileData.skills?.soft,
+          hard_skills: profileData.skills?.hard,
+          feedback_score: profileData.skills?.feedback,
+          learning_score: profileData.skills?.learning,
+        };
+
+        const { error: skillError } = await supabase
+          .from('jobseeker_skill_rating')
+          .update(skillUpdate)
+          .eq('user_id', user.id);
+
+        if (skillError) throw skillError;
+      } else if (user.userType === 'organization') {
+        const orgUpdate: any = {};
+        
+        if ('name' in profileData) orgUpdate.company_name = profileData.name;
+        if ('logo' in profileData) orgUpdate.logo = (profileData as OrganizationProfile).logo;
+        if ('website' in profileData) orgUpdate.website = (profileData as OrganizationProfile).website;
+        if ('about' in profileData) orgUpdate.about = (profileData as OrganizationProfile).about;
+        if ('needs' in profileData) orgUpdate.needs = (profileData as OrganizationProfile).needs;
+
+        const { error: orgError } = await supabase
+          .from('organization_details')
+          .update(orgUpdate)
+          .eq('organization_id', user.id);
+
+        if (orgError) throw orgError;
+      }
+
+      // Reload user profile
+      const { data: { user: supabaseUser } } = await supabase.auth.getUser();
+      if (supabaseUser) {
+        const userData = await loadUserProfile(supabaseUser);
+        setUser(userData);
+      }
+
       toast({
         title: "Profile updated",
         description: "Your profile has been successfully updated",
       });
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Update error:', error);
       toast({
         title: "Update failed",
-        description: "Could not update your profile. Please try again.",
+        description: error.message || "Could not update your profile",
         variant: "destructive",
       });
+      throw error;
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <AuthContext.Provider value={{
-      user,
-      loading,
-      login,
-      register,
-      logout,
-      updateProfile
-    }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        login,
+        register,
+        logout,
+        updateProfile,
+        createProfile,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
 };
 
-// Custom hook for using the auth context
 export const useAuth = () => useContext(AuthContext);

@@ -66,7 +66,7 @@ const MatchList: React.FC<MatchListProps> = ({ onViewMatch }) => {
                     </div>
                     <Button
                       onClick={() => onViewMatch(match.id)}
-                      className="bg-talendeur-red hover:bg-talendeur-darkred"
+                      className="bg-talendeur-primary hover:bg-talendeur-primary-dark"
                     >
                       View
                     </Button>

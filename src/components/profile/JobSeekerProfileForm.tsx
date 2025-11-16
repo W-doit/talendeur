@@ -6,8 +6,15 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import ImageUpload from '@/components/ui/image-upload';
+import { LinkedInImport } from '@/components/profile/LinkedInImport';
+import { uploadProfilePicture } from '@/lib/supabase-storage';
 
-const JobSeekerProfileForm: React.FC = () => {
+interface JobSeekerProfileFormProps {
+  onSaveComplete?: () => void;
+}
+
+const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({ onSaveComplete }) => {
   const { user, updateProfile } = useAuth();
   const profile = user?.profile as JobSeekerProfile | null;
   
@@ -21,6 +28,8 @@ const JobSeekerProfileForm: React.FC = () => {
   
   const [interestsInput, setInterestsInput] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -58,12 +67,50 @@ const JobSeekerProfileForm: React.FC = () => {
     }));
   };
 
+  const handleImageChange = (file: File) => {
+    setImageFile(file);
+  };
+
+  const handleImageRemove = () => {
+    setImageFile(null);
+    setFormData(prev => ({
+      ...prev,
+      profilePic: ''
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     
     try {
-      await updateProfile(formData);
+      let profilePicUrl = formData.profilePic;
+
+      // Upload image if a new one was selected
+      if (imageFile && user?.id) {
+        setUploadingImage(true);
+        try {
+          profilePicUrl = await uploadProfilePicture(imageFile, user.id);
+        } catch (uploadError) {
+          console.error('Image upload error:', uploadError);
+          throw new Error('Failed to upload profile picture');
+        } finally {
+          setUploadingImage(false);
+        }
+      }
+
+      // Update profile with the image URL
+      await updateProfile({
+        ...formData,
+        profilePic: profilePicUrl
+      });
+
+      setImageFile(null);
+      
+      // Call the onSaveComplete callback if provided
+      if (onSaveComplete) {
+        onSaveComplete();
+      }
     } catch (error) {
       console.error('Profile update error:', error);
     } finally {
@@ -71,8 +118,32 @@ const JobSeekerProfileForm: React.FC = () => {
     }
   };
 
+  const handleLinkedInImport = (data: unknown) => {
+    const linkedInData = data as any;
+    
+    // Update form with LinkedIn data
+    if (linkedInData.profile) {
+      setFormData(prev => ({
+        ...prev,
+        name: `${linkedInData.profile.first_name} ${linkedInData.profile.surname}`.trim() || prev.name,
+        bio: linkedInData.profile.bio || prev.bio,
+        profilePic: linkedInData.profile.profile_pic || prev.profilePic,
+      }));
+    }
+
+    // Add skills if available
+    if (linkedInData.skills && Array.isArray(linkedInData.skills)) {
+      setFormData(prev => ({
+        ...prev,
+        interests: [...(prev.interests || []), ...linkedInData.skills],
+      }));
+    }
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      <LinkedInImport onImport={handleLinkedInImport} />
+      
       <Card>
         <CardContent className="pt-6">
           <div className="space-y-4">
@@ -101,23 +172,15 @@ const JobSeekerProfileForm: React.FC = () => {
             </div>
             
             <div>
-              <label htmlFor="profilePic" className="block text-sm font-medium mb-1">Profile Picture URL</label>
-              <Input
-                id="profilePic"
-                name="profilePic"
-                value={formData.profilePic}
-                onChange={handleChange}
-                placeholder="URL to your profile picture"
+              <label className="block text-sm font-medium mb-3">Profile Picture</label>
+              <ImageUpload
+                currentImageUrl={formData.profilePic}
+                onImageChange={handleImageChange}
+                onImageRemove={handleImageRemove}
+                uploading={uploadingImage}
+                size="lg"
+                fallbackText={formData.name?.charAt(0).toUpperCase() || 'U'}
               />
-              {formData.profilePic && (
-                <div className="mt-2 flex justify-center">
-                  <img 
-                    src={formData.profilePic} 
-                    alt="Profile preview" 
-                    className="h-32 w-32 rounded-full object-cover border-2 border-muted"
-                  />
-                </div>
-              )}
             </div>
             
             <div>
@@ -229,10 +292,10 @@ const JobSeekerProfileForm: React.FC = () => {
       <div className="flex justify-end">
         <Button 
           type="submit" 
-          className="bg-talendeur-red hover:bg-talendeur-darkred"
-          disabled={isSubmitting}
+          className="bg-talendeur-primary hover:bg-talendeur-primary-dark"
+          disabled={isSubmitting || uploadingImage}
         >
-          {isSubmitting ? 'Saving...' : 'Save Profile'}
+          {uploadingImage ? 'Uploading image...' : isSubmitting ? 'Saving...' : 'Save Profile'}
         </Button>
       </div>
     </form>
