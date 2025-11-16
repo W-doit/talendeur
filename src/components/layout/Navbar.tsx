@@ -1,12 +1,18 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { LogOut, User, Building } from 'lucide-react';
 
 const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/');
+  };
 
   return (
     <nav className="bg-gradient-to-r from-talendeur-primary to-talendeur-orange px-6 py-4 shadow-md">
@@ -47,7 +53,7 @@ const Navbar: React.FC = () => {
               <Button 
                 variant="ghost" 
                 className="text-white hover:bg-white/20"
-                onClick={() => logout()}
+                onClick={handleLogout}
               >
                 <LogOut className="h-5 w-5" />
               </Button>

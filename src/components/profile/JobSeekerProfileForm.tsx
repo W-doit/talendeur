@@ -21,15 +21,15 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({ onSaveCompl
   const [formData, setFormData] = useState<Partial<JobSeekerProfile>>({
     name: profile?.name || '',
     bio: profile?.bio || '',
-    interests: profile?.interests || [],
-    skills: profile?.skills || { soft: 70, hard: 70, feedback: 70, learning: 70 },
-    profilePic: profile?.profilePic || ''
+    profilePic: profile?.profilePic || '',
+    cv: profile?.cv || ''
   });
   
-  const [interestsInput, setInterestsInput] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [cvFile, setCvFile] = useState<File | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingCV, setUploadingCV] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -49,21 +49,20 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({ onSaveCompl
     }));
   };
 
-  const handleAddInterest = () => {
-    if (!interestsInput.trim()) return;
-    
-    setFormData(prev => ({
-      ...prev,
-      interests: [...(prev.interests || []), interestsInput.trim()]
-    }));
-    
-    setInterestsInput('');
+  const handleCVChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.type === 'application/pdf') {
+      setCvFile(file);
+    } else {
+      alert('Please upload a PDF file');
+    }
   };
 
-  const handleRemoveInterest = (interest: string) => {
+  const handleCVRemove = () => {
+    setCvFile(null);
     setFormData(prev => ({
       ...prev,
-      interests: (prev.interests || []).filter(i => i !== interest)
+      cv: ''
     }));
   };
 
@@ -81,16 +80,24 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({ onSaveCompl
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Form submitted');
+    console.log('Current formData:', formData);
+    console.log('imageFile:', imageFile);
+    console.log('cvFile:', cvFile);
+    
     setIsSubmitting(true);
     
     try {
       let profilePicUrl = formData.profilePic;
+      let cvUrl = formData.cv;
 
       // Upload image if a new one was selected
       if (imageFile && user?.id) {
+        console.log('Uploading image...');
         setUploadingImage(true);
         try {
           profilePicUrl = await uploadProfilePicture(imageFile, user.id);
+          console.log('Image uploaded successfully:', profilePicUrl);
         } catch (uploadError) {
           console.error('Image upload error:', uploadError);
           throw new Error('Failed to upload profile picture');
@@ -99,13 +106,40 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({ onSaveCompl
         }
       }
 
-      // Update profile with the image URL
-      await updateProfile({
+      // Upload CV if a new one was selected
+      if (cvFile && user?.id) {
+        console.log('Uploading CV...', cvFile);
+        setUploadingCV(true);
+        try {
+          // Import uploadCV function
+          const { uploadCV } = await import('@/lib/supabase-storage');
+          cvUrl = await uploadCV(cvFile, user.id);
+          console.log('CV uploaded successfully:', cvUrl);
+        } catch (uploadError) {
+          console.error('CV upload error:', uploadError);
+          throw new Error('Failed to upload CV');
+        } finally {
+          setUploadingCV(false);
+        }
+      }
+
+      console.log('Calling updateProfile with:', {
         ...formData,
-        profilePic: profilePicUrl
+        profilePic: profilePicUrl,
+        cv: cvUrl
       });
 
+      // Update profile with the image and CV URLs
+      await updateProfile({
+        ...formData,
+        profilePic: profilePicUrl,
+        cv: cvUrl
+      });
+
+      console.log('Profile updated successfully');
+
       setImageFile(null);
+      setCvFile(null);
       
       // Call the onSaveComplete callback if provided
       if (onSaveComplete) {
@@ -148,6 +182,46 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({ onSaveCompl
         <CardContent className="pt-6">
           <div className="space-y-4">
             <div>
+              <label className="block text-sm font-medium mb-3">Import from CV</label>
+              <div className="space-y-2">
+                {formData.cv ? (
+                  <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <svg className="w-5 h-5 text-talendeur-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                      </svg>
+                      <span className="text-sm">CV Uploaded</span>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleCVRemove}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                ) : (
+                  <div>
+                    <Input
+                      type="file"
+                      accept=".pdf"
+                      onChange={handleCVChange}
+                      className="cursor-pointer"
+                    />
+                    {cvFile && (
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Selected: {cvFile.name}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <Separator className="my-4" />
+            
+            <div>
               <label htmlFor="name" className="block text-sm font-medium mb-1">Full Name</label>
               <Input
                 id="name"
@@ -182,109 +256,6 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({ onSaveCompl
                 fallbackText={formData.name?.charAt(0).toUpperCase() || 'U'}
               />
             </div>
-            
-            <div>
-              <label className="block text-sm font-medium mb-1">Interests</label>
-              <div className="flex space-x-2">
-                <Input
-                  value={interestsInput}
-                  onChange={(e) => setInterestsInput(e.target.value)}
-                  placeholder="Add an interest or skill"
-                />
-                <Button 
-                  type="button" 
-                  onClick={handleAddInterest}
-                  variant="outline"
-                >
-                  Add
-                </Button>
-              </div>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {formData.interests?.map((interest, index) => (
-                  <div 
-                    key={index}
-                    className="bg-muted rounded-full px-3 py-1 text-sm flex items-center"
-                  >
-                    {interest}
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveInterest(interest)}
-                      className="ml-2 text-muted-foreground hover:text-destructive"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-            
-            <Separator className="my-4" />
-            
-            <div>
-              <h3 className="text-lg font-medium mb-4">Skills Evaluation</h3>
-              
-              <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between text-sm">
-                    <span>Soft Skills</span>
-                    <span>{formData.skills?.soft}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={formData.skills?.soft}
-                    onChange={(e) => handleSkillChange('soft', parseInt(e.target.value))}
-                    className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer"
-                  />
-                </div>
-                
-                <div>
-                  <div className="flex justify-between text-sm">
-                    <span>Hard Skills</span>
-                    <span>{formData.skills?.hard}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={formData.skills?.hard}
-                    onChange={(e) => handleSkillChange('hard', parseInt(e.target.value))}
-                    className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer"
-                  />
-                </div>
-                
-                <div>
-                  <div className="flex justify-between text-sm">
-                    <span>Previous Feedback</span>
-                    <span>{formData.skills?.feedback}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={formData.skills?.feedback}
-                    onChange={(e) => handleSkillChange('feedback', parseInt(e.target.value))}
-                    className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer"
-                  />
-                </div>
-                
-                <div>
-                  <div className="flex justify-between text-sm">
-                    <span>Continuous Learning</span>
-                    <span>{formData.skills?.learning}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={formData.skills?.learning}
-                    onChange={(e) => handleSkillChange('learning', parseInt(e.target.value))}
-                    className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer"
-                  />
-                </div>
-              </div>
-            </div>
           </div>
         </CardContent>
       </Card>
@@ -293,9 +264,9 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({ onSaveCompl
         <Button 
           type="submit" 
           className="bg-talendeur-primary hover:bg-talendeur-primary-dark"
-          disabled={isSubmitting || uploadingImage}
+          disabled={isSubmitting || uploadingImage || uploadingCV}
         >
-          {uploadingImage ? 'Uploading image...' : isSubmitting ? 'Saving...' : 'Save Profile'}
+          {uploadingImage ? 'Uploading image...' : uploadingCV ? 'Uploading CV...' : isSubmitting ? 'Saving...' : 'Save Profile'}
         </Button>
       </div>
     </form>

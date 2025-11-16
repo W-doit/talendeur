@@ -43,7 +43,10 @@ export const SkillsRadarChart = () => {
           .eq('user_id', user.id)
           .single();
 
-        if (error) throw error;
+        // Ignore "no rows" error - just means no data yet
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error fetching skills dimensions:', error);
+        }
 
         if (data) {
           // Transform data for radar chart
@@ -68,7 +71,7 @@ export const SkillsRadarChart = () => {
           setSkillsData(chartData);
         }
       } catch (error) {
-        console.error('Error fetching skills dimensions:', error);
+        // Silently handle - data just doesn't exist yet
       } finally {
         setLoading(false);
       }

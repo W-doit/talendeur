@@ -343,21 +343,42 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setLoading(true);
 
     try {
+      console.log('Starting Supabase signup...');
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase signup error:', error);
+        throw error;
+      }
+
+      console.log('Supabase signup response:', data);
 
       if (data.user) {
+        console.log('User created, creating profile...');
         // Create profile
-        await createProfile(userType);
+        const profileCreated = await createProfile(userType);
+        
+        console.log('Profile created:', profileCreated);
+        
+        if (profileCreated) {
+          // Load the user profile immediately after creation
+          console.log('Loading user profile...');
+          const authUser = await loadUserProfile(data.user);
+          if (authUser) {
+            console.log('User profile loaded:', authUser);
+            setUser(authUser);
+          }
+        }
 
         toast({
           title: "Registration successful",
-          description: "Please check your email to confirm your account.",
+          description: "Your account has been created. You can now complete your profile.",
         });
+      } else {
+        console.log('No user in signup response');
       }
     } catch (error: any) {
       console.error('Registration error:', error);
@@ -395,6 +416,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // Update profile
   const updateProfile = async (profileData: Partial<JobSeekerProfile> | Partial<OrganizationProfile>) => {
+    console.log('updateProfile called with data:', profileData);
+    
     if (!user) {
       toast({
         title: "Update failed",
@@ -407,6 +430,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setLoading(true);
 
     try {
+      console.log('Starting profile update for user:', user.id);
+      
       // Update profile table
       const profileUpdate: any = {
         bio: (profileData as any).bio,
@@ -423,15 +448,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         profileUpdate.cv_url = profileData.cv;
       }
 
+      console.log('Updating profile table with:', profileUpdate);
+
       const { error: profileError } = await supabase
         .from('profile')
         .update(profileUpdate)
         .eq('user_id', user.id);
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('Profile table update error:', profileError);
+        throw profileError;
+      }
 
-      // Update type-specific tables
-      if (user.userType === 'jobseeker' && 'skills' in profileData) {
+      console.log('Profile table updated successfully');
+
+      // Update type-specific tables only if relevant data is provided
+      if (user.userType === 'jobseeker' && 'skills' in profileData && profileData.skills) {
+        console.log('Updating jobseeker skills');
         const skillUpdate = {
           interests: (profileData as JobSeekerProfile).interests,
           soft_skills: profileData.skills?.soft,
@@ -445,8 +478,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           .update(skillUpdate)
           .eq('user_id', user.id);
 
-        if (skillError) throw skillError;
+        if (skillError) {
+          console.error('Skill rating update error:', skillError);
+          throw skillError;
+        }
+        console.log('Jobseeker skills updated successfully');
+        console.log('Jobseeker skills updated successfully');
       } else if (user.userType === 'organization') {
+        console.log('Updating organization details');
         const orgUpdate: any = {};
         
         if ('name' in profileData) orgUpdate.company_name = profileData.name;
@@ -460,20 +499,28 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           .update(orgUpdate)
           .eq('organization_id', user.id);
 
-        if (orgError) throw orgError;
+        if (orgError) {
+          console.error('Organization details update error:', orgError);
+          throw orgError;
+        }
+        console.log('Organization details updated successfully');
       }
 
+      console.log('Reloading user profile...');
       // Reload user profile
       const { data: { user: supabaseUser } } = await supabase.auth.getUser();
       if (supabaseUser) {
         const userData = await loadUserProfile(supabaseUser);
         setUser(userData);
+        console.log('User profile reloaded successfully');
       }
 
       toast({
         title: "Profile updated",
         description: "Your profile has been successfully updated",
       });
+      
+      console.log('Profile update completed successfully');
     } catch (error: any) {
       console.error('Update error:', error);
       toast({
@@ -484,6 +531,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       throw error;
     } finally {
       setLoading(false);
+      console.log('updateProfile finished, loading state reset');
     }
   };
 

@@ -2,6 +2,55 @@ import { supabase } from '@/integrations/supabase/client';
 
 // Storage bucket name for profile pictures
 export const PROFILE_PICTURES_BUCKET = 'profile-pictures';
+export const CV_BUCKET = 'cvs';
+
+/**
+ * Upload a CV (PDF) to Supabase Storage
+ * @param file - The PDF file to upload
+ * @param userId - The user's ID (used for file naming)
+ * @returns The public URL of the uploaded CV
+ */
+export async function uploadCV(file: File, userId: string): Promise<string> {
+  try {
+    // Validate file type
+    if (file.type !== 'application/pdf') {
+      throw new Error('Only PDF files are allowed');
+    }
+
+    // Check file size (max 10MB)
+    const maxSize = 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      throw new Error('CV file size must be less than 10MB');
+    }
+
+    // Generate a unique filename
+    const fileName = `${userId}-${Date.now()}.pdf`;
+    const filePath = `${userId}/${fileName}`;
+
+    // Upload the file to Supabase Storage
+    const { data, error } = await supabase.storage
+      .from(CV_BUCKET)
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (error) {
+      console.error('CV upload error:', error);
+      throw new Error(`Failed to upload CV: ${error.message}`);
+    }
+
+    // Get the public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from(CV_BUCKET)
+      .getPublicUrl(filePath);
+
+    return publicUrl;
+  } catch (error) {
+    console.error('Error uploading CV:', error);
+    throw error;
+  }
+}
 
 /**
  * Upload a profile picture to Supabase Storage

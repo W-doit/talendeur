@@ -35,7 +35,10 @@ export const ESGChart = () => {
           .eq('user_id', user.id)
           .single();
 
-        if (error) throw error;
+        // Ignore "no rows" error - just means no data yet
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error fetching ESG scores:', error);
+        }
 
         if (data) {
           const total = data.environment_score + data.social_score + data.governance_score;
@@ -65,7 +68,7 @@ export const ESGChart = () => {
           setEsgData(chartData);
         }
       } catch (error) {
-        console.error('Error fetching ESG scores:', error);
+        // Silently handle - data just doesn't exist yet
       } finally {
         setLoading(false);
       }
