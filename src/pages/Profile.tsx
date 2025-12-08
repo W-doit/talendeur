@@ -131,7 +131,7 @@ const Profile: React.FC = () => {
           {hasCompleteProfile && !isEditMode && (
             <Button 
               onClick={() => setIsEditMode(true)}
-              className="bg-talendeur-primary hover:bg-talendeur-primary-dark"
+              className="bg-gradient-to-r from-talendeur-orange to-talendeur-primary hover:opacity-90"
             >
               Edit Profile
             </Button>
@@ -146,16 +146,12 @@ const Profile: React.FC = () => {
           )}
         </div>
         
-        {/* Debug: Log profile data */}
-        {console.log('Profile data:', user.profile)}
-        {console.log('Profile pic URL:', user.userType === 'jobseeker' ? (user.profile as any)?.profilePic : (user.profile as any)?.logo)}
-        
         <div className="space-y-8">
           {hasCompleteProfile && !isEditMode ? (
             // View Mode - Show profile information
             <>
               {/* Colored banner with profile picture */}
-              <div className="bg-gradient-to-r from-talendeur-primary to-talendeur-orange p-6 rounded-xl shadow-md text-white">
+              <div className="bg-gradient-to-r from-talendeur-orange to-talendeur-primary p-6 rounded-xl shadow-md text-white">
                 <div className="flex flex-col md:flex-row items-center gap-6">
                   <div className="flex-shrink-0">
                     {(() => {
@@ -210,11 +206,20 @@ const Profile: React.FC = () => {
                   {/* Right column: Visualizations and info boxes */}
                   <div className="w-full md:w-2/3 flex flex-col gap-8">
                     <KeyMetricsCards />
-                  <BiographyWordCloud />
-                  <SkillsRadarChart />
-                  <PersonalityVisualization />
-                  <ESGChart />
-                  <InternationalExperienceMap />
+                    <BiographyWordCloud />
+                    <SkillsRadarChart />
+                    <PersonalityVisualization />
+                    <ESGChart />
+                  </div>
+              </div>
+
+              {/* Full-width International Experience Map */}
+              <div className="w-full">
+                <InternationalExperienceMap />
+              </div>
+
+              {/* Interests and Needs sections */}
+              <div className="flex flex-col gap-8">
                   {user.userType === 'jobseeker' && (user.profile as any).interests && (user.profile as any).interests.length > 0 && (
                     <Card>
                       <CardHeader>
@@ -254,7 +259,6 @@ const Profile: React.FC = () => {
                     </Card>
                   )}
                 </div>
-              </div>
             </>
           ) : (
             // Edit Mode - Show form
