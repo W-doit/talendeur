@@ -60,7 +60,7 @@ yarn dev
 
 ### Environment Setup
 
-Create a `.env` file in the root directory with the following variables (to be updated once Supabase is integrated):
+Create a `.env` file in the root directory with the following variables (to be updated once Supabase is integrated-in progress):
 ```env
 VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
@@ -119,7 +119,7 @@ Talendeur
 - **Charts**: Recharts
 - **Backend**: Supabase (to be implemented)
 - **Authentication**: Currently mocked, to be replaced with Supabase Auth
-- **Database**: Supabase PostgreSQL (to be implemented)
+- **Database**: Supabase PostgreSQL
 - **Storage**: Supabase Storage (to be implemented for CV uploads)
 
 ## Application Flow Diagram
