@@ -124,7 +124,7 @@ const MatchCard: React.FC<MatchCardProps> = ({ profile, onApprove, onReject }) =
           onClick={handleReject}
           variant="outline" 
           size="lg"
-          className="rounded-full h-14 w-14 p-0 border-2 border-muted hover:border-red-500 hover:bg-red-500 hover:text-white"
+          className="rounded-full h-14 w-14 p-0 border-2 border-muted hover:border-talendeur-orange hover:bg-talendeur-orange hover:text-white"
         >
           <X className="h-6 w-6" />
         </Button>

@@ -127,20 +127,11 @@ const Profile: React.FC = () => {
   return (
     <MainLayout>
       <div className="container max-w-7xl mx-auto py-12 px-4">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">{user.profile?.name || 'My Profile'}</h1>
-            <p className="text-muted-foreground">
-              {user.userType === 'jobseeker' 
-                ? 'Showcase your skills and experience to potential employers' 
-                : 'Highlight your organization to attract the best talent'
-              }
-            </p>
-          </div>
+        <div className="flex justify-end items-center mb-8">
           {hasCompleteProfile && !isEditMode && (
             <Button 
               onClick={() => setIsEditMode(true)}
-              className="bg-talendeur-primary hover:bg-talendeur-primary-dark"
+              className="bg-gradient-to-r from-talendeur-orange to-talendeur-primary hover:opacity-90"
             >
               Edit Profile
             </Button>
@@ -155,15 +146,12 @@ const Profile: React.FC = () => {
           )}
         </div>
         
-        {/* Debug: Log profile data */}
-        {console.log('Profile data:', user.profile)}
-        {console.log('Profile pic URL:', user.userType === 'jobseeker' ? (user.profile as any)?.profilePic : (user.profile as any)?.logo)}
-        
         <div className="space-y-8">
           {hasCompleteProfile && !isEditMode ? (
             // View Mode - Show profile information
             <>
-              <div className="bg-gradient-to-r from-talendeur-primary to-talendeur-orange p-6 rounded-xl shadow-md text-white">
+              {/* Colored banner with profile picture */}
+              <div className="bg-gradient-to-r from-talendeur-orange to-talendeur-primary p-6 rounded-xl shadow-md text-white">
                 <div className="flex flex-col md:flex-row items-center gap-6">
                   <div className="flex-shrink-0">
                     {(() => {
@@ -171,23 +159,12 @@ const Profile: React.FC = () => {
                         ? (user.profile as any).profilePic 
                         : (user.profile as any).logo;
                       
-                      console.log('Rendering image with URL:', imageUrl);
-                      
                       if (imageUrl) {
                         return (
                           <img 
                             src={imageUrl}
                             alt={user.profile.name}
-                            crossOrigin="anonymous"
-                            className={user.userType === 'jobseeker' 
-                              ? 'h-28 w-28 rounded-full object-cover border-4 border-white bg-white' 
-                              : 'h-28 w-28 rounded-lg bg-white p-2 object-contain border-4 border-white'
-                            }
-                            onLoad={() => console.log('Image loaded successfully')}
-                            onError={(e) => {
-                              console.error('Image failed to load:', e);
-                              console.error('Failed URL:', imageUrl);
-                            }}
+                            className={user.userType === 'jobseeker' ? 'h-28 w-28 rounded-full object-cover border-4 border-white' : 'h-28 w-28 rounded-lg object-cover border-4 border-white'}
                           />
                         );
                       } else {
@@ -208,7 +185,6 @@ const Profile: React.FC = () => {
                   </div>
                   <div className="flex-1 text-center md:text-left">
                     <h2 className="text-2xl font-bold">{user.profile.name}</h2>
-                    <p className="text-white/80">{user.email}</p>
                     {user.userType === 'organization' && (user.profile as any).website && (
                       <p className="text-white/80 mt-1">
                         <a href={(user.profile as any).website} target="_blank" rel="noopener noreferrer" className="hover:underline">
@@ -216,45 +192,35 @@ const Profile: React.FC = () => {
                         </a>
                       </p>
                     )}
-                    <div className="mt-4">
-                      <Button 
-                        onClick={() => navigate('/find')}
-                        className="bg-white text-talendeur-primary hover:bg-white/90"
-                      >
-                        Find {user.userType === 'jobseeker' ? 'Organizations' : 'Talent'}
-                      </Button>
-                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Dashboard Metrics */}
-              <KeyMetricsCards />
+              <div className="flex flex-col md:flex-row gap-8">
+                {/* Left column: Timeline (all date-based items) */}
+                <div className="w-full md:w-1/3 flex flex-col gap-8">
+                    <WorkExperienceTimeline />
+                    <EducationForm />
+                    <CertificationsChart />
+                  </div>
+                  {/* Right column: Visualizations and info boxes */}
+                  <div className="w-full md:w-2/3 flex flex-col gap-8">
+                    <KeyMetricsCards />
+                    <BiographyWordCloud />
+                    <SkillsRadarChart />
+                    <PersonalityVisualization />
+                    <ESGChart />
+                  </div>
+              </div>
 
-              {/* Biography Word Cloud */}
-              <BiographyWordCloud />
+              {/* Full-width International Experience Map */}
+              <div className="w-full">
+                <InternationalExperienceMap />
+              </div>
 
-              {/* Skills Radar Chart */}
-              <SkillsRadarChart />
-
-              {/* Personality Profile */}
-              <PersonalityVisualization />
-
-              {/* Work Experience Timeline */}
-              <WorkExperienceTimeline />
-
-              {/* Certifications Chart */}
-              <CertificationsChart />
-
-              {/* ESG Impact Chart */}
-              <ESGChart />
-
-              {/* International Experience */}
-              <InternationalExperienceMap />
-
-              {user.userType === 'jobseeker' && (
-                <>
-                  {(user.profile as any).interests && (user.profile as any).interests.length > 0 && (
+              {/* Interests and Needs sections */}
+              <div className="flex flex-col gap-8">
+                  {user.userType === 'jobseeker' && (user.profile as any).interests && (user.profile as any).interests.length > 0 && (
                     <Card>
                       <CardHeader>
                         <CardTitle>Interests</CardTitle>
@@ -273,28 +239,26 @@ const Profile: React.FC = () => {
                       </CardContent>
                     </Card>
                   )}
-                </>
-              )}
-
-              {user.userType === 'organization' && (user.profile as any).needs && (user.profile as any).needs.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>We're Looking For</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-wrap gap-2">
-                      {(user.profile as any).needs.map((need: string, index: number) => (
-                        <span 
-                          key={index} 
-                          className="px-3 py-1 bg-talendeur-orange/10 text-talendeur-orange rounded-full text-sm"
-                        >
-                          {need}
-                        </span>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+                  {user.userType === 'organization' && (user.profile as any).needs && (user.profile as any).needs.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>We're Looking For</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex flex-wrap gap-2">
+                          {(user.profile as any).needs.map((need: string, index: number) => (
+                            <span 
+                              key={index} 
+                              className="px-3 py-1 bg-talendeur-orange/10 text-talendeur-orange rounded-full text-sm"
+                            >
+                              {need}
+                            </span>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
             </>
           ) : (
             // Edit Mode - Show form
