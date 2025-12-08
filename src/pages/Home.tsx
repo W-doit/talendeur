@@ -8,19 +8,19 @@ const Home: React.FC = () => {
   return (
     <MainLayout>
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-talendeur-darkred to-talendeur-red py-20 px-4 text-white">
+      <section className="bg-gradient-to-r from-talendeur-primary to-talendeur-orange py-20 px-4 text-white">
         <div className="container mx-auto max-w-6xl">
           <div className="flex flex-col md:flex-row items-center justify-between gap-12">
             <div className="flex-1 text-center md:text-left">
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
-                Discover Your <span className="text-talendeur-orange">Perfect Match</span> in the Job Market
+                Discover Your <span className="text-white drop-shadow-lg">Perfect Match</span> in the Job Market
               </h1>
               <p className="text-lg md:text-xl mb-8 text-white/90">
                 Talendeur connects talented individuals with organizations seeking their unique skills. Our innovative matchmaking platform creates meaningful professional connections.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
                 <Link to="/register">
-                  <Button size="lg" className="bg-talendeur-orange hover:bg-talendeur-lightorange text-white">
+                  <Button size="lg" className="bg-talendeur-orange hover:bg-talendeur-orange/90 text-white">
                     Get Started
                   </Button>
                 </Link>
@@ -57,7 +57,7 @@ const Home: React.FC = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="bg-muted/30 rounded-xl p-6 text-center">
-              <div className="w-16 h-16 bg-talendeur-red rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">1</div>
+              <div className="w-16 h-16 bg-talendeur-primary rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">1</div>
               <h3 className="text-xl font-bold mb-3">Create Your Profile</h3>
               <p className="text-muted-foreground">
                 Job seekers showcase their skills and experience. Organizations highlight their culture and needs.
@@ -73,7 +73,7 @@ const Home: React.FC = () => {
             </div>
             
             <div className="bg-muted/30 rounded-xl p-6 text-center">
-              <div className="w-16 h-16 bg-talendeur-red rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">3</div>
+              <div className="w-16 h-16 bg-talendeur-primary rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">3</div>
               <h3 className="text-xl font-bold mb-3">Connect Directly</h3>
               <p className="text-muted-foreground">
                 When there's mutual interest, connect directly to explore potential opportunities together.
@@ -132,14 +132,14 @@ const Home: React.FC = () => {
       </section>
 
       {/* CTA */}
-      <section className="bg-gradient-to-r from-talendeur-red to-talendeur-orange py-16 px-4 text-white">
+      <section className="bg-gradient-to-r from-talendeur-primary to-talendeur-orange py-16 px-4 text-white">
         <div className="container mx-auto max-w-4xl text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to Find Your Perfect Match?</h2>
           <p className="text-xl mb-8 text-white/90 max-w-2xl mx-auto">
             Join Talendeur today and revolutionize the way you connect in the professional world.
           </p>
           <Link to="/register">
-            <Button size="lg" className="bg-white text-talendeur-red hover:bg-white/90">
+            <Button size="lg" className="bg-white text-talendeur-primary hover:bg-white/90">
               Get Started Now
             </Button>
           </Link>
