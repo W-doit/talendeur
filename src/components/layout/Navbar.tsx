@@ -11,27 +11,28 @@ const Navbar: React.FC = () => {
 
   const handleLogout = async () => {
     await logout();
-    navigate('/');
+    navigate('/login');
   };
 
   return (
-    <nav className="bg-gradient-to-r from-talendeur-primary to-talendeur-orange px-6 py-4 shadow-md">
+    <nav className="bg-gradient-to-r from-talendeur-orange to-talendeur-primary px-6 py-4 shadow-md">
       <div className="max-w-7xl mx-auto flex justify-between items-center">
-        <Link to="/" className="flex items-center space-x-2">
-          <div className="bg-white rounded-lg px-3 py-2 shadow-md">
+        <div className="flex items-center space-x-6">
+          <Link to="/" className="flex items-center space-x-2">
             <img 
               src="/Talendeur_logo.png" 
               alt="Talendeur" 
-              className="h-12 w-auto object-contain"
+              className="h-16 w-auto object-contain" // Increased height from h-12 to h-16
             />
-          </div>
-        </Link>
-        
+          </Link>
+          {/* Address removed as requested */}
+          {/* LinkedIn icon removed as requested */}
+        </div>
         <div className="flex items-center space-x-4">
           {user ? (
             <>
               <Link to="/profile">
-                <Button variant="ghost" className="text-white hover:bg-white/20">
+                <Button variant="outline" className="bg-white/70 text-talendeur-primary hover:bg-white/90">
                   {user.userType === 'jobseeker' ? (
                     <User className="mr-2 h-5 w-5" />
                   ) : (
@@ -41,18 +42,18 @@ const Navbar: React.FC = () => {
                 </Button>
               </Link>
               <Link to="/matches">
-                <Button variant="ghost" className="text-white hover:bg-white/20">
+                <Button variant="outline" className="bg-white/70 text-talendeur-primary hover:bg-white/90">
                   Matches
                 </Button>
               </Link>
               <Link to="/find">
-                <Button variant="outline" className="bg-white text-talendeur-primary hover:bg-white/90">
+                <Button variant="outline" className="bg-white/70 text-talendeur-primary hover:bg-white/90">
                   Find {user.userType === 'jobseeker' ? 'Organizations' : 'Talent'}
                 </Button>
               </Link>
               <Button 
-                variant="ghost" 
-                className="text-white hover:bg-white/20"
+                variant="outline"
+                className="bg-white/70 text-talendeur-primary hover:bg-white/90"
                 onClick={handleLogout}
               >
                 <LogOut className="h-5 w-5" />
@@ -61,12 +62,12 @@ const Navbar: React.FC = () => {
           ) : (
             <>
               <Link to="/login">
-                <Button variant="ghost" className="text-white hover:bg-white/20">
+                <Button variant="outline" className="bg-white/70 text-talendeur-primary hover:bg-white/90">
                   Login
                 </Button>
               </Link>
               <Link to="/register">
-                <Button variant="outline" className="bg-white text-talendeur-primary hover:bg-white/90">
+                <Button variant="outline" className="bg-white/70 text-talendeur-primary hover:bg-white/90">
                   Register
                 </Button>
               </Link>

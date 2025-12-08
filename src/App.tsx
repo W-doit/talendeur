@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 
 // Context Providers
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -35,6 +36,7 @@ const App = () => (
               <Route path="/profile" element={<Profile />} />
               <Route path="/find" element={<FindMatches />} />
               <Route path="/matches" element={<Matches />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
