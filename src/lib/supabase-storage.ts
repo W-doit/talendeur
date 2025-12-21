@@ -60,28 +60,55 @@ export async function uploadCV(file: File, userId: string): Promise<string> {
  */
 export async function uploadProfilePicture(file: File, userId: string): Promise<string> {
   try {
+    console.log('Starting profile picture upload...');
+    console.log('File details:', { name: file.name, size: file.size, type: file.type });
+    console.log('User ID:', userId);
+    
     // Generate a unique filename
     const fileExt = file.name.split('.').pop();
     const fileName = `${userId}-${Date.now()}.${fileExt}`;
     const filePath = `${userId}/${fileName}`;
+    
+    console.log('Upload path:', filePath);
+    console.log('Bucket name:', PROFILE_PICTURES_BUCKET);
+    console.log('About to call storage.upload...');
 
-    // Upload the file to Supabase Storage
-    const { data, error } = await supabase.storage
+    // Create upload promise with explicit timeout
+    const uploadPromise = supabase.storage
       .from(PROFILE_PICTURES_BUCKET)
       .upload(filePath, file, {
         cacheControl: '3600',
-        upsert: false
+        upsert: true
       });
+    
+    // Create timeout promise
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => {
+        console.error('Upload timed out after 10 seconds');
+        reject(new Error('Upload timeout - check your Supabase storage bucket permissions and CORS settings'));
+      }, 10000);
+    });
+    
+    // Race between upload and timeout
+    const { data, error } = await Promise.race([uploadPromise, timeoutPromise]);
+    
+    console.log('Upload call completed');
 
     if (error) {
-      console.error('Upload error:', error);
+      console.error('Upload error details:', error);
+      console.error('Error message:', error.message);
+      console.error('Error name:', error.name);
       throw new Error(`Failed to upload image: ${error.message}`);
     }
+    
+    console.log('Upload successful, data:', data);
 
     // Get the public URL
     const { data: { publicUrl } } = supabase.storage
       .from(PROFILE_PICTURES_BUCKET)
       .getPublicUrl(filePath);
+    
+    console.log('Public URL generated:', publicUrl);
 
     return publicUrl;
   } catch (error) {

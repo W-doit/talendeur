@@ -74,7 +74,7 @@ const Login: React.FC = () => {
             <CardFooter className="flex flex-col space-y-4">
               <Button 
                 type="submit" 
-                className="w-full bg-gradient-to-r from-talendeur-orange to-talendeur-primary hover:opacity-90"
+                className="w-full bg-gradient-to-r from-white via-talendeur-orange to-talendeur-primary hover:opacity-90"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? 'Signing in...' : 'Sign In'}

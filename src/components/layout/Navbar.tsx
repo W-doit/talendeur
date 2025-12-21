@@ -15,14 +15,14 @@ const Navbar: React.FC = () => {
   };
 
   return (
-    <nav className="bg-gradient-to-r from-talendeur-orange to-talendeur-primary px-6 py-4 shadow-md">
+    <nav className="bg-gradient-to-r from-white via-talendeur-orange to-talendeur-primary px-6 py-4 shadow-md">
       <div className="max-w-7xl mx-auto flex justify-between items-center">
         <div className="flex items-center space-x-6">
           <Link to="/" className="flex items-center space-x-2">
             <img 
               src="/Talendeur_logo.png" 
               alt="Talendeur" 
-              className="h-16 w-auto object-contain" // Increased height from h-12 to h-16
+              className="h-20 w-auto object-contain"
             />
           </Link>
           {/* Address removed as requested */}
@@ -32,7 +32,7 @@ const Navbar: React.FC = () => {
           {user ? (
             <>
               <Link to="/profile">
-                <Button variant="outline" className="bg-white/70 text-talendeur-primary hover:bg-white/90">
+                <Button variant="outline" className="bg-white/70 text-talendeur-primary hover:bg-white/90 text-base">
                   {user.userType === 'jobseeker' ? (
                     <User className="mr-2 h-5 w-5" />
                   ) : (
@@ -42,12 +42,12 @@ const Navbar: React.FC = () => {
                 </Button>
               </Link>
               <Link to="/matches">
-                <Button variant="outline" className="bg-white/70 text-talendeur-primary hover:bg-white/90">
+                <Button variant="outline" className="bg-white/70 text-talendeur-primary hover:bg-white/90 text-base">
                   Matches
                 </Button>
               </Link>
               <Link to="/find">
-                <Button variant="outline" className="bg-white/70 text-talendeur-primary hover:bg-white/90">
+                <Button variant="outline" className="bg-white/70 text-talendeur-primary hover:bg-white/90 text-base">
                   Find {user.userType === 'jobseeker' ? 'Organizations' : 'Talent'}
                 </Button>
               </Link>

@@ -29,7 +29,7 @@ const FindMatches: React.FC = () => {
   return (
     <MainLayout>
       <div className="container max-w-4xl mx-auto py-12 px-4">
-        <h1 className="text-3xl font-bold mb-2">Find {user.userType === 'jobseeker' ? 'Organizations' : 'Talent'}</h1>
+        <h1 className="text-3xl font-bold mb-2">Find {user.userType === 'jobseeker' ? 'Organisations' : 'Talent'}</h1>
         <p className="text-muted-foreground mb-8">
           Swipe right to express interest, or left to pass
         </p>

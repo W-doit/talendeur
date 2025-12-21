@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth, UserType } from '@/contexts/AuthContext';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth, UserType, JobSeekerProfile, OrganizationProfile } from '@/contexts/AuthContext';
 import JobSeekerProfileForm from '@/components/profile/JobSeekerProfileForm';
 import OrganizationProfileForm from '@/components/profile/OrganizationProfileForm';
 import MainLayout from '@/components/layout/MainLayout';
@@ -23,26 +23,37 @@ import { ReferencesForm } from '@/components/profile/ReferencesForm';
 import { PersonalityTest } from '@/components/profile/PersonalityTest';
 
 const Profile: React.FC = () => {
-  const { user, createProfile } = useAuth();
+  const { user, createProfile, loading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [selectedUserType, setSelectedUserType] = useState<UserType>('jobseeker');
   const [isCreatingProfile, setIsCreatingProfile] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   
-  // Redirect to login if no user
-  React.useEffect(() => {
-    if (!user) {
-      navigate('/login');
-    }
-  }, [user, navigate]);
-
   // Check if profile has been filled out (has a name)
   const hasCompleteProfile = user?.profile?.name;
+  
+  // Exit edit mode when navigating to profile page
+  React.useEffect(() => {
+    if (hasCompleteProfile && location.pathname === '/profile') {
+      setIsEditMode(false);
+    }
+  }, [location.pathname, hasCompleteProfile]);
+  
+  // Redirect to login if no user (only after loading is complete)
+  React.useEffect(() => {
+    if (!loading && !user) {
+      navigate('/login');
+    }
+  }, [user, loading, navigate]);
 
   // Automatically enter edit mode if profile is incomplete
   React.useEffect(() => {
     if (user?.profile && !hasCompleteProfile) {
       setIsEditMode(true);
+    } else if (hasCompleteProfile) {
+      // Exit edit mode when profile is complete (e.g., when clicking Profile button from header)
+      setIsEditMode(false);
     }
   }, [user, hasCompleteProfile]);
 
@@ -63,6 +74,17 @@ const Profile: React.FC = () => {
       setIsCreatingProfile(false);
     }
   };
+  
+  // Show loading state
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="container max-w-2xl mx-auto py-12 px-4 text-center">
+          <p className="text-lg">Loading profile...</p>
+        </div>
+      </MainLayout>
+    );
+  }
   
   if (!user) {
     return null;
@@ -87,8 +109,8 @@ const Profile: React.FC = () => {
                 className="w-full"
               >
                 <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="jobseeker">Job Seeker</TabsTrigger>
-                  <TabsTrigger value="organization">Organization</TabsTrigger>
+                  <TabsTrigger value="jobseeker">Individual</TabsTrigger>
+                  <TabsTrigger value="organization">Organisation</TabsTrigger>
                 </TabsList>
                 <TabsContent value="jobseeker" className="pt-4">
                   <div className="space-y-2">
@@ -127,68 +149,62 @@ const Profile: React.FC = () => {
   return (
     <MainLayout>
       <div className="container max-w-7xl mx-auto py-12 px-4">
-        <div className="flex justify-end items-center mb-8">
-          {hasCompleteProfile && !isEditMode && (
-            <Button 
-              onClick={() => setIsEditMode(true)}
-              className="bg-gradient-to-r from-talendeur-orange to-talendeur-primary hover:opacity-90"
-            >
-              Edit Profile
-            </Button>
-          )}
-          {hasCompleteProfile && isEditMode && (
-            <Button 
-              onClick={() => setIsEditMode(false)}
-              variant="outline"
-            >
-              View Profile
-            </Button>
-          )}
-        </div>
-        
         <div className="space-y-8">
           {hasCompleteProfile && !isEditMode ? (
             // View Mode - Show profile information
             <>
-              {/* Colored banner with profile picture */}
-              <div className="bg-gradient-to-r from-talendeur-orange to-talendeur-primary p-6 rounded-xl shadow-md text-white">
+              {/* Profile header */}
+              <div className="p-6">
                 <div className="flex flex-col md:flex-row items-center gap-6">
-                  <div className="flex-shrink-0">
+                  <div className="flex-shrink-0 flex flex-col items-center gap-3">
                     {(() => {
                       const imageUrl = user.userType === 'jobseeker' 
-                        ? (user.profile as any).profilePic 
-                        : (user.profile as any).logo;
+                        ? (user.profile as JobSeekerProfile).profilePic 
+                        : (user.profile as OrganizationProfile).logo;
                       
                       if (imageUrl) {
                         return (
                           <img 
                             src={imageUrl}
                             alt={user.profile.name}
-                            className={user.userType === 'jobseeker' ? 'h-28 w-28 rounded-full object-cover border-4 border-white' : 'h-28 w-28 rounded-lg object-cover border-4 border-white'}
+                            className={user.userType === 'jobseeker' ? 'h-28 w-28 rounded-full object-cover border-4 border-gray-200' : 'h-28 w-28 rounded-lg object-cover border-4 border-gray-200'}
                           />
                         );
                       } else {
                         return (
                           <div 
                             className={user.userType === 'jobseeker'
-                              ? 'h-28 w-28 rounded-full bg-white/20 border-4 border-white flex items-center justify-center'
-                              : 'h-28 w-28 rounded-lg bg-white/20 border-4 border-white flex items-center justify-center'
+                              ? 'h-28 w-28 rounded-full bg-gray-200 border-4 border-gray-300 flex items-center justify-center'
+                              : 'h-28 w-28 rounded-lg bg-gray-200 border-4 border-gray-300 flex items-center justify-center'
                             }
                           >
-                            <span className="text-4xl font-bold text-white">
+                            <span className="text-4xl font-bold text-gray-600">
                               {user.profile.name?.charAt(0).toUpperCase() || '?'}
                             </span>
                           </div>
                         );
                       }
                     })()}
+                    <Button 
+                      onClick={() => setIsEditMode(true)}
+                      size="sm"
+                      variant="outline"
+                      className="bg-white/70 text-talendeur-primary hover:bg-white/90 border-talendeur-primary"
+                    >
+                      Edit Profile
+                    </Button>
                   </div>
                   <div className="flex-1 text-center md:text-left">
-                    <h2 className="text-2xl font-bold">{user.profile.name}</h2>
-                    {user.userType === 'organization' && (user.profile as any).website && (
-                      <p className="text-white/80 mt-1">
-                        <a href={(user.profile as any).website} target="_blank" rel="noopener noreferrer" className="hover:underline">
-                          {(user.profile as any).website}
+                    <h2 className="text-2xl font-bold text-black">{user.profile.name}</h2>
+                    {(user.profile as JobSeekerProfile | OrganizationProfile).headline && (
+                      <p className="text-lg text-gray-700 mt-2 italic font-light">
+                        {(user.profile as JobSeekerProfile | OrganizationProfile).headline}
+                      </p>
+                    )}
+                    {user.userType === 'organization' && (user.profile as OrganizationProfile).website && (
+                      <p className="text-gray-600 mt-1">
+                        <a href={(user.profile as OrganizationProfile).website} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                          {(user.profile as OrganizationProfile).website}
                         </a>
                       </p>
                     )}
@@ -200,7 +216,6 @@ const Profile: React.FC = () => {
                 {/* Left column: Timeline (all date-based items) */}
                 <div className="w-full md:w-1/3 flex flex-col gap-8">
                     <WorkExperienceTimeline />
-                    <EducationForm />
                     <CertificationsChart />
                   </div>
                   {/* Right column: Visualizations and info boxes */}
@@ -220,14 +235,14 @@ const Profile: React.FC = () => {
 
               {/* Interests and Needs sections */}
               <div className="flex flex-col gap-8">
-                  {user.userType === 'jobseeker' && (user.profile as any).interests && (user.profile as any).interests.length > 0 && (
+                  {user.userType === 'jobseeker' && (user.profile as JobSeekerProfile).interests && (user.profile as JobSeekerProfile).interests.length > 0 && (
                     <Card>
                       <CardHeader>
                         <CardTitle>Interests</CardTitle>
                       </CardHeader>
                       <CardContent>
                         <div className="flex flex-wrap gap-2">
-                          {(user.profile as any).interests.map((interest: string, index: number) => (
+                          {(user.profile as JobSeekerProfile).interests.map((interest: string, index: number) => (
                             <span 
                               key={index} 
                               className="px-3 py-1 bg-talendeur-primary/10 text-talendeur-primary rounded-full text-sm"
@@ -239,14 +254,14 @@ const Profile: React.FC = () => {
                       </CardContent>
                     </Card>
                   )}
-                  {user.userType === 'organization' && (user.profile as any).needs && (user.profile as any).needs.length > 0 && (
+                  {user.userType === 'organization' && (user.profile as OrganizationProfile).needs && (user.profile as OrganizationProfile).needs.length > 0 && (
                     <Card>
                       <CardHeader>
                         <CardTitle>We're Looking For</CardTitle>
                       </CardHeader>
                       <CardContent>
                         <div className="flex flex-wrap gap-2">
-                          {(user.profile as any).needs.map((need: string, index: number) => (
+                          {(user.profile as OrganizationProfile).needs.map((need: string, index: number) => (
                             <span 
                               key={index} 
                               className="px-3 py-1 bg-talendeur-orange/10 text-talendeur-orange rounded-full text-sm"
@@ -264,11 +279,23 @@ const Profile: React.FC = () => {
             // Edit Mode - Show form
             <>
               <Card>
-                <CardHeader>
-                  <CardTitle>{hasCompleteProfile ? 'Edit Profile' : 'Complete Your Profile'}</CardTitle>
-                  <CardDescription>
-                    {hasCompleteProfile ? 'Update your information' : 'Fill in your details to start matching'}
-                  </CardDescription>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>{hasCompleteProfile ? 'Edit Profile' : 'Complete Your Profile'}</CardTitle>
+                    <CardDescription>
+                      {hasCompleteProfile ? 'Update your information' : 'Fill in your details to start matching'}
+                    </CardDescription>
+                  </div>
+                  {hasCompleteProfile && (
+                    <Button 
+                      onClick={() => setIsEditMode(false)}
+                      size="sm"
+                      variant="outline"
+                      className="bg-white/70 text-talendeur-primary hover:bg-white/90"
+                    >
+                      View Profile
+                    </Button>
+                  )}
                 </CardHeader>
               </Card>
 

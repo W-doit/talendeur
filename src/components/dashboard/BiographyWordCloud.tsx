@@ -7,16 +7,51 @@ interface WordFrequency {
   value: number;
   color: string;
   size: number;
+  x: number;
+  y: number;
+  rotation: number;
 }
 
-const COLORS = ['#D1163E', '#E30F68', '#FF9F14', '#180D51', '#10B981'];
+const COLORS = ['#9EBC9E', '#CFC6B8', '#FFCFD2', '#FFAFC5', '#AA778A', '#553E4E'];
+
+// Common stop words to filter out
 const STOP_WORDS = new Set([
   'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
   'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'were', 'been',
   'be', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'should',
   'could', 'may', 'might', 'must', 'can', 'that', 'this', 'these', 'those',
   'i', 'you', 'he', 'she', 'it', 'we', 'they', 'my', 'your', 'his', 'her',
-  'its', 'our', 'their', 'me', 'him', 'them', 'us'
+  'its', 'our', 'their', 'me', 'him', 'them', 'us', 'am', 'been', 'being',
+  'into', 'through', 'during', 'before', 'after', 'above', 'below', 'up', 'down',
+  'out', 'off', 'over', 'under', 'again', 'further', 'then', 'once', 'here',
+  'there', 'when', 'where', 'why', 'how', 'all', 'both', 'each', 'few', 'more',
+  'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only', 'own', 'same',
+  'so', 'than', 'too', 'very', 'just', 'now', 'also', 'well'
+]);
+
+// Common nouns and verbs (expanded list for better filtering)
+const MEANINGFUL_WORDS = new Set([
+  // Professional nouns
+  'team', 'project', 'experience', 'work', 'role', 'position', 'skills', 'knowledge',
+  'development', 'management', 'leadership', 'strategy', 'innovation', 'results',
+  'business', 'client', 'customer', 'product', 'service', 'solution', 'technology',
+  'design', 'research', 'analysis', 'data', 'system', 'process', 'quality', 'growth',
+  'success', 'achievement', 'goal', 'objective', 'performance', 'delivery', 'value',
+  'collaboration', 'communication', 'organization', 'company', 'industry', 'market',
+  'sales', 'marketing', 'finance', 'operations', 'engineering', 'software', 'platform',
+  'infrastructure', 'architecture', 'implementation', 'optimization', 'efficiency',
+  'improvement', 'transformation', 'initiative', 'program', 'budget', 'timeline',
+  'stakeholder', 'partner', 'vendor', 'resource', 'talent', 'people', 'culture',
+  
+  // Action verbs
+  'lead', 'manage', 'develop', 'create', 'build', 'design', 'implement', 'execute',
+  'deliver', 'achieve', 'improve', 'optimize', 'drive', 'grow', 'increase', 'enhance',
+  'establish', 'launch', 'coordinate', 'collaborate', 'communicate', 'present', 'report',
+  'analyze', 'evaluate', 'assess', 'monitor', 'track', 'measure', 'identify', 'solve',
+  'resolve', 'support', 'provide', 'ensure', 'maintain', 'oversee', 'supervise', 'mentor',
+  'train', 'coach', 'guide', 'facilitate', 'negotiate', 'plan', 'organize', 'prioritize',
+  'streamline', 'automate', 'innovate', 'transform', 'modernize', 'scale', 'expand',
+  'integrate', 'deploy', 'migrate', 'upgrade', 'troubleshoot', 'debug', 'test', 'review'
 ]);
 
 export const BiographyWordCloud = () => {
@@ -30,13 +65,17 @@ export const BiographyWordCloud = () => {
     
     if (!bio) return;
 
-    // Extract words and count frequency
+    // Extract words and count frequency, filtering for meaningful nouns and verbs
     const wordCounts: { [key: string]: number } = {};
     const cleanedText = bio
       .toLowerCase()
       .replace(/[^\w\s]/g, ' ')
       .split(/\s+/)
-      .filter(word => word.length > 3 && !STOP_WORDS.has(word));
+      .filter(word => 
+        word.length > 3 && 
+        !STOP_WORDS.has(word) &&
+        MEANINGFUL_WORDS.has(word) // Only include nouns and verbs
+      );
 
     cleanedText.forEach(word => {
       wordCounts[word] = (wordCounts[word] || 0) + 1;
@@ -45,19 +84,50 @@ export const BiographyWordCloud = () => {
     // Convert to array and sort by frequency
     const sortedWords = Object.entries(wordCounts)
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 30); // Top 30 words
+      .slice(0, 25); // Top 25 words
+
+    if (sortedWords.length === 0) {
+      setWords([]);
+      return;
+    }
 
     const maxCount = sortedWords[0]?.[1] || 1;
     const minCount = sortedWords[sortedWords.length - 1]?.[1] || 1;
 
-    // Create word cloud data
+    // Create word cloud data with random positioning
     const cloudWords = sortedWords.map(([text, count], index) => {
-      const normalizedSize = ((count - minCount) / (maxCount - minCount)) * 100 + 50;
+      // Size based on frequency (much larger range for bigger words)
+      const normalizedSize = ((count - minCount) / (maxCount - minCount)) * 200 + 80;
+      
+      // More varied rotations including vertical orientations
+      const rotations = [0, 0, 90, -90, 45, -45, 30, -30, 60, -60, 15, -15, 75, -75];
+      const rotation = rotations[Math.floor(Math.random() * rotations.length)];
+      
+      // Position with better spacing - use grid-like positions with random offset
+      const cols = 5;
+      const rows = Math.ceil(sortedWords.length / cols);
+      const col = index % cols;
+      const row = Math.floor(index / cols);
+      
+      // Calculate position with spacing
+      const xBase = (100 / (cols + 1)) * (col + 1);
+      const yBase = (100 / (rows + 1)) * (row + 1);
+      
+      // Add random offset for organic look
+      const xOffset = (Math.random() - 0.5) * 15;
+      const yOffset = (Math.random() - 0.5) * 15;
+      
+      const x = Math.max(10, Math.min(90, xBase + xOffset));
+      const y = Math.max(10, Math.min(90, yBase + yOffset));
+      
       return {
         text,
         value: count,
         color: COLORS[index % COLORS.length],
-        size: normalizedSize
+        size: normalizedSize,
+        x,
+        y,
+        rotation
       };
     });
 
@@ -72,11 +142,11 @@ export const BiographyWordCloud = () => {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Biography Word Cloud</CardTitle>
-          <CardDescription>Key themes and concepts from your profile</CardDescription>
+          <CardTitle>You in a Wordcloud</CardTitle>
+          <CardDescription>Most significant nouns and verbs from your profile</CardDescription>
         </CardHeader>
         <CardContent className="py-8 text-center text-gray-500">
-          No biography text available
+          No meaningful keywords found. Add more details about your experience and skills.
         </CardContent>
       </Card>
     );
@@ -85,29 +155,32 @@ export const BiographyWordCloud = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Biography Word Cloud</CardTitle>
+        <CardTitle>You in a Wordcloud</CardTitle>
         <CardDescription>
-          Most frequently used words in your profile ({words.length} key terms)
+          Top {words.length} nouns and verbs highlighting your expertise
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="relative bg-gradient-to-br from-gray-50 to-white rounded-lg border border-gray-200 p-8 min-h-[400px] flex items-center justify-center overflow-hidden">
-          <div className="relative w-full h-full flex flex-wrap items-center justify-center gap-2">
+        <div className="relative bg-gradient-to-br from-blue-50/30 via-purple-50/20 to-pink-50/30 rounded-lg border border-gray-200 p-6 overflow-hidden">
+          <div className="relative w-full h-[320px]">
             {words.map((word, index) => (
-              <span
+              <div
                 key={index}
-                className="inline-block font-bold cursor-pointer transition-all duration-300 hover:scale-110 hover:opacity-80"
+                className="absolute font-bold cursor-pointer transition-all duration-300 hover:scale-110 hover:z-50 whitespace-nowrap"
                 style={{
-                  fontSize: `${Math.max(12, word.size / 5)}px`,
+                  left: `${word.x}%`,
+                  top: `${word.y}%`,
+                  fontSize: `${Math.max(16, word.size / 3.5)}px`,
                   color: word.color,
-                  padding: '4px 8px',
-                  animation: `fadeIn 0.5s ease-in-out ${index * 0.05}s both`,
-                  transform: `rotate(${Math.random() * 20 - 10}deg)`,
+                  transform: `translate(-50%, -50%) rotate(${word.rotation}deg)`,
+                  textShadow: '1px 1px 2px rgba(255,255,255,0.8)',
+                  fontWeight: 600 + (word.value * 100),
+                  animation: `cloudFadeIn 0.8s ease-out ${index * 0.05}s both`,
                 }}
-                title={`Used ${word.value} time${word.value !== 1 ? 's' : ''}`}
+                title={`"${word.text}" appears ${word.value} time${word.value !== 1 ? 's' : ''}`}
               >
                 {word.text}
-              </span>
+              </div>
             ))}
           </div>
         </div>
@@ -117,13 +190,13 @@ export const BiographyWordCloud = () => {
           {words.slice(0, 5).map((word, index) => (
             <div 
               key={index}
-              className="text-center p-3 rounded-lg border-2 hover:shadow-md transition-shadow"
+              className="text-center p-3 rounded-lg border-2 hover:shadow-md transition-all hover:scale-105"
               style={{ borderColor: word.color }}
             >
               <div className="text-2xl font-bold" style={{ color: word.color }}>
                 #{index + 1}
               </div>
-              <div className="text-sm font-semibold text-gray-700 mt-1">
+              <div className="text-sm font-semibold text-gray-700 mt-1 capitalize">
                 {word.text}
               </div>
               <div className="text-xs text-gray-500">
@@ -134,14 +207,14 @@ export const BiographyWordCloud = () => {
         </div>
 
         <style>{`
-          @keyframes fadeIn {
+          @keyframes cloudFadeIn {
             from {
               opacity: 0;
-              transform: scale(0.8) rotate(0deg);
+              transform: translate(-50%, -50%) rotate(${Math.random() * 360}deg) scale(0.3);
             }
             to {
               opacity: 1;
-              transform: scale(1) rotate(var(--rotation));
+              transform: translate(-50%, -50%) rotate(var(--rotation)) scale(1);
             }
           }
         `}</style>

@@ -48,19 +48,19 @@ export const ESGChart = () => {
             {
               name: 'Environmental',
               value: data.environment_score,
-              color: '#10B981',
+              color: '#9EBC9E',
               icon: Leaf
             },
             {
               name: 'Social',
               value: data.social_score,
-              color: '#E30F68',
+              color: '#FFAFC5',
               icon: Users
             },
             {
               name: 'Governance',
               value: data.governance_score,
-              color: '#180D51',
+              color: '#553E4E',
               icon: Shield
             }
           ];
@@ -149,7 +149,7 @@ export const ESGChart = () => {
               </PieChart>
             </ResponsiveContainer>
             <div className="text-center mt-4">
-              <div className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-500 via-pink-500 to-indigo-900">
+              <div className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#9EBC9E] via-[#FFAFC5] to-[#553E4E]">
                 {totalScore.toFixed(1)}%
               </div>
               <div className="text-sm text-gray-600 font-medium">Total ESG Score</div>

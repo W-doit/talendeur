@@ -18,6 +18,7 @@ const OrganizationProfileForm: React.FC<OrganizationProfileFormProps> = ({ onSav
   
   const [formData, setFormData] = useState<Partial<OrganizationProfile>>({
     name: profile?.name || '',
+    headline: (profile as any)?.headline || '',
     about: profile?.about || '',
     website: profile?.website || '',
     logo: profile?.logo || '',
@@ -124,6 +125,19 @@ const OrganizationProfileForm: React.FC<OrganizationProfileFormProps> = ({ onSav
             </div>
             
             <div>
+              <label htmlFor="headline" className="block text-sm font-medium mb-1">Headline (One-sentence description)</label>
+              <Input
+                id="headline"
+                name="headline"
+                value={(formData as any).headline || ''}
+                onChange={handleChange}
+                placeholder="e.g., Innovative Tech Company | Empowering the Next Generation"
+                maxLength={120}
+              />
+              <p className="text-xs text-gray-500 mt-1">Displayed prominently on your profile</p>
+            </div>
+            
+            <div>
               <label htmlFor="about" className="block text-sm font-medium mb-1">About</label>
               <Textarea
                 id="about"
@@ -199,7 +213,7 @@ const OrganizationProfileForm: React.FC<OrganizationProfileFormProps> = ({ onSav
       <div className="flex justify-end">
         <Button 
           type="submit" 
-          className="bg-talendeur-primary hover:bg-talendeur-primary-dark"
+          className="bg-gradient-to-r from-white via-talendeur-orange to-talendeur-primary hover:opacity-90"
           disabled={isSubmitting || uploadingLogo}
         >
           {uploadingLogo ? 'Uploading logo...' : isSubmitting ? 'Saving...' : 'Save Profile'}
