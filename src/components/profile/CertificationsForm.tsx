@@ -33,14 +33,29 @@ export const CertificationsForm = () => {
   const [certifications, setCertifications] = useState<Certification[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [hasFetched, setHasFetched] = useState(false); // Track if we've already fetched
 
   const fetchCertifications = useCallback(async () => {
+    // Don't refetch if we already tried
+    if (hasFetched) {
+      setLoading(false);
+      return;
+    }
+    
     if (!user) {
       setLoading(false);
       return;
     }
 
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      
+      if (!sessionData.session) {
+        console.error('CertificationsForm: No active session!');
+        setLoading(false);
+        return;
+      }
+      
       const { data, error } = await supabase
         .from('certifications')
         .select('*')
@@ -48,13 +63,17 @@ export const CertificationsForm = () => {
         .order('date_attained', { ascending: false });
 
       if (error) throw error;
+      
       setCertifications(data || []);
+      setHasFetched(true); // Mark as fetched
     } catch (error) {
       console.error('Error fetching certifications:', error);
+      setCertifications([]);
+      setHasFetched(true); // Mark as attempted even on error
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, hasFetched]);
 
   useEffect(() => {
     fetchCertifications();
@@ -237,7 +256,7 @@ export const CertificationsForm = () => {
           <Button
             onClick={saveCertifications}
             disabled={saving}
-            className="bg-talendeur-primary hover:bg-talendeur-primary-dark"
+            className="bg-gradient-to-r from-white via-talendeur-orange to-talendeur-primary hover:opacity-90 text-white"
           >
             {saving ? 'Saving...' : 'Save Certifications'}
           </Button>

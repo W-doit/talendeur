@@ -84,7 +84,7 @@ export const LinkedInImport: React.FC<LinkedInImportProps> = ({ onImport }) => {
         <Button
           onClick={handleConnectLinkedIn}
           disabled={importing}
-          className="w-full bg-[#0A66C2] hover:bg-[#004182]"
+          className="w-full bg-gradient-to-r from-white via-talendeur-orange to-talendeur-primary hover:opacity-90"
         >
           {importing ? (
             <>

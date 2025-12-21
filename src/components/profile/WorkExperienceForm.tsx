@@ -21,14 +21,31 @@ export const WorkExperienceForm = () => {
   const [experiences, setExperiences] = useState<WorkExperience[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [hasFetched, setHasFetched] = useState(false); // Track if we've already fetched
 
   const fetchExperiences = useCallback(async () => {
+    // Don't refetch if we already tried
+    if (hasFetched) {
+      setLoading(false);
+      return;
+    }
+    
     if (!user) {
       setLoading(false);
       return;
     }
 
     try {
+      // Verify session before query
+      const { data: sessionData } = await supabase.auth.getSession();
+      
+      if (!sessionData.session) {
+        console.error('WorkExperienceForm: No active session!');
+        setLoading(false);
+        return;
+      }
+      
+      
       const { data, error } = await supabase
         .from('work_experience')
         .select('*')
@@ -36,13 +53,18 @@ export const WorkExperienceForm = () => {
         .order('start_date', { ascending: false });
 
       if (error) throw error;
+      
       setExperiences(data || []);
+      setHasFetched(true); // Mark as fetched
     } catch (error) {
       console.error('Error fetching work experience:', error);
+      // Set empty array so form still shows
+      setExperiences([]);
+      setHasFetched(true); // Mark as attempted even on error
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, hasFetched]);
 
   useEffect(() => {
     fetchExperiences();
@@ -238,7 +260,7 @@ export const WorkExperienceForm = () => {
           <Button
             onClick={saveExperiences}
             disabled={saving}
-            className="bg-talendeur-primary hover:bg-talendeur-primary-dark"
+            className="bg-gradient-to-r from-white via-talendeur-orange to-talendeur-primary hover:opacity-90 text-white"
           >
             {saving ? 'Saving...' : 'Save Work Experience'}
           </Button>

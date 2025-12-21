@@ -23,23 +23,23 @@ interface ChartData {
 
 const TRAIT_INFO = {
   openness: {
-    color: '#FF9F14',
+    color: '#9EBC9E',
     description: 'Imagination, curiosity, and openness to new experiences'
   },
   conscientiousness: {
-    color: '#D1163E',
+    color: '#CFC6B8',
     description: 'Organization, responsibility, and self-discipline'
   },
   extraversion: {
-    color: '#E30F68',
+    color: '#FFCFD2',
     description: 'Sociability, assertiveness, and energetic behavior'
   },
   agreeableness: {
-    color: '#10B981',
+    color: '#FFAFC5',
     description: 'Compassion, cooperation, and trust in others'
   },
   neuroticism: {
-    color: '#180D51',
+    color: '#AA778A',
     description: 'Emotional stability and tendency toward negative emotions'
   },
 };
@@ -212,7 +212,7 @@ export const PersonalityVisualization = () => {
                   dataKey="score"
                   stroke="#D1163E"
                   fill="#D1163E"
-                  fillOpacity={0.5}
+                  fillOpacity={0.2}
                 />
                 <Tooltip
                   contentStyle={{

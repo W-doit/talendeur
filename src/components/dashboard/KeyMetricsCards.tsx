@@ -98,12 +98,12 @@ export const KeyMetricsCards = () => {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      <Card className="border-l-4 border-l-primary hover:shadow-lg transition-shadow">
+      <Card className="border-l-4 border-l-[#9EBC9E] hover:shadow-lg transition-shadow">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium text-gray-600">
             Highest Qualification
           </CardTitle>
-          <GraduationCap className="h-5 w-5 text-primary" />
+          <GraduationCap className="h-5 w-5 text-[#9EBC9E]" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-gray-900">
@@ -112,12 +112,12 @@ export const KeyMetricsCards = () => {
         </CardContent>
       </Card>
 
-      <Card className="border-l-4 border-l-[#E30F68] hover:shadow-lg transition-shadow">
+      <Card className="border-l-4 border-l-[#CFC6B8] hover:shadow-lg transition-shadow">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium text-gray-600">
             Total Experience
           </CardTitle>
-          <Briefcase className="h-5 w-5 text-[#E30F68]" />
+          <Briefcase className="h-5 w-5 text-[#CFC6B8]" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-gray-900">
@@ -129,12 +129,12 @@ export const KeyMetricsCards = () => {
         </CardContent>
       </Card>
 
-      <Card className="border-l-4 border-l-[#FF9F14] hover:shadow-lg transition-shadow">
+      <Card className="border-l-4 border-l-[#FFCFD2] hover:shadow-lg transition-shadow">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium text-gray-600">
             Avg. Years per Job
           </CardTitle>
-          <TrendingUp className="h-5 w-5 text-[#FF9F14]" />
+          <TrendingUp className="h-5 w-5 text-[#FFCFD2]" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-gray-900">
@@ -146,12 +146,12 @@ export const KeyMetricsCards = () => {
         </CardContent>
       </Card>
 
-      <Card className="border-l-4 border-l-[#180D51] hover:shadow-lg transition-shadow">
+      <Card className="border-l-4 border-l-[#553E4E] hover:shadow-lg transition-shadow">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium text-gray-600">
             Career Positions
           </CardTitle>
-          <Award className="h-5 w-5 text-[#180D51]" />
+          <Award className="h-5 w-5 text-[#553E4E]" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-gray-900">

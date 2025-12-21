@@ -10,6 +10,7 @@ export interface JobSeekerProfile {
   id: string;
   name: string;
   email: string;
+  headline?: string;
   profilePic: string;
   cv: string;
   interests: string[];
@@ -26,6 +27,7 @@ export interface OrganizationProfile {
   id: string;
   name: string;
   email: string;
+  headline?: string;
   logo: string;
   website: string;
   about: string;
@@ -99,6 +101,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           id: profileData.user_id,
           name: `${profileData.first_name} ${profileData.surname}`.trim(),
           email: profileData.email,
+          headline: profileData.headline || undefined,
           profilePic: profileData.profile_pic || '',
           cv: profileData.cv_url || '',
           interests: skillData?.interests || [],
@@ -122,6 +125,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           id: profileData.user_id,
           name: orgData?.company_name || '',
           email: profileData.email,
+          headline: profileData.headline || undefined,
           logo: orgData?.logo || '',
           website: orgData?.website || '',
           about: orgData?.about || '',
@@ -271,7 +275,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     console.log('Login function called for:', email);
     
     try {
-      console.log('Calling Supabase signInWithPassword...');
+      console.log('Login attempt:', { email, hasPassword: !!password });
+      console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
+      
+      // Clear any existing session first to prevent conflicts
+      await supabase.auth.signOut();
+      
+      console.log('Calling signInWithPassword...');
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -399,6 +409,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       await supabase.auth.signOut();
       setUser(null);
+      
+      // Clear all Supabase-related data from localStorage
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('supabase')) {
+          localStorage.removeItem(key);
+        }
+      });
+      
       toast({
         title: "Logged out",
         description: "You have been successfully logged out",
@@ -437,6 +455,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         bio: (profileData as any).bio,
         profile_pic: (profileData as any).profilePic || (profileData as any).logo,
       };
+
+      if ('headline' in profileData) {
+        profileUpdate.headline = profileData.headline;
+      }
 
       if ('name' in profileData && profileData.name) {
         const names = profileData.name.split(' ');
