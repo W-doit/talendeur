@@ -132,9 +132,9 @@ export const SkillsRadarChart = () => {
             <Radar
               name="Skills"
               dataKey="value"
-              stroke="#D1163E"
-              fill="#D1163E"
-              fillOpacity={0.6}
+              stroke="#AA778A"
+              fill="#AA778A"
+              fillOpacity={0.2}
             />
             <Tooltip
               contentStyle={{
@@ -158,7 +158,7 @@ export const SkillsRadarChart = () => {
                 key={skill.skill} 
                 className="text-center p-3 rounded-lg bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200"
               >
-                <div className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-[#E30F68]">
+                <div className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#9EBC9E] to-[#AA778A]">
                   #{index + 1}
                 </div>
                 <div className="text-sm font-semibold text-gray-700 mt-1">{skill.skill}</div>

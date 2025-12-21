@@ -20,6 +20,7 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({ onSaveCompl
   
   const [formData, setFormData] = useState<Partial<JobSeekerProfile>>({
     name: profile?.name || '',
+    headline: (profile as any)?.headline || '',
     bio: profile?.bio || '',
     profilePic: profile?.profilePic || '',
     cv: profile?.cv || ''
@@ -234,6 +235,19 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({ onSaveCompl
             </div>
             
             <div>
+              <label htmlFor="headline" className="block text-sm font-medium mb-1">Headline (One-sentence professional summary)</label>
+              <Input
+                id="headline"
+                name="headline"
+                value={(formData as any).headline || ''}
+                onChange={handleChange}
+                placeholder="e.g., Senior Software Engineer | AI Enthusiast | Building the Future"
+                maxLength={120}
+              />
+              <p className="text-xs text-gray-500 mt-1">Displayed prominently on your profile</p>
+            </div>
+            
+            <div>
               <label htmlFor="bio" className="block text-sm font-medium mb-1">Bio</label>
               <Textarea
                 id="bio"
@@ -263,7 +277,7 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({ onSaveCompl
       <div className="flex justify-end">
         <Button 
           type="submit" 
-          className="bg-talendeur-primary hover:bg-talendeur-primary-dark"
+          className="bg-gradient-to-r from-white via-talendeur-orange to-talendeur-primary hover:opacity-90"
           disabled={isSubmitting || uploadingImage || uploadingCV}
         >
           {uploadingImage ? 'Uploading image...' : uploadingCV ? 'Uploading CV...' : isSubmitting ? 'Saving...' : 'Save Profile'}

@@ -58,9 +58,6 @@ const Register: React.FC = () => {
         <Card className="w-full">
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl text-center">Create an account</CardTitle>
-            <CardDescription className="text-center">
-              Join Talendeur and connect with your perfect match
-            </CardDescription>
           </CardHeader>
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4">
@@ -70,17 +67,17 @@ const Register: React.FC = () => {
                 onValueChange={(value) => setUserType(value as UserType)}
               >
                 <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="jobseeker">Job Seeker</TabsTrigger>
-                  <TabsTrigger value="organization">Organization</TabsTrigger>
+                  <TabsTrigger value="jobseeker">Individual</TabsTrigger>
+                  <TabsTrigger value="organization">Organisation</TabsTrigger>
                 </TabsList>
                 <TabsContent value="jobseeker" className="pt-4">
                   <p className="text-sm text-muted-foreground mb-4">
-                    Create your job seeker profile to showcase your skills and connect with organizations
+                    Create your individual profile to showcase your skills and connect with organisations
                   </p>
                 </TabsContent>
                 <TabsContent value="organization" className="pt-4">
                   <p className="text-sm text-muted-foreground mb-4">
-                    Create your organization profile to find the perfect talent for your team
+                    Create your organisation profile to find the perfect talent for your team
                   </p>
                 </TabsContent>
               </Tabs>
@@ -125,7 +122,7 @@ const Register: React.FC = () => {
             <CardFooter className="flex flex-col space-y-4">
               <Button 
                 type="submit" 
-                className="w-full bg-talendeur-primary hover:bg-talendeur-primary-dark"
+                className="w-full bg-gradient-to-r from-white via-talendeur-orange to-talendeur-primary hover:opacity-90"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? 'Creating account...' : 'Create account'}

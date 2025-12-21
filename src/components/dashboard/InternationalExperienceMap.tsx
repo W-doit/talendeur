@@ -113,13 +113,13 @@ export const InternationalExperienceMap = () => {
   const getTypeColor = (type: string) => {
     switch (type.toLowerCase()) {
       case 'work':
-        return '#D1163E';
+        return '#AA778A';
       case 'study':
-        return '#FF9F14';
+        return '#9EBC9E';
       case 'volunteer':
-        return '#10B981';
+        return '#FFAFC5';
       default:
-        return '#180D51';
+        return '#553E4E';
     }
   };
 
@@ -257,18 +257,18 @@ export const InternationalExperienceMap = () => {
 
         {/* Summary Stats */}
         <div className="grid grid-cols-3 gap-4">
-          <div className="text-center p-4 rounded-lg bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20">
-            <Globe className="h-8 w-8 text-primary mx-auto mb-2" />
+          <div className="text-center p-4 rounded-lg bg-gradient-to-br from-[#9EBC9E]/10 to-[#9EBC9E]/5 border border-[#9EBC9E]/20">
+            <Globe className="h-8 w-8 text-[#9EBC9E] mx-auto mb-2" />
             <div className="text-3xl font-bold text-gray-900">{totalCountries}</div>
             <div className="text-xs text-gray-600 font-medium">Countries</div>
           </div>
-          <div className="text-center p-4 rounded-lg bg-gradient-to-br from-[#FF9F14]/10 to-[#FF9F14]/5 border border-[#FF9F14]/20">
-            <Calendar className="h-8 w-8 text-[#FF9F14] mx-auto mb-2" />
+          <div className="text-center p-4 rounded-lg bg-gradient-to-br from-[#CFC6B8]/10 to-[#CFC6B8]/5 border border-[#CFC6B8]/20">
+            <Calendar className="h-8 w-8 text-[#CFC6B8] mx-auto mb-2" />
             <div className="text-3xl font-bold text-gray-900">{totalMonths}</div>
             <div className="text-xs text-gray-600 font-medium">Months Abroad</div>
           </div>
-          <div className="text-center p-4 rounded-lg bg-gradient-to-br from-[#10B981]/10 to-[#10B981]/5 border border-[#10B981]/20">
-            <MapPin className="h-8 w-8 text-[#10B981] mx-auto mb-2" />
+          <div className="text-center p-4 rounded-lg bg-gradient-to-br from-[#FFCFD2]/10 to-[#FFCFD2]/5 border border-[#FFCFD2]/20">
+            <MapPin className="h-8 w-8 text-[#FFCFD2] mx-auto mb-2" />
             <div className="text-3xl font-bold text-gray-900">{experiences.length}</div>
             <div className="text-xs text-gray-600 font-medium">Experiences</div>
           </div>

@@ -109,7 +109,7 @@ export const WorkExperienceTimeline = () => {
       <CardContent>
         <div className="relative">
           {/* Timeline line */}
-          <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary via-[#E30F68] to-[#FF9F14]"></div>
+          <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-[#9EBC9E] via-[#FFAFC5] to-[#AA778A]"></div>
 
           {/* Timeline items */}
           <div className="space-y-8">
@@ -118,7 +118,7 @@ export const WorkExperienceTimeline = () => {
                 {/* Timeline dot */}
                 <div className={`absolute left-3 w-6 h-6 rounded-full border-4 border-white shadow-md ${
                   exp.still_work_here 
-                    ? 'bg-gradient-to-br from-primary to-[#E30F68] animate-pulse' 
+                    ? 'bg-gradient-to-br from-[#9EBC9E] to-[#FFAFC5] animate-pulse' 
                     : 'bg-gradient-to-br from-gray-400 to-gray-500'
                 }`}>
                   {exp.still_work_here && (
@@ -129,7 +129,7 @@ export const WorkExperienceTimeline = () => {
                 {/* Content card */}
                 <div className={`rounded-lg border p-4 transition-all hover:shadow-lg ${
                   exp.still_work_here 
-                    ? 'bg-gradient-to-br from-primary/5 to-[#E30F68]/5 border-primary/20' 
+                    ? 'bg-gradient-to-br from-[#9EBC9E]/5 to-[#FFAFC5]/5 border-[#9EBC9E]/20' 
                     : 'bg-white border-gray-200'
                 }`}>
                   <div className="flex items-start justify-between gap-4">
@@ -137,7 +137,7 @@ export const WorkExperienceTimeline = () => {
                       <div className="flex items-center gap-2 mb-1">
                         <h3 className="font-bold text-lg text-gray-900">{exp.job_title}</h3>
                         {exp.still_work_here && (
-                          <span className="px-2 py-1 text-xs font-semibold text-white bg-gradient-to-r from-primary to-[#E30F68] rounded-full">
+                          <span className="px-2 py-1 text-xs font-semibold text-white bg-gradient-to-r from-[#9EBC9E] to-[#FFAFC5] rounded-full">
                             Current
                           </span>
                         )}
@@ -156,7 +156,7 @@ export const WorkExperienceTimeline = () => {
                           </span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <span className="font-medium text-primary">
+                          <span className="font-medium text-[#AA778A]">
                             {calculateDuration(exp.start_date, exp.end_date)}
                           </span>
                         </div>

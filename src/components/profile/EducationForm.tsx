@@ -32,28 +32,48 @@ export const EducationForm = () => {
   const [educations, setEducations] = useState<Education[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [hasFetched, setHasFetched] = useState(false); // Track if we've already fetched
 
   const fetchEducation = useCallback(async () => {
+    // Don't refetch if we already tried
+    if (hasFetched) {
+      setLoading(false);
+      return;
+    }
+    
     if (!user) {
       setLoading(false);
       return;
     }
 
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      
+      if (!sessionData.session) {
+        console.error('EducationForm: No active session!');
+        setLoading(false);
+        return;
+      }
+      
+      
       const { data, error } = await supabase
         .from('education_history')
         .select('*')
         .eq('user_id', user.id)
         .order('start_date', { ascending: false });
-
+      
       if (error) throw error;
+      
       setEducations(data || []);
+      setHasFetched(true); // Mark as fetched
     } catch (error) {
       console.error('Error fetching education:', error);
+      setEducations([]);
+      setHasFetched(true); // Mark as attempted even on error
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, hasFetched]);
 
   useEffect(() => {
     fetchEducation();
@@ -262,7 +282,7 @@ export const EducationForm = () => {
           <Button
             onClick={saveEducations}
             disabled={saving}
-            className="bg-talendeur-primary hover:bg-talendeur-primary-dark"
+            className="bg-gradient-to-r from-white via-talendeur-orange to-talendeur-primary hover:opacity-90 text-white"
           >
             {saving ? 'Saving...' : 'Save Education'}
           </Button>

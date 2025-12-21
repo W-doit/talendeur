@@ -26,7 +26,7 @@ export const CertificationsChart = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const COLORS = ['#D1163E', '#E30F68', '#FF9F14', '#180D51', '#FF6B9D'];
+    const COLORS = ['#9EBC9E', '#CFC6B8', '#FFCFD2', '#FFAFC5', '#AA778A', '#553E4E'];
     
     const fetchCertifications = async () => {
       if (!user) return;
@@ -144,7 +144,7 @@ export const CertificationsChart = () => {
           </h4>
           <div className="space-y-3">
             {certifications.slice(0, 5).map((cert) => {
-              const colors = ['#D1163E', '#E30F68', '#FF9F14', '#180D51', '#FF6B9D'];
+              const colors = ['#9EBC9E', '#CFC6B8', '#FFCFD2', '#FFAFC5', '#AA778A', '#553E4E'];
               const colorIndex = certifications.indexOf(cert) % colors.length;
               return (
                 <div 
