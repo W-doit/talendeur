@@ -14,22 +14,27 @@ interface WorkExperience {
 }
 
 export const WorkExperienceTimeline = () => {
-  const { user } = useAuth();
+  const { user, accessToken } = useAuth();
   const [experiences, setExperiences] = useState<WorkExperience[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchExperiences = async () => {
-      if (!user) return;
+      if (!user || !accessToken) return;
 
       try {
-        const { data, error } = await supabase
-          .from('work_experience')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('start_date', { ascending: false });
-
-        if (error) throw error;
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+        const response = await fetch(
+          `${supabaseUrl}/rest/v1/work_experience?user_id=eq.${user.id}&select=*&order=start_date.desc`,
+          {
+            headers: {
+              'apikey': supabaseKey,
+              'Authorization': `Bearer ${accessToken}`,
+            }
+          }
+        );
+        const data = await response.json();
         setExperiences(data || []);
       } catch (error) {
         console.error('Error fetching work experience:', error);
@@ -39,7 +44,7 @@ export const WorkExperienceTimeline = () => {
     };
 
     fetchExperiences();
-  }, [user]);
+  }, [user, accessToken]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);

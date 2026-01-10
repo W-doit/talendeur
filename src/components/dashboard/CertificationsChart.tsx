@@ -20,7 +20,7 @@ interface CategoryCount {
 }
 
 export const CertificationsChart = () => {
-  const { user } = useAuth();
+  const { user, accessToken } = useAuth();
   const [certifications, setCertifications] = useState<Certification[]>([]);
   const [categoryData, setCategoryData] = useState<CategoryCount[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,16 +29,21 @@ export const CertificationsChart = () => {
     const COLORS = ['#9EBC9E', '#CFC6B8', '#FFCFD2', '#FFAFC5', '#AA778A', '#553E4E'];
     
     const fetchCertifications = async () => {
-      if (!user) return;
+      if (!user || !accessToken) return;
 
       try {
-        const { data, error } = await supabase
-          .from('certifications')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('date_attained', { ascending: false });
-
-        if (error) throw error;
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+        const response = await fetch(
+          `${supabaseUrl}/rest/v1/certifications?user_id=eq.${user.id}&select=*&order=date_attained.desc`,
+          {
+            headers: {
+              'apikey': supabaseKey,
+              'Authorization': `Bearer ${accessToken}`,
+            }
+          }
+        );
+        const data = await response.json();
 
         if (data) {
           setCertifications(data);
@@ -68,7 +73,7 @@ export const CertificationsChart = () => {
     };
 
     fetchCertifications();
-  }, [user]);
+  }, [user, accessToken]);
 
   if (loading) {
     return (

@@ -45,42 +45,50 @@ const TRAIT_INFO = {
 };
 
 export const PersonalityVisualization = () => {
-  const { user } = useAuth();
+  const { user, accessToken } = useAuth();
   const [traits, setTraits] = useState<PersonalityTraits | null>(null);
   const [facets, setFacets] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchPersonalityData = useCallback(async () => {
-    if (!user) {
+    if (!user || !accessToken) {
       setLoading(false);
       return;
     }
 
     try {
-      // Fetch personality traits
-      const { data: traitsData, error: traitsError } = await supabase
-        .from('personality_traits')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (traitsError) {
-        console.error('Error fetching traits:', traitsError);
-      }
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      const authHeader = `Bearer ${accessToken}`;
+      
+      // Fetch personality traits via REST API
+      const traitsResponse = await fetch(
+        `${supabaseUrl}/rest/v1/personality_traits?user_id=eq.${user.id}&select=*`,
+        {
+          headers: {
+            'apikey': supabaseKey,
+            'Authorization': authHeader,
+          }
+        }
+      );
+      const traitsDataArray = await traitsResponse.json();
+      const traitsData = traitsDataArray[0];
 
       if (traitsData) {
         setTraits(traitsData);
 
         // Fetch facets using the personality_trait_id
-        const { data: facetsData, error: facetsError } = await supabase
-          .from('personality_facets')
-          .select('*')
-          .eq('personality_trait_id', traitsData.id)
-          .maybeSingle();
-
-        if (facetsError) {
-          console.error('Error fetching facets:', facetsError);
-        }
+        const facetsResponse = await fetch(
+          `${supabaseUrl}/rest/v1/personality_facets?personality_trait_id=eq.${traitsData.id}&select=*`,
+          {
+            headers: {
+              'apikey': supabaseKey,
+              'Authorization': authHeader,
+            }
+          }
+        );
+        const facetsDataArray = await facetsResponse.json();
+        const facetsData = facetsDataArray[0];
 
         if (facetsData) {
           setFacets(facetsData);
@@ -91,7 +99,7 @@ export const PersonalityVisualization = () => {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, accessToken]);
 
   useEffect(() => {
     fetchPersonalityData();

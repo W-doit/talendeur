@@ -28,25 +28,32 @@ interface ChartDataPoint {
 }
 
 export const SkillsRadarChart = () => {
-  const { user } = useAuth();
+  const { user, accessToken } = useAuth();
   const [skillsData, setSkillsData] = useState<ChartDataPoint[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchSkills = async () => {
-      if (!user) return;
+      if (!user || !accessToken) return;
 
       try {
-        const { data, error } = await supabase
-          .from('skills_dimensions')
-          .select('*')
-          .eq('user_id', user.id)
-          .single();
-
-        // Ignore "no rows" error - just means no data yet
-        if (error && error.code !== 'PGRST116') {
-          console.error('Error fetching skills dimensions:', error);
-        }
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+        const authHeader = `Bearer ${accessToken}`;
+        
+        // Fetch skills dimensions via REST API
+        const response = await fetch(
+          `${supabaseUrl}/rest/v1/skills_dimensions?user_id=eq.${user.id}&select=*`,
+          {
+            headers: {
+              'apikey': supabaseKey,
+              'Authorization': authHeader,
+            }
+          }
+        );
+        
+        const dataArray = await response.json();
+        const data = dataArray[0];
 
         if (data) {
           // Transform data for radar chart
@@ -78,7 +85,7 @@ export const SkillsRadarChart = () => {
     };
 
     fetchSkills();
-  }, [user]);
+  }, [user, accessToken]);
 
   if (loading) {
     return (

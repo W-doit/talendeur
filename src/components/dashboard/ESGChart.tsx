@@ -19,26 +19,29 @@ interface ChartData {
 }
 
 export const ESGChart = () => {
-  const { user } = useAuth();
+  const { user, accessToken } = useAuth();
   const [esgData, setEsgData] = useState<ChartData[]>([]);
   const [totalScore, setTotalScore] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchESG = async () => {
-      if (!user) return;
+      if (!user || !accessToken) return;
 
       try {
-        const { data, error } = await supabase
-          .from('esg_scores')
-          .select('*')
-          .eq('user_id', user.id)
-          .single();
-
-        // Ignore "no rows" error - just means no data yet
-        if (error && error.code !== 'PGRST116') {
-          console.error('Error fetching ESG scores:', error);
-        }
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+        const response = await fetch(
+          `${supabaseUrl}/rest/v1/esg_scores?user_id=eq.${user.id}&select=*`,
+          {
+            headers: {
+              'apikey': supabaseKey,
+              'Authorization': `Bearer ${accessToken}`,
+            }
+          }
+        );
+        const dataArray = await response.json();
+        const data = dataArray[0];
 
         if (data) {
           const total = data.environment_score + data.social_score + data.governance_score;
@@ -75,7 +78,7 @@ export const ESGChart = () => {
     };
 
     fetchESG();
-  }, [user]);
+  }, [user, accessToken]);
 
   if (loading) {
     return (
