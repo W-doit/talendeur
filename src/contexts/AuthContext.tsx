@@ -44,58 +44,113 @@ export type AuthUser = {
 interface AuthContextType {
   user: AuthUser | null;
   loading: boolean;
+  accessToken: string | null;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, userType: UserType) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (profileData: Partial<JobSeekerProfile> | Partial<OrganizationProfile>) => Promise<void>;
   createProfile: (userType: UserType) => Promise<boolean>;
+  resetPassword: (email: string) => Promise<void>;
+  updatePassword: (newPassword: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
+  accessToken: null,
   login: async () => {},
   register: async () => {},
   logout: async () => {},
   updateProfile: async () => {},
   createProfile: async () => false,
+  resetPassword: async () => {},
+  updatePassword: async () => {},
 });
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Load user profile from Supabase
-  const loadUserProfile = async (supabaseUser: User) => {
+  const loadUserProfile = async (supabaseUser: User, accessToken?: string) => {
+    console.log('loadUserProfile called for user:', supabaseUser.id);
+    console.log('User email:', supabaseUser.email);
+    console.log('Has access token:', !!accessToken);
     try {
-      // Get profile from database
-      const { data: profileData, error: profileError } = await supabase
-        .from('profile')
-        .select('*')
-        .eq('user_id', supabaseUser.id)
-        .maybeSingle(); // Use maybeSingle instead of single to avoid error if no rows
-
-      if (profileError) {
-        console.error('Error loading profile:', profileError);
+      // Get profile from database using direct API
+      console.log('Fetching profile from database via REST API...');
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      
+      // Use the user's access token if available (for RLS policies)
+      const authHeader = accessToken ? `Bearer ${accessToken}` : `Bearer ${supabaseKey}`;
+      console.log('Using auth header with', accessToken ? 'user access token' : 'anon key');
+      
+      // Try fetching by email first (more reliable)
+      console.log('Trying to fetch profile by email:', supabaseUser.email);
+      let profileResponse = await fetch(
+        `${supabaseUrl}/rest/v1/profile?email=eq.${supabaseUser.email}&select=*`,
+        {
+          headers: {
+            'apikey': supabaseKey,
+            'Authorization': authHeader,
+          }
+        }
+      );
+      
+      let profileDataArray = await profileResponse.json();
+      console.log('Profile fetch by email result:', { status: profileResponse.status, count: profileDataArray?.length, data: profileDataArray });
+      
+      // If not found by email, try by user_id
+      if (!profileDataArray || profileDataArray.length === 0) {
+        console.log('Not found by email, trying by user_id:', supabaseUser.id);
+        profileResponse = await fetch(
+          `${supabaseUrl}/rest/v1/profile?user_id=eq.${supabaseUser.id}&select=*`,
+          {
+            headers: {
+              'apikey': supabaseKey,
+              'Authorization': authHeader,
+            }
+          }
+        );
+        
+        profileDataArray = await profileResponse.json();
+        console.log('Profile fetch by user_id result:', { status: profileResponse.status, count: profileDataArray?.length });
+      }
+      
+      if (!profileResponse.ok) {
+        console.error('Error loading profile:', profileDataArray);
         return null;
       }
 
+      const profileData = profileDataArray[0];
       if (!profileData) {
-        console.log('No profile found for user:', supabaseUser.id);
+        console.log('No profile found for user:', supabaseUser.id, 'or email:', supabaseUser.email);
         return null;
       }
 
+      console.log('Profile found! user_id in profile:', profileData.user_id);
       const userType = profileData.user_type as UserType;
       let fullProfile: JobSeekerProfile | OrganizationProfile | null = null;
 
       if (userType === 'jobseeker') {
-        // Load jobseeker skill ratings
-        const { data: skillData } = await supabase
-          .from('jobseeker_skill_rating')
-          .select('*')
-          .eq('user_id', supabaseUser.id)
-          .maybeSingle();
+        console.log('Loading jobseeker skill ratings...');
+        // Load jobseeker skill ratings via REST API - use the user_id from the profile
+        const skillResponse = await fetch(
+          `${supabaseUrl}/rest/v1/jobseeker_skill_rating?user_id=eq.${profileData.user_id}&select=*`,
+          {
+            headers: {
+              'apikey': supabaseKey,
+              'Authorization': authHeader,
+            }
+          }
+        );
+        
+        const skillDataArray = await skillResponse.json();
+        const skillData = skillDataArray[0];
+        console.log('Skill data loaded:', !!skillData);
 
         fullProfile = {
           id: profileData.user_id,
@@ -114,12 +169,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           bio: profileData.bio || '',
         };
       } else {
-        // Load organization details
-        const { data: orgData } = await supabase
-          .from('organization_details')
-          .select('*')
-          .eq('organization_id', supabaseUser.id)
-          .maybeSingle();
+        console.log('Loading organization details...');
+        // Load organization details via REST API - use the user_id from the profile
+        const orgResponse = await fetch(
+          `${supabaseUrl}/rest/v1/organization_details?organization_id=eq.${profileData.user_id}&select=*`,
+          {
+            headers: {
+              'apikey': supabaseKey,
+              'Authorization': authHeader,
+            }
+          }
+        );
+        
+        const orgDataArray = await orgResponse.json();
+        const orgData = orgDataArray[0];
+        console.log('Organization data loaded:', !!orgData);
 
         fullProfile = {
           id: profileData.user_id,
@@ -133,6 +197,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         };
       }
 
+      console.log('Returning full user data');
       return {
         id: supabaseUser.id,
         email: supabaseUser.email!,
@@ -149,7 +214,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
-        loadUserProfile(session.user).then((userData) => {
+        // Store access token
+        if (session.access_token) {
+          setAccessToken(session.access_token);
+        }
+        
+        loadUserProfile(session.user, session.access_token).then((userData) => {
           if (!userData || !userData.profile) {
             // User authenticated but no profile
             setUser({
@@ -170,7 +240,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
-        const userData = await loadUserProfile(session.user);
+        // Store access token
+        if (session.access_token) {
+          setAccessToken(session.access_token);
+        }
+        
+        const userData = await loadUserProfile(session.user, session.access_token);
         if (!userData || !userData.profile) {
           setUser({
             id: session.user.id,
@@ -273,31 +348,35 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Login
   const login = async (email: string, password: string) => {
     console.log('Login function called for:', email);
+    setLoading(true);
     
     try {
       console.log('Login attempt:', { email, hasPassword: !!password });
       console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
       
-      // Clear any existing session first to prevent conflicts
-      await supabase.auth.signOut();
-      
-      console.log('Calling signInWithPassword...');
-      
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      // Use direct API call to avoid hanging
+      console.log('Using direct API call for login...');
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const response = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ email, password }),
       });
 
-      console.log('Supabase response received:', { hasData: !!data, hasError: !!error });
+      const data = await response.json();
+      console.log('Direct API login response:', { status: response.status, hasUser: !!data.user });
 
-      if (error) {
-        console.error('Supabase auth error:', error);
+      if (!response.ok) {
+        console.error('Login error:', data);
         toast({
           title: "Login failed",
-          description: error.message || "Invalid email or password",
+          description: data.error_description || data.msg || "Invalid email or password",
           variant: "destructive",
         });
-        throw error;
+        throw new Error(data.error_description || 'Login failed');
       }
 
       if (!data.user) {
@@ -311,6 +390,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
 
       console.log('Login successful, user ID:', data.user.id);
+      
+      // Store tokens for later use
+      const userAccessToken = data.access_token;
+      const refreshToken = data.refresh_token;
+      
+      // Store access token in state
+      setAccessToken(userAccessToken);
+      
+      // Set the session in Supabase client for subsequent requests
+      if (userAccessToken && refreshToken) {
+        console.log('Setting session with tokens...');
+        // Don't await this - just fire and forget to avoid hanging
+        supabase.auth.setSession({
+          access_token: userAccessToken,
+          refresh_token: refreshToken,
+        }).catch(err => console.warn('setSession warning:', err));
+      }
 
       // Set basic user data immediately
       const basicUser = {
@@ -323,8 +419,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.log('Setting user state with basic data');
       setUser(basicUser);
       
-      // Try to load profile in background (non-blocking)
-      loadUserProfile(data.user).then((userData) => {
+      // Try to load profile in background (non-blocking) - pass the access token
+      loadUserProfile(data.user, userAccessToken).then((userData) => {
         if (userData && userData.profile) {
           console.log('Profile loaded successfully');
           setUser(userData);
@@ -345,6 +441,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch (error: any) {
       console.error('Login error caught:', error);
       throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -407,8 +505,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const logout = async () => {
     setLoading(true);
     try {
-      await supabase.auth.signOut();
+      // Clear state immediately
       setUser(null);
+      setAccessToken(null);
       
       // Clear all Supabase-related data from localStorage
       Object.keys(localStorage).forEach(key => {
@@ -416,6 +515,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           localStorage.removeItem(key);
         }
       });
+      
+      // Sign out from Supabase (don't wait if it hangs)
+      supabase.auth.signOut().catch(err => console.warn('SignOut warning:', err));
       
       toast({
         title: "Logged out",
@@ -529,10 +631,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
 
       console.log('Reloading user profile...');
-      // Reload user profile
-      const { data: { user: supabaseUser } } = await supabase.auth.getUser();
-      if (supabaseUser) {
-        const userData = await loadUserProfile(supabaseUser);
+      // Reload user profile with access token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user && session?.access_token) {
+        const userData = await loadUserProfile(session.user, session.access_token);
         setUser(userData);
         console.log('User profile reloaded successfully');
       }
@@ -557,16 +659,71 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  // Request password reset email
+  const resetPassword = async (email: string) => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+
+      if (error) {
+        toast({
+          title: "Password reset failed",
+          description: error.message,
+          variant: "destructive",
+        });
+        throw error;
+      }
+
+      toast({
+        title: "Check your email",
+        description: "Password reset instructions have been sent to your email",
+      });
+    } catch (error: any) {
+      console.error('Password reset error:', error);
+      throw error;
+    }
+  };
+
+  // Update user password
+  const updatePassword = async (newPassword: string) => {
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (error) {
+        toast({
+          title: "Password update failed",
+          description: error.message,
+          variant: "destructive",
+        });
+        throw error;
+      }
+
+      toast({
+        title: "Password updated",
+        description: "Your password has been successfully updated",
+      });
+    } catch (error: any) {
+      console.error('Password update error:', error);
+      throw error;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
         user,
         loading,
+        accessToken,
         login,
         register,
         logout,
         updateProfile,
         createProfile,
+        resetPassword,
+        updatePassword,
       }}
     >
       {children}

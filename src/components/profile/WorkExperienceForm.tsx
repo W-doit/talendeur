@@ -16,16 +16,42 @@ interface WorkExperience {
   still_work_here: boolean;
 }
 
-export const WorkExperienceForm = () => {
+interface WorkExperienceFormProps {
+  importedData?: any[];
+}
+
+export const WorkExperienceForm = ({ importedData }: WorkExperienceFormProps = {}) => {
   const { user } = useAuth();
   const [experiences, setExperiences] = useState<WorkExperience[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [hasFetched, setHasFetched] = useState(false); // Track if we've already fetched
+  const [hasImportedData, setHasImportedData] = useState(false); // Track if imported data was loaded
+
+  // Pre-fill with imported data immediately on mount
+  useEffect(() => {
+    console.log('WorkExperienceForm useEffect - importedData:', importedData);
+    console.log('WorkExperienceForm useEffect - hasImportedData:', hasImportedData);
+    if (importedData && importedData.length > 0 && !hasImportedData) {
+      console.log('Pre-filling work experience with imported data:', importedData);
+      const mappedData = importedData.map(exp => ({
+        job_title: exp.job_title || '',
+        company: exp.company || '',
+        start_date: exp.start_date || '',
+        end_date: exp.end_date || '',
+        still_work_here: exp.still_work_here || false,
+      }));
+      console.log('Mapped work experience data:', mappedData);
+      setExperiences(mappedData);
+      setHasImportedData(true);
+      setLoading(false);
+    }
+  }, [importedData, hasImportedData]);
 
   const fetchExperiences = useCallback(async () => {
-    // Don't refetch if we already tried
-    if (hasFetched) {
+    // Don't fetch if we have imported data or already tried
+    if (hasFetched || (importedData && importedData.length > 0)) {
+      console.log('Skipping fetch - hasFetched:', hasFetched, 'importedData exists:', !!(importedData && importedData.length > 0));
       setLoading(false);
       return;
     }
@@ -64,7 +90,7 @@ export const WorkExperienceForm = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, hasFetched]);
+  }, [user, hasFetched, importedData]);
 
   useEffect(() => {
     fetchExperiences();
@@ -168,6 +194,9 @@ export const WorkExperienceForm = () => {
   if (!user) {
     return <div className="text-center py-4 text-muted-foreground">Please log in to manage your work experience.</div>;
   }
+
+  console.log('WorkExperienceForm RENDER - experiences:', experiences);
+  console.log('WorkExperienceForm RENDER - experiences.length:', experiences.length);
 
   return (
     <Card>

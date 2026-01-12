@@ -29,9 +29,14 @@ const Profile: React.FC = () => {
   const [selectedUserType, setSelectedUserType] = useState<UserType>('jobseeker');
   const [isCreatingProfile, setIsCreatingProfile] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [importedData, setImportedData] = useState<any>(null);
   
-  // Check if profile has been filled out (has a name)
-  const hasCompleteProfile = user?.profile?.name;
+  // Check if profile has been filled out (has a name or other basic info)
+  const hasCompleteProfile = user?.profile && (
+    user.profile.name || 
+    user.profile.email ||
+    (user.profile as any).bio
+  );
   
   // Exit edit mode when navigating to profile page
   React.useEffect(() => {
@@ -313,17 +318,28 @@ const Profile: React.FC = () => {
                   <TabsContent value="basic" className="mt-6">
                     <Card>
                       <CardContent className="pt-6">
-                        <JobSeekerProfileForm onSaveComplete={() => setIsEditMode(false)} />
+                        <JobSeekerProfileForm 
+                          onSaveComplete={() => {
+                            setIsEditMode(false);
+                            setImportedData(null);
+                          }}
+                          importedData={importedData}
+                          onDataImport={setImportedData}
+                        />
                       </CardContent>
                     </Card>
                   </TabsContent>
 
                   <TabsContent value="work" className="mt-6">
-                    <WorkExperienceForm />
+                    <WorkExperienceForm 
+                      importedData={importedData?.parsedData?.workExperience}
+                    />
                   </TabsContent>
 
                   <TabsContent value="education" className="mt-6">
-                    <EducationForm />
+                    <EducationForm 
+                      importedData={importedData?.parsedData?.education}
+                    />
                   </TabsContent>
 
                   <TabsContent value="certifications" className="mt-6">
