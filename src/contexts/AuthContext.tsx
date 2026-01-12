@@ -214,7 +214,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
-        loadUserProfile(session.user).then((userData) => {
+        // Store access token
+        if (session.access_token) {
+          setAccessToken(session.access_token);
+        }
+        
+        loadUserProfile(session.user, session.access_token).then((userData) => {
           if (!userData || !userData.profile) {
             // User authenticated but no profile
             setUser({
@@ -235,7 +240,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
-        const userData = await loadUserProfile(session.user);
+        // Store access token
+        if (session.access_token) {
+          setAccessToken(session.access_token);
+        }
+        
+        const userData = await loadUserProfile(session.user, session.access_token);
         if (!userData || !userData.profile) {
           setUser({
             id: session.user.id,
@@ -621,10 +631,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
 
       console.log('Reloading user profile...');
-      // Reload user profile
-      const { data: { user: supabaseUser } } = await supabase.auth.getUser();
-      if (supabaseUser) {
-        const userData = await loadUserProfile(supabaseUser);
+      // Reload user profile with access token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user && session?.access_token) {
+        const userData = await loadUserProfile(session.user, session.access_token);
         setUser(userData);
         console.log('User profile reloaded successfully');
       }
