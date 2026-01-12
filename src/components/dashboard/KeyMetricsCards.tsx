@@ -12,26 +12,42 @@ interface ProfileMetrics {
 }
 
 export const KeyMetricsCards = () => {
-  const { user } = useAuth();
+  const { user, accessToken } = useAuth();
   const [metrics, setMetrics] = useState<ProfileMetrics | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchMetrics = async () => {
-      if (!user) return;
+      if (!user || !accessToken) return;
 
       try {
-        // Fetch work experience
-        const { data: workExp } = await supabase
-          .from('work_experience')
-          .select('*')
-          .eq('user_id', user.id);
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+        const authHeader = `Bearer ${accessToken}`;
+        
+        // Fetch work experience via REST API
+        const workExpResponse = await fetch(
+          `${supabaseUrl}/rest/v1/work_experience?user_id=eq.${user.id}&select=*`,
+          {
+            headers: {
+              'apikey': supabaseKey,
+              'Authorization': authHeader,
+            }
+          }
+        );
+        const workExp = await workExpResponse.json();
 
-        // Fetch education
-        const { data: education } = await supabase
-          .from('education')
-          .select('degree')
-          .eq('user_id', user.id);
+        // Fetch education via REST API
+        const educationResponse = await fetch(
+          `${supabaseUrl}/rest/v1/education?user_id=eq.${user.id}&select=degree`,
+          {
+            headers: {
+              'apikey': supabaseKey,
+              'Authorization': authHeader,
+            }
+          }
+        );
+        const education = await educationResponse.json();
 
         // Calculate highest qualification
         const degreeHierarchy = { 'PhD': 4, 'Master': 3, 'Bachelor': 2, 'Certificate': 1 };
@@ -75,7 +91,7 @@ export const KeyMetricsCards = () => {
     };
 
     fetchMetrics();
-  }, [user]);
+  }, [user, accessToken]);
 
   if (loading) {
     return (

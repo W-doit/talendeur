@@ -27,16 +27,43 @@ const QUALIFICATION_TYPES = [
   'High School'
 ];
 
-export const EducationForm = () => {
+interface EducationFormProps {
+  importedData?: any[];
+}
+
+export const EducationForm = ({ importedData }: EducationFormProps = {}) => {
   const { user } = useAuth();
   const [educations, setEducations] = useState<Education[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [hasFetched, setHasFetched] = useState(false); // Track if we've already fetched
+  const [hasImportedData, setHasImportedData] = useState(false); // Track if imported data was loaded
+
+  // Pre-fill with imported data immediately on mount
+  useEffect(() => {
+    console.log('EducationForm useEffect - importedData:', importedData);
+    console.log('EducationForm useEffect - hasImportedData:', hasImportedData);
+    if (importedData && importedData.length > 0 && !hasImportedData) {
+      console.log('Pre-filling education with imported data:', importedData);
+      const mappedData = importedData.map(edu => ({
+        institution: edu.institution || '',
+        qualification_type: edu.qualification_type || '',
+        subject: edu.subject || '',
+        start_date: edu.start_date || '',
+        end_date: edu.end_date || '',
+        still_studying: edu.still_studying || false,
+      }));
+      console.log('Mapped education data:', mappedData);
+      setEducations(mappedData);
+      setHasImportedData(true);
+      setLoading(false);
+    }
+  }, [importedData, hasImportedData]);
 
   const fetchEducation = useCallback(async () => {
-    // Don't refetch if we already tried
-    if (hasFetched) {
+    // Don't fetch if we have imported data or already tried
+    if (hasFetched || (importedData && importedData.length > 0)) {
+      console.log('Skipping fetch - hasFetched:', hasFetched, 'importedData exists:', !!(importedData && importedData.length > 0));
       setLoading(false);
       return;
     }
@@ -73,7 +100,7 @@ export const EducationForm = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, hasFetched]);
+  }, [user, hasFetched, importedData]);
 
   useEffect(() => {
     fetchEducation();
@@ -174,6 +201,9 @@ export const EducationForm = () => {
   if (!user) {
     return <div className="text-center py-4 text-muted-foreground">Please log in to manage your education.</div>;
   }
+
+  console.log('EducationForm RENDER - educations:', educations);
+  console.log('EducationForm RENDER - educations.length:', educations.length);
 
   return (
     <Card>

@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Upload, X, Loader2 } from 'lucide-react';
 import { validateImageFile, compressImage } from '@/lib/supabase-storage';
+import ImageCropDialog from '@/components/ui/image-crop-dialog';
 
 interface ImageUploadProps {
   currentImageUrl?: string;
@@ -25,6 +26,9 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
 }) => {
   const [preview, setPreview] = useState<string | null>(currentImageUrl || null);
   const [error, setError] = useState<string | null>(null);
+  const [showCropDialog, setShowCropDialog] = useState(false);
+  const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
+  const [originalFileName, setOriginalFileName] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const sizeClasses = {
@@ -45,12 +49,29 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
     }
 
     setError(null);
+    setOriginalFileName(file.name);
 
+    // Create preview URL for cropping
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setSelectedImageUrl(reader.result as string);
+      setShowCropDialog(true);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCropComplete = async (croppedBlob: Blob) => {
     try {
-      // Compress the image
-      const compressedBlob = await compressImage(file);
-      const compressedFile = new File([compressedBlob], file.name, {
-        type: file.type,
+      // Compress the cropped image
+      const compressedBlob = await compressImage(
+        new File([croppedBlob], originalFileName, {
+          type: 'image/jpeg',
+          lastModified: Date.now()
+        })
+      );
+
+      const compressedFile = new File([compressedBlob], originalFileName, {
+        type: 'image/jpeg',
         lastModified: Date.now()
       });
 
@@ -63,9 +84,22 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
 
       // Call the parent's handler
       onImageChange(compressedFile);
+      
+      // Close the dialog
+      setShowCropDialog(false);
+      setSelectedImageUrl(null);
     } catch (err) {
       setError('Failed to process image. Please try again.');
       console.error('Image processing error:', err);
+      setShowCropDialog(false);
+    }
+  };
+
+  const handleCropCancel = () => {
+    setShowCropDialog(false);
+    setSelectedImageUrl(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -146,6 +180,18 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
           JPG, PNG, GIF or WebP. Max 5MB.
         </p>
       </div>
+
+      {/* Image Crop Dialog */}
+      {selectedImageUrl && (
+        <ImageCropDialog
+          open={showCropDialog}
+          imageUrl={selectedImageUrl}
+          onCropComplete={handleCropComplete}
+          onCancel={handleCropCancel}
+          aspectRatio={1}
+          circularCrop={true}
+        />
+      )}
     </div>
   );
 };
