@@ -8,9 +8,11 @@ import MainLayout from '@/components/layout/MainLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { KeyMetricsCards } from '@/components/dashboard/KeyMetricsCards';
 import { SkillsRadarChart } from '@/components/dashboard/SkillsRadarChart';
-import { WorkExperienceTimeline } from '@/components/dashboard/WorkExperienceTimeline';
+import { Timeline } from '@/components/dashboard/Timeline';
 import { CertificationsChart } from '@/components/dashboard/CertificationsChart';
 import { ESGChart } from '@/components/dashboard/ESGChart';
 import { InternationalExperienceMap } from '@/components/dashboard/InternationalExperienceMap';
@@ -20,16 +22,69 @@ import { WorkExperienceForm } from '@/components/profile/WorkExperienceForm';
 import { EducationForm } from '@/components/profile/EducationForm';
 import { CertificationsForm } from '@/components/profile/CertificationsForm';
 import { ReferencesForm } from '@/components/profile/ReferencesForm';
+import { ReferencesDisplay } from '@/components/dashboard/ReferencesDisplay';
 import { PersonalityTest } from '@/components/profile/PersonalityTest';
+import { ChevronDown } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 
 const Profile: React.FC = () => {
   const { user, createProfile, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { toast } = useToast();
   const [selectedUserType, setSelectedUserType] = useState<UserType>('jobseeker');
   const [isCreatingProfile, setIsCreatingProfile] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [importedData, setImportedData] = useState<any>(null);
+  const [isVideoOpen, setIsVideoOpen] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  const getVideoEmbedUrl = (url: string) => {
+    try {
+      const parsedUrl = new URL(url);
+      const hostname = parsedUrl.hostname.replace('www.', '');
+
+      if (hostname === 'youtube.com' || hostname === 'm.youtube.com') {
+        const videoId = parsedUrl.searchParams.get('v');
+        if (videoId) {
+          return `https://www.youtube.com/embed/${videoId}`;
+        }
+      }
+
+      if (hostname === 'youtu.be') {
+        const videoId = parsedUrl.pathname.replace('/', '').trim();
+        if (videoId) {
+          return `https://www.youtube.com/embed/${videoId}`;
+        }
+      }
+
+      if (hostname === 'vimeo.com') {
+        const videoId = parsedUrl.pathname.replace('/', '').trim();
+        if (videoId) {
+          return `https://player.vimeo.com/video/${videoId}`;
+        }
+      }
+
+      return url;
+    } catch {
+      return url;
+    }
+  };
+
+  const publicProfileUrl = user?.profile?.id
+    ? `${window.location.origin}/public/${user.profile.id}`
+    : '';
+
+  const handleCopyProfileUrl = async () => {
+    if (!publicProfileUrl) return;
+    try {
+      await navigator.clipboard.writeText(publicProfileUrl);
+      toast({ title: 'Profile link copied' });
+    } catch (error) {
+      console.error('Failed to copy profile URL:', error);
+      toast({ title: 'Copy failed', description: 'Please try again.' });
+    }
+  };
   
   // Check if profile has been filled out (has a name or other basic info)
   const hasCompleteProfile = user?.profile && (
@@ -38,12 +93,24 @@ const Profile: React.FC = () => {
     (user.profile as any).bio
   );
   
-  // Exit edit mode when navigating to profile page
+  // Exit edit mode when navigating to profile page (including header Profile click)
   React.useEffect(() => {
+    const locationState = location.state as { mode?: string } | null;
     if (hasCompleteProfile && location.pathname === '/profile') {
-      setIsEditMode(false);
+      if (locationState?.mode === 'view') {
+        setIsEditMode(false);
+      }
     }
-  }, [location.pathname, hasCompleteProfile]);
+  }, [location.pathname, location.state, hasCompleteProfile]);
+
+  // Log when importedData changes
+  React.useEffect(() => {
+    console.log('Profile.tsx - importedData changed:', importedData);
+    if (importedData?.parsedData) {
+      console.log('Profile.tsx - workExperience:', importedData.parsedData.workExperience);
+      console.log('Profile.tsx - education:', importedData.parsedData.education);
+    }
+  }, [importedData]);
   
   // Redirect to login if no user (only after loading is complete)
   React.useEffect(() => {
@@ -59,6 +126,8 @@ const Profile: React.FC = () => {
     } else if (hasCompleteProfile) {
       // Exit edit mode when profile is complete (e.g., when clicking Profile button from header)
       setIsEditMode(false);
+      // Refresh data when exiting edit mode to show updated work experience/education
+      setRefreshTrigger(prev => prev + 1);
     }
   }, [user, hasCompleteProfile]);
 
@@ -161,58 +230,92 @@ const Profile: React.FC = () => {
               {/* Profile header */}
               <div className="p-6">
                 <div className="flex flex-col md:flex-row items-center gap-6">
-                  <div className="flex-shrink-0 flex flex-col items-center gap-3">
-                    {(() => {
-                      const imageUrl = user.userType === 'jobseeker' 
-                        ? (user.profile as JobSeekerProfile).profilePic 
-                        : (user.profile as OrganizationProfile).logo;
-                      
-                      if (imageUrl) {
-                        return (
-                          <img 
-                            src={imageUrl}
-                            alt={user.profile.name}
-                            className={user.userType === 'jobseeker' ? 'h-28 w-28 rounded-full object-cover border-4 border-gray-200' : 'h-28 w-28 rounded-lg object-cover border-4 border-gray-200'}
-                          />
-                        );
-                      } else {
-                        return (
-                          <div 
-                            className={user.userType === 'jobseeker'
-                              ? 'h-28 w-28 rounded-full bg-gray-200 border-4 border-gray-300 flex items-center justify-center'
-                              : 'h-28 w-28 rounded-lg bg-gray-200 border-4 border-gray-300 flex items-center justify-center'
-                            }
-                          >
-                            <span className="text-4xl font-bold text-gray-600">
-                              {user.profile.name?.charAt(0).toUpperCase() || '?'}
-                            </span>
-                          </div>
-                        );
-                      }
-                    })()}
-                    <Button 
-                      onClick={() => setIsEditMode(true)}
-                      size="sm"
-                      variant="outline"
-                      className="bg-white/70 text-talendeur-primary hover:bg-white/90 border-talendeur-primary"
-                    >
-                      Edit Profile
-                    </Button>
+                  <div className="flex-shrink-0 flex flex-col md:flex-row items-center gap-4">
+                    <div className="flex flex-col items-center gap-3">
+                      {(() => {
+                        const imageUrl = user.userType === 'jobseeker' 
+                          ? (user.profile as JobSeekerProfile).profilePic 
+                          : (user.profile as OrganizationProfile).logo;
+                        
+                        if (imageUrl) {
+                          return (
+                            <img 
+                              src={imageUrl}
+                              alt={user.profile.name}
+                              className={user.userType === 'jobseeker' ? 'h-28 w-28 rounded-full object-cover border-4 border-gray-200' : 'h-28 w-28 rounded-lg object-cover border-4 border-gray-200'}
+                            />
+                          );
+                        } else {
+                          return (
+                            <div 
+                              className={user.userType === 'jobseeker'
+                                ? 'h-28 w-28 rounded-full bg-gray-200 border-4 border-gray-300 flex items-center justify-center'
+                                : 'h-28 w-28 rounded-lg bg-gray-200 border-4 border-gray-300 flex items-center justify-center'
+                              }
+                            >
+                              <span className="text-4xl font-bold text-gray-600">
+                                {user.profile.name?.charAt(0).toUpperCase() || '?'}
+                              </span>
+                            </div>
+                          );
+                        }
+                      })()}
+                    </div>
+                    
                   </div>
-                  <div className="flex-1 text-center md:text-left">
-                    <h2 className="text-2xl font-bold text-black">{user.profile.name}</h2>
-                    {(user.profile as JobSeekerProfile | OrganizationProfile).headline && (
-                      <p className="text-lg text-gray-700 mt-2 italic font-light">
-                        {(user.profile as JobSeekerProfile | OrganizationProfile).headline}
-                      </p>
-                    )}
-                    {user.userType === 'organization' && (user.profile as OrganizationProfile).website && (
-                      <p className="text-gray-600 mt-1">
-                        <a href={(user.profile as OrganizationProfile).website} target="_blank" rel="noopener noreferrer" className="hover:underline">
-                          {(user.profile as OrganizationProfile).website}
-                        </a>
-                      </p>
-                    )}
+                  <div className="flex-1 w-full">
+                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 text-center md:text-left">
+                      <div>
+                        <h2 className="text-2xl font-bold text-black">{user.profile.name}</h2>
+                        {(user.profile as JobSeekerProfile | OrganizationProfile).headline && (
+                          <p className="text-lg text-gray-700 mt-2 italic font-light">
+                            {(user.profile as JobSeekerProfile | OrganizationProfile).headline}
+                          </p>
+                        )}
+                        {user.userType === 'organization' && (user.profile as OrganizationProfile).website && (
+                          <p className="text-gray-600 mt-1">
+                            <a href={(user.profile as OrganizationProfile).website} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                              {(user.profile as OrganizationProfile).website}
+                            </a>
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <Button 
+                          onClick={() => setIsEditMode(true)}
+                          size="sm"
+                          variant="outline"
+                          className="bg-white/70 text-talendeur-primary hover:bg-white/90 border-talendeur-primary"
+                        >
+                          Edit Profile
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="bg-white/70 text-talendeur-primary hover:bg-white/90 border-talendeur-primary"
+                            >
+                              Share your profile
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start">
+                            <DropdownMenuItem asChild>
+                              <a
+                                href={`https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(publicProfileUrl)}&title=${encodeURIComponent(`${user.profile.name} - Talendeur Profile`)}&summary=${encodeURIComponent((user.profile as any).headline || 'View my profile on Talendeur')}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                Share to LinkedIn
+                              </a>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={handleCopyProfileUrl}>
+                              Copy URL
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -220,12 +323,46 @@ const Profile: React.FC = () => {
               <div className="flex flex-col md:flex-row gap-8">
                 {/* Left column: Timeline (all date-based items) */}
                 <div className="w-full md:w-1/3 flex flex-col gap-8">
-                    <WorkExperienceTimeline />
+                    <Timeline refreshTrigger={refreshTrigger} />
                     <CertificationsChart />
                   </div>
                   {/* Right column: Visualizations and info boxes */}
                   <div className="w-full md:w-2/3 flex flex-col gap-8">
                     <KeyMetricsCards />
+                    {(user.profile as any).videoUrl && (
+                      <Card>
+                        <Collapsible open={isVideoOpen} onOpenChange={setIsVideoOpen}>
+                          <CardHeader className="flex flex-row items-center justify-between">
+                            <CardTitle>Video Profile</CardTitle>
+                            <CollapsibleTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="bg-white/70 text-talendeur-primary hover:bg-white/90 border-talendeur-primary"
+                                aria-label={isVideoOpen ? 'Collapse video profile' : 'Expand video profile'}
+                              >
+                                <ChevronDown className={`h-4 w-4 transition-transform ${isVideoOpen ? 'rotate-180' : ''}`} />
+                              </Button>
+                            </CollapsibleTrigger>
+                          </CardHeader>
+                          <CollapsibleContent>
+                            <CardContent>
+                              <div className="relative w-full overflow-hidden rounded-lg border border-gray-200">
+                                <div className="aspect-video">
+                                  <iframe
+                                    src={getVideoEmbedUrl((user.profile as any).videoUrl)}
+                                    title="Profile video"
+                                    className="h-full w-full"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                    allowFullScreen
+                                  />
+                                </div>
+                              </div>
+                            </CardContent>
+                          </CollapsibleContent>
+                        </Collapsible>
+                      </Card>
+                    )}
                     <BiographyWordCloud />
                     <SkillsRadarChart />
                     <PersonalityVisualization />
@@ -236,6 +373,11 @@ const Profile: React.FC = () => {
               {/* Full-width International Experience Map */}
               <div className="w-full">
                 <InternationalExperienceMap />
+              </div>
+
+              {/* Full-width References */}
+              <div className="w-full">
+                <ReferencesDisplay />
               </div>
 
               {/* Interests and Needs sections */}
@@ -321,7 +463,6 @@ const Profile: React.FC = () => {
                         <JobSeekerProfileForm 
                           onSaveComplete={() => {
                             setIsEditMode(false);
-                            setImportedData(null);
                           }}
                           importedData={importedData}
                           onDataImport={setImportedData}

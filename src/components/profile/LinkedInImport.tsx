@@ -8,9 +8,11 @@ import { parsePDF, ParsedData } from '@/lib/pdf-parser';
 
 interface LinkedInImportProps {
   onImport: (data: ParsedData, pdfFile: File) => void;
+  currentCV?: string;
+  onCVRemove?: () => void;
 }
 
-export const LinkedInImport: React.FC<LinkedInImportProps> = ({ onImport }) => {
+export const LinkedInImport: React.FC<LinkedInImportProps> = ({ onImport, currentCV, onCVRemove }) => {
   const [uploading, setUploading] = useState(false);
   const [fileName, setFileName] = useState<string>('');
   const { toast } = useToast();
@@ -102,12 +104,49 @@ export const LinkedInImport: React.FC<LinkedInImportProps> = ({ onImport }) => {
           </AlertDescription>
         </Alert>
 
+        {currentCV && !fileName && (
+          <div className="flex items-center justify-between p-3 bg-gradient-to-r from-talendeur-orange/10 to-talendeur-primary/10 border border-talendeur-primary/20 rounded-lg">
+            <div className="flex items-center gap-3">
+              <CheckCircle className="w-5 h-5 text-talendeur-primary" />
+              <div className="flex flex-col">
+                <span className="text-sm font-medium text-gray-900">CV uploaded</span>
+                <span className="text-xs text-gray-600">
+                  {decodeURIComponent(currentCV.split('/').pop()?.split('-').slice(1).join('-') || 'CV')} • {new Date(parseInt(currentCV.match(/(\d{13})/)?.[1] || '0')).toLocaleDateString()}
+                </span>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <a
+                href={currentCV}
+                download
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm px-3 py-1 bg-gradient-to-r from-talendeur-orange to-talendeur-primary text-white rounded hover:opacity-90 transition-opacity"
+              >
+                Download
+              </a>
+              {onCVRemove && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={onCVRemove}
+                  className="text-talendeur-primary hover:text-talendeur-primary/80 text-xs"
+                >
+                  Remove
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
+
         {fileName && (
-          <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
-            <CheckCircle className="w-5 h-5 text-green-600" />
-            <span className="text-sm text-green-800">
-              {fileName} uploaded successfully
-            </span>
+          <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-talendeur-orange/10 to-talendeur-primary/10 border border-talendeur-primary/20 rounded-lg">
+            <CheckCircle className="w-5 h-5 text-talendeur-primary" />
+            <div className="flex flex-col">
+              <span className="text-sm font-medium text-gray-900">{fileName}</span>
+              <span className="text-xs text-gray-600">Ready to upload - Click Save to confirm</span>
+            </div>
           </div>
         )}
 

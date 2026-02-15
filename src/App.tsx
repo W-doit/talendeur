@@ -20,6 +20,7 @@ import Matches from "./pages/Matches";
 import NotFound from "./pages/NotFound";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import PublicProfile from "./pages/PublicProfile";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,7 @@ const App = () => (
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/public/:userId" element={<PublicProfile />} />
               <Route path="/find" element={<FindMatches />} />
               <Route path="/matches" element={<Matches />} />
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />

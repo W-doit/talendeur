@@ -123,7 +123,10 @@ export const CertificationsForm = () => {
 
     setSaving(true);
     try {
-      for (const cert of certifications) {
+      const updatedCertifications = [...certifications];
+
+      for (let index = 0; index < certifications.length; index += 1) {
+        const cert = certifications[index];
         if (!cert.course_name || !cert.certification_type) continue;
 
         if (cert.id) {
@@ -139,7 +142,7 @@ export const CertificationsForm = () => {
 
           if (error) throw error;
         } else {
-          const { error } = await supabase
+          const { data, error } = await supabase
             .from('certifications')
             .insert({
               user_id: user.id,
@@ -147,13 +150,17 @@ export const CertificationsForm = () => {
               certification_type: cert.certification_type,
               date_attained: cert.date_attained,
               details: cert.details,
-            });
+            })
+            .select('id')
+            .single();
 
           if (error) throw error;
+
+          updatedCertifications[index] = { ...cert, id: data?.id };
         }
       }
 
-      await fetchCertifications();
+      setCertifications(updatedCertifications);
     } catch (error) {
       console.error('Error saving certifications:', error);
     } finally {

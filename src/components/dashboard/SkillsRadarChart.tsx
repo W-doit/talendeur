@@ -27,23 +27,30 @@ interface ChartDataPoint {
   value: number;
 }
 
-export const SkillsRadarChart = () => {
+interface SkillsRadarChartProps {
+  userId?: string;
+  accessTokenOverride?: string | null;
+}
+
+export const SkillsRadarChart = ({ userId, accessTokenOverride }: SkillsRadarChartProps = {}) => {
   const { user, accessToken } = useAuth();
   const [skillsData, setSkillsData] = useState<ChartDataPoint[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchSkills = async () => {
-      if (!user || !accessToken) return;
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      const effectiveUserId = userId ?? user?.id;
+      const effectiveToken = accessTokenOverride !== undefined ? (accessTokenOverride || supabaseKey) : (accessToken || supabaseKey);
+      if (!effectiveUserId) return;
 
       try {
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-        const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-        const authHeader = `Bearer ${accessToken}`;
+        const authHeader = `Bearer ${effectiveToken}`;
         
         // Fetch skills dimensions via REST API
         const response = await fetch(
-          `${supabaseUrl}/rest/v1/skills_dimensions?user_id=eq.${user.id}&select=*`,
+          `${supabaseUrl}/rest/v1/skills_dimensions?user_id=eq.${effectiveUserId}&select=*`,
           {
             headers: {
               'apikey': supabaseKey,
@@ -85,7 +92,7 @@ export const SkillsRadarChart = () => {
     };
 
     fetchSkills();
-  }, [user, accessToken]);
+  }, [user, accessToken, userId, accessTokenOverride]);
 
   if (loading) {
     return (
