@@ -8,9 +8,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import ImageUpload from '@/components/ui/image-upload';
 import { LinkedInImport } from '@/components/profile/LinkedInImport';
-import { uploadProfilePicture } from '@/lib/supabase-storage';
+import { uploadProfilePicture, uploadCV } from '@/lib/supabase-storage';
 import { ParsedData } from '@/lib/pdf-parser';
 import { useToast } from '@/components/ui/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface JobSeekerProfileFormProps {
   onSaveComplete?: () => void;
@@ -32,13 +33,14 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({
     headline: (profile as any)?.headline || '',
     bio: profile?.bio || '',
     profilePic: profile?.profilePic || '',
-    cv: profile?.cv || ''
+    cv: profile?.cv || '',
+    videoUrl: (profile as any)?.videoUrl || ''
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [cvFile, setCvFile] = useState<File | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [cvFile, setCvFile] = useState<File | null>(null);
   const [uploadingCV, setUploadingCV] = useState(false);
 
   // Restore imported data when coming back to this tab
@@ -73,23 +75,6 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({
         ...prev.skills!,
         [skill]: value
       }
-    }));
-  };
-
-  const handleCVChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && file.type === 'application/pdf') {
-      setCvFile(file);
-    } else {
-      alert('Please upload a PDF file');
-    }
-  };
-
-  const handleCVRemove = () => {
-    setCvFile(null);
-    setFormData(prev => ({
-      ...prev,
-      cv: ''
     }));
   };
 
@@ -138,8 +123,6 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({
         console.log('Uploading CV...', cvFile);
         setUploadingCV(true);
         try {
-          // Import uploadCV function
-          const { uploadCV } = await import('@/lib/supabase-storage');
           cvUrl = await uploadCV(cvFile, user.id);
           console.log('CV uploaded successfully:', cvUrl);
         } catch (uploadError) {
@@ -153,20 +136,20 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({
       console.log('Calling updateProfile with:', {
         ...formData,
         profilePic: profilePicUrl,
-        cv: cvUrl
+        cv: cvUrl,
       });
 
       // Update profile with the image and CV URLs
       await updateProfile({
         ...formData,
         profilePic: profilePicUrl,
-        cv: cvUrl
+        cv: cvUrl,
       });
 
       console.log('Profile updated successfully');
 
-      setImageFile(null);
       setCvFile(null);
+      setImageFile(null);
       
       // Call the onSaveComplete callback if provided
       if (onSaveComplete) {
@@ -180,9 +163,13 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({
   };
 
   const handleLinkedInImport = (data: ParsedData, pdfFile: File) => {
+    console.log('handleLinkedInImport called with data:', data);
+    
     // Store data in parent component to persist across tab changes
     if (onDataImport) {
-      onDataImport({ parsedData: data, pdfFile });
+      const importedDataToPass = { parsedData: data, pdfFile };
+      console.log('Calling onDataImport with:', importedDataToPass);
+      onDataImport(importedDataToPass);
     }
     
     // Store the PDF file to be uploaded
@@ -221,70 +208,20 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({
     console.log('Parsed work experience:', data.workExperience);
     console.log('Parsed certifications:', data.certifications);
     console.log('Parsed skills:', data.skills);
+    console.log('Full parsed data object:', data);
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <LinkedInImport onImport={handleLinkedInImport} />
+      <LinkedInImport 
+        onImport={handleLinkedInImport}
+        currentCV={formData.cv}
+        onCVRemove={() => setFormData(prev => ({ ...prev, cv: '' }))}
+      />
       
       <Card>
         <CardContent className="pt-6">
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-3">Import from CV</label>
-              <div className="space-y-2">
-                {cvFile ? (
-                  <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                      </svg>
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium text-blue-900">{cvFile.name}</span>
-                        <span className="text-xs text-blue-600">Ready to upload - Click Save to confirm</span>
-                      </div>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleCVRemove}
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                ) : formData.cv ? (
-                  <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <svg className="w-5 h-5 text-talendeur-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                      </svg>
-                      <span className="text-sm">CV Uploaded</span>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleCVRemove}
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                ) : (
-                  <div>
-                    <Input
-                      type="file"
-                      accept=".pdf"
-                      onChange={handleCVChange}
-                      className="cursor-pointer"
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <Separator className="my-4" />
-            
             <div>
               <label htmlFor="name" className="block text-sm font-medium mb-1">Full Name</label>
               <Input
@@ -320,6 +257,19 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({
                 placeholder="Tell us about yourself, your experience and what you're looking for"
                 rows={4}
               />
+            </div>
+            
+            <div>
+              <label htmlFor="videoUrl" className="block text-sm font-medium mb-1">Profile Video (Optional)</label>
+              <Input
+                id="videoUrl"
+                name="videoUrl"
+                value={(formData as any).videoUrl || ''}
+                onChange={handleChange}
+                placeholder="https://youtube.com/watch?v=... or https://vimeo.com/..."
+                type="url"
+              />
+              <p className="text-xs text-gray-500 mt-1">Add a link to your 2-minute profile video (YouTube, Vimeo, etc.)</p>
             </div>
             
             <div>

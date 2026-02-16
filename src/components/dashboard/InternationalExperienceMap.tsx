@@ -69,7 +69,12 @@ const countryCoordinates: { [key: string]: [number, number] } = {
   'Romania': [45.943161, 24.96676],
 };
 
-export const InternationalExperienceMap = () => {
+interface InternationalExperienceMapProps {
+  userId?: string;
+  accessTokenOverride?: string | null;
+}
+
+export const InternationalExperienceMap = ({ userId, accessTokenOverride }: InternationalExperienceMapProps = {}) => {
   const { user, accessToken } = useAuth();
   const [experiences, setExperiences] = useState<InternationalExperience[]>([]);
   const [loading, setLoading] = useState(true);
@@ -100,7 +105,7 @@ export const InternationalExperienceMap = () => {
     };
 
     fetchExperiences();
-  }, [user, accessToken]);
+  }, [user, accessToken, userId, accessTokenOverride]);
 
   const getTypeIcon = (type: string) => {
     switch (type.toLowerCase()) {

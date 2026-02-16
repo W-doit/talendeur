@@ -8,9 +8,10 @@ import { useAuth } from '@/contexts/AuthContext';
 
 interface Reference {
   id?: string;
-  relationship: string;
-  email: string;
-  number: number | string;
+  name: string;
+  nature_of_reference: string;
+  year_worked_known: string;
+  linkedin_profile: string;
 }
 
 export const ReferencesForm = () => {
@@ -67,9 +68,10 @@ export const ReferencesForm = () => {
     setReferences([
       ...references,
       {
-        relationship: '',
-        email: '',
-        number: '',
+        name: '',
+        nature_of_reference: '',
+        year_worked_known: '',
+        linkedin_profile: '',
       },
     ]);
   };
@@ -106,35 +108,44 @@ export const ReferencesForm = () => {
 
     setSaving(true);
     try {
-      for (const ref of references) {
-        if (!ref.relationship || !ref.email) continue;
+      const updatedReferences = [...references];
+
+      for (let index = 0; index < references.length; index += 1) {
+        const ref = references[index];
+        if (!ref.name) continue;
 
         if (ref.id) {
           const { error } = await supabase
             .from('reference')
             .update({
-              relationship: ref.relationship,
-              email: ref.email,
-              number: ref.number ? Number(ref.number) : null,
+              name: ref.name,
+              nature_of_reference: ref.nature_of_reference,
+              year_worked_known: ref.year_worked_known,
+              linkedin_profile: ref.linkedin_profile,
             })
             .eq('id', ref.id);
 
           if (error) throw error;
         } else {
-          const { error } = await supabase
+          const { data, error } = await supabase
             .from('reference')
             .insert({
               user_id: user.id,
-              relationship: ref.relationship,
-              email: ref.email,
-              number: ref.number ? Number(ref.number) : null,
-            });
+              name: ref.name,
+              nature_of_reference: ref.nature_of_reference,
+              year_worked_known: ref.year_worked_known,
+              linkedin_profile: ref.linkedin_profile,
+            })
+            .select('id')
+            .single();
 
           if (error) throw error;
+
+          updatedReferences[index] = { ...ref, id: data?.id };
         }
       }
 
-      await fetchReferences();
+      setReferences(updatedReferences);
     } catch (error) {
       console.error('Error saving references:', error);
     } finally {
@@ -162,33 +173,41 @@ export const ReferencesForm = () => {
         {references.map((ref, index) => (
           <Card key={index} className="border-2">
             <CardContent className="pt-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Relationship *</label>
+                  <label className="block text-sm font-medium mb-1">Name *</label>
                   <Input
-                    value={ref.relationship}
-                    onChange={(e) => updateReference(index, 'relationship', e.target.value)}
-                    placeholder="e.g., Former Manager, Professor"
+                    value={ref.name}
+                    onChange={(e) => updateReference(index, 'name', e.target.value)}
+                    placeholder="e.g., John Smith"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">Email *</label>
+                  <label className="block text-sm font-medium mb-1">Nature of Reference</label>
                   <Input
-                    type="email"
-                    value={ref.email}
-                    onChange={(e) => updateReference(index, 'email', e.target.value)}
-                    placeholder="reference@example.com"
+                    value={ref.nature_of_reference}
+                    onChange={(e) => updateReference(index, 'nature_of_reference', e.target.value)}
+                    placeholder="e.g., Former Manager, Colleague, Professor"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">Phone Number</label>
+                  <label className="block text-sm font-medium mb-1">Year Worked/Known</label>
                   <Input
-                    type="tel"
-                    value={ref.number}
-                    onChange={(e) => updateReference(index, 'number', e.target.value)}
-                    placeholder="+1234567890"
+                    value={ref.year_worked_known}
+                    onChange={(e) => updateReference(index, 'year_worked_known', e.target.value)}
+                    placeholder="e.g., 2020-2023, 2019"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">LinkedIn Profile</label>
+                  <Input
+                    type="url"
+                    value={ref.linkedin_profile}
+                    onChange={(e) => updateReference(index, 'linkedin_profile', e.target.value)}
+                    placeholder="https://linkedin.com/in/..."
                   />
                 </div>
 

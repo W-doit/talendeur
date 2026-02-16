@@ -22,7 +22,8 @@ const OrganizationProfileForm: React.FC<OrganizationProfileFormProps> = ({ onSav
     about: profile?.about || '',
     website: profile?.website || '',
     logo: profile?.logo || '',
-    needs: profile?.needs || []
+    needs: profile?.needs || [],
+    videoUrl: (profile as any)?.videoUrl || ''
   });
   
   const [needInput, setNeedInput] = useState('');
@@ -147,6 +148,19 @@ const OrganizationProfileForm: React.FC<OrganizationProfileFormProps> = ({ onSav
                 placeholder="Tell us about your organization, its mission, and culture"
                 rows={4}
               />
+            </div>
+            
+            <div>
+              <label htmlFor="videoUrl" className="block text-sm font-medium mb-1">Organization Video (Optional)</label>
+              <Input
+                id="videoUrl"
+                name="videoUrl"
+                value={(formData as any).videoUrl || ''}
+                onChange={handleChange}
+                placeholder="https://youtube.com/watch?v=... or https://vimeo.com/..."
+                type="url"
+              />
+              <p className="text-xs text-gray-500 mt-1">Add a link to your 2-minute organization video (YouTube, Vimeo, etc.)</p>
             </div>
             
             <div>

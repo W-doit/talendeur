@@ -83,16 +83,21 @@ const SECTION_PATTERNS = {
   ],
 };
 
-// Date patterns to extract dates
+// Date patterns to extract dates (order matters - more specific first)
 const DATE_PATTERNS = [
-  /(\d{4})\s*-\s*(\d{4})/,  // 2020 - 2024
-  /(\d{4})\s*–\s*(\d{4})/,  // 2020 – 2024 (en dash)
-  /(\w+)\s+(\d{4})\s*-\s*(\w+)?\s*(\d{4})?/,  // Jan 2020 - Dec 2024
-  /(\d{1,2})\/(\d{4})/,  // 01/2020
-  /(\w+)\s+(\d{4})/,  // January 2020
+  // Month Year - Month Year format: Jan 2020 - Dec 2024 or January 2020 - March 2024
+  /(\w+)\s+(\d{4})\s*[-–]\s*(\w+)?\s*(\d{4})?/,
+  // Year - Year format: 2020 - 2024 or 2020–2024
+  /(\d{4})\s*[-–]\s*(\d{4})/,
+  // Month/Year format: 01/2020
+  /(\d{1,2})\/(\d{4})/,
+  // Month Year format: January 2020 or Jan 2020
+  /(\w+)\s+(\d{4})/,
+  // Duration format: 6 years 1 month
+  /(\d+)\s+years?(?:\s+(\d+)\s+months?)?/i,
 ];
 
-const PRESENT_KEYWORDS = ['present', 'current', 'now', 'ongoing', 'today'];
+const PRESENT_KEYWORDS = ['present', 'current', 'now', 'ongoing', 'today', 'currently'];
 
 // Email pattern
 const EMAIL_PATTERN = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
@@ -282,108 +287,211 @@ function identifySections(lines: string[]): {
 }
 
 /**
- * Parse education entries
+ * Parse education entries - improved to capture all consecutive education blocks
  */
 function parseEducation(lines: string[]): ParsedEducation[] {
   const educationEntries: ParsedEducation[] = [];
-  let currentEntry: Partial<ParsedEducation> = {};
-  
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i].trim();
     
-    // Check for institution (usually has keywords or is capitalized)
-    if (/University|College|School|Institute/i.test(line) || /^[A-Z][a-z\s&,]+$/.test(line)) {
-      // Save previous entry if complete
-      if (currentEntry.institution && currentEntry.qualification_type) {
-        educationEntries.push(currentEntry as ParsedEducation);
-      }
-      
-      currentEntry = {
-        institution: line,
+    // Skip empty lines
+    if (!line) {
+      i++;
+      continue;
+    }
+
+    // Look for institution or degree indicators
+    const hasInstitution = /University|College|School|Institute|Business School|Università|Sapienza/i.test(line);
+    const hasDegree = /Bachelor|Master|PhD|Doctorate|Degree|Diploma|Certificate|Training|Instructional/i.test(line);
+    const hasCapitalizedWords = /^[A-Z][a-zA-Z\s&,'-]*$/.test(line) && line.length > 3;
+
+    // If this looks like the start of an education entry
+    if (hasInstitution || hasDegree || hasCapitalizedWords) {
+      const entry: Partial<ParsedEducation> = {
+        institution: '',
         qualification_type: '',
         subject: '',
         start_date: '',
         end_date: null,
         still_studying: false,
       };
-    }
-    // Check for degree/qualification
-    else if (/Bachelor|Master|PhD|Doctorate|Degree|Diploma|Certificate/i.test(line)) {
-      currentEntry.qualification_type = line;
-      // Extract subject if it's in the same line
-      const subjectMatch = line.match(/in\s+(.+)/i);
-      if (subjectMatch) {
-        currentEntry.subject = subjectMatch[1];
+
+      // Collect lines that belong to this education entry
+      const entryLines: string[] = [];
+      let j = i;
+      let foundDates = false;
+
+      // Collect lines for this entry (usually 2-5 lines)
+      while (j < lines.length && entryLines.length < 5) {
+        const currentLine = lines[j].trim();
+        
+        if (!currentLine) {
+          j++;
+          continue;
+        }
+
+        entryLines.push(currentLine);
+
+        // Stop if we found dates and have at least 2 pieces of info
+        if (containsDate(currentLine)) {
+          foundDates = true;
+          j++;
+          break;
+        }
+
+        j++;
       }
-    }
-    // Check for dates
-    else if (containsDate(line)) {
-      const dates = extractDates(line);
-      if (dates.start) currentEntry.start_date = dates.start;
-      if (dates.end) {
-        currentEntry.end_date = dates.end;
+
+      // Parse the collected lines
+      for (const entryLine of entryLines) {
+        // First line is usually institution or degree
+        if (!entry.institution && !entry.qualification_type) {
+          if (/University|College|School|Institute|Business School|Università|Sapienza/i.test(entryLine)) {
+            entry.institution = entryLine;
+          } else {
+            entry.qualification_type = entryLine;
+          }
+        }
+        // Look for degree type
+        else if (!entry.qualification_type) {
+          if (/Bachelor|Master|PhD|Doctorate|Degree|Diploma|Certificate|Training|Instructional/i.test(entryLine)) {
+            entry.qualification_type = entryLine;
+            // Extract subject
+            const subjectMatch = entryLine.match(/in\s+(.+)/i);
+            if (subjectMatch) {
+              entry.subject = subjectMatch[1];
+            }
+          } else if (!entry.institution) {
+            entry.institution = entryLine;
+          }
+        }
+        // Look for dates
+        else if (containsDate(entryLine)) {
+          const dates = extractDates(entryLine);
+          if (dates.start) entry.start_date = dates.start;
+          if (dates.end) entry.end_date = dates.end;
+          entry.still_studying = dates.isPresent;
+        }
       }
-      currentEntry.still_studying = dates.isPresent;
+
+      // Add entry if we have at least institution or qualification
+      if (entry.institution || entry.qualification_type) {
+        educationEntries.push(entry as ParsedEducation);
+      }
+
+      i = j;
+    } else {
+      i++;
     }
   }
-  
-  // Save last entry
-  if (currentEntry.institution && currentEntry.qualification_type) {
-    educationEntries.push(currentEntry as ParsedEducation);
-  }
-  
+
   return educationEntries;
 }
 
 /**
- * Parse work experience entries
+ * Parse work experience entries - improved to capture all consecutive job blocks
  */
 function parseWorkExperience(lines: string[]): ParsedWorkExperience[] {
   const experiences: ParsedWorkExperience[] = [];
-  let currentEntry: Partial<ParsedWorkExperience> = {};
-  
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    
-    // Check for job title (usually before company or has certain keywords)
-    if (!currentEntry.job_title && /Manager|Developer|Engineer|Analyst|Consultant|Designer|Director|Lead|Senior|Junior/i.test(line)) {
-      // Save previous entry if complete
-      if (currentEntry.job_title && currentEntry.company) {
-        experiences.push(currentEntry as ParsedWorkExperience);
-      }
-      
-      currentEntry = {
-        job_title: line,
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i].trim();
+
+    // Skip empty lines
+    if (!line) {
+      i++;
+      continue;
+    }
+
+    // Look for job titles or company indicators
+    // Job titles often contain: Manager, Developer, Engineer, Analyst, Consultant, Designer, Director, Lead, Senior, Junior, Specialist, Officer, Executive, Admin, etc.
+    // Or: word(s) followed by "at" company
+    const hasJobKeyword = /Manager|Developer|Engineer|Analyst|Consultant|Designer|Director|Lead|Senior|Junior|Specialist|Officer|Executive|Admin|Trainer|Expert|Generalist|Account/i.test(line);
+    const looksLikeJobTitle = line.length > 3 && line.length < 100 && !containsDate(line) && hasJobKeyword;
+
+    if (looksLikeJobTitle) {
+      const entry: Partial<ParsedWorkExperience> = {
+        job_title: '',
         company: '',
         start_date: '',
         end_date: null,
         still_work_here: false,
       };
-    }
-    // Check for company (often follows job title or has 'at' keyword)
-    else if (currentEntry.job_title && !currentEntry.company) {
-      // Remove 'at' if present
-      const company = line.replace(/^at\s+/i, '').trim();
-      if (company.length > 2) {
-        currentEntry.company = company;
+
+      // Collect lines for this work experience entry (usually 2-5 lines)
+      const entryLines: string[] = [];
+      let j = i;
+      let foundDates = false;
+
+      while (j < lines.length && entryLines.length < 6) {
+        const currentLine = lines[j].trim();
+
+        if (!currentLine) {
+          j++;
+          continue;
+        }
+
+        entryLines.push(currentLine);
+
+        // Stop after we find dates
+        if (containsDate(currentLine) && entryLines.length >= 2) {
+          j++;
+          break;
+        }
+
+        // Stop if next line looks like a new job title
+        if (j > i && hasJobKeyword && /Manager|Developer|Engineer|Analyst|Consultant|Designer|Director|Lead|Senior|Junior|Specialist|Officer|Executive|Admin|Trainer|Expert|Generalist|Account/i.test(currentLine)) {
+          break;
+        }
+
+        j++;
       }
-    }
-    // Check for dates
-    else if (containsDate(line)) {
-      const dates = extractDates(line);
-      if (dates.start) currentEntry.start_date = dates.start;
-      if (dates.end) {
-        currentEntry.end_date = dates.end;
+
+      // Parse the collected lines
+      for (let idx = 0; idx < entryLines.length; idx++) {
+        const entryLine = entryLines[idx];
+
+        // First line is usually job title
+        if (!entry.job_title) {
+          entry.job_title = entryLine;
+        }
+        // Next line(s) could be company, description, or dates
+        else if (!entry.company) {
+          // If it has date pattern, it might be dates
+          if (containsDate(entryLine)) {
+            const dates = extractDates(entryLine);
+            if (dates.start) entry.start_date = dates.start;
+            if (dates.end) entry.end_date = dates.end;
+            entry.still_work_here = dates.isPresent;
+          }
+          // If it looks like a company name (capitalized, not too long, no date keywords)
+          else if (/^[A-Z][a-zA-Z0-9\s&,'-]*$/i.test(entryLine) && entryLine.length < 80) {
+            entry.company = entryLine;
+          }
+        }
+        // Look for dates in subsequent lines
+        else if (containsDate(entryLine)) {
+          const dates = extractDates(entryLine);
+          if (dates.start && !entry.start_date) entry.start_date = dates.start;
+          if (dates.end && !entry.end_date) entry.end_date = dates.end;
+          entry.still_work_here = dates.isPresent;
+        }
       }
-      currentEntry.still_work_here = dates.isPresent;
+
+      // Add entry if we have at least job title and company
+      if (entry.job_title && entry.company) {
+        experiences.push(entry as ParsedWorkExperience);
+      }
+
+      i = j;
+    } else {
+      i++;
     }
   }
-  
-  // Save last entry
-  if (currentEntry.job_title && currentEntry.company) {
-    experiences.push(currentEntry as ParsedWorkExperience);
-  }
-  
+
   return experiences;
 }
 
@@ -444,7 +552,7 @@ function containsDate(line: string): boolean {
 }
 
 /**
- * Extract dates from a line
+ * Extract dates from a line - improved to handle various date formats
  */
 function extractDates(line: string): {
   start: string;
@@ -456,37 +564,71 @@ function extractDates(line: string): {
     end: null as string | null,
     isPresent: false,
   };
-  
+
   // Check for "present" keywords
-  result.isPresent = PRESENT_KEYWORDS.some(keyword => 
-    new RegExp(keyword, 'i').test(line)
+  result.isPresent = PRESENT_KEYWORDS.some(keyword =>
+    new RegExp(`\\b${keyword}\\b`, 'i').test(line)
   );
-  
-  // Try different date patterns
-  for (const pattern of DATE_PATTERNS) {
-    const match = line.match(pattern);
-    if (match) {
-      // Format varies by pattern
-      if (match[1] && match[1].match(/^\d{4}$/)) {
-        // Year format: 2020 - 2024
-        result.start = `${match[1]}-01-01`;
-        if (match[2] && !result.isPresent) {
-          result.end = `${match[2]}-01-01`;
-        }
-      } else if (match[1] && match[2] && match[2].match(/^\d{4}$/)) {
-        // Month Year format: Jan 2020
-        const monthNum = getMonthNumber(match[1]);
-        result.start = `${match[2]}-${monthNum.toString().padStart(2, '0')}-01`;
-        
-        if (match[3] && match[4] && !result.isPresent) {
-          const endMonthNum = getMonthNumber(match[3]);
-          result.end = `${match[4]}-${endMonthNum.toString().padStart(2, '0')}-01`;
-        }
+
+  // Try Month Year - Month Year pattern first (most common in LinkedIn CVs)
+  // Matches: "January 2020 - Present", "Jan 2020 - Dec 2024", etc.
+  let match = line.match(/(\w+)\s+(\d{4})\s*[-–]\s*(?:(\w+)\s+)?(\d{4}|\w+)?/);
+  if (match) {
+    const startMonth = getMonthNumber(match[1]);
+    const startYear = match[2];
+    result.start = `${startYear}-${startMonth.toString().padStart(2, '0')}-01`;
+
+    // If end date exists and it's not "Present"
+    if (match[4] && !result.isPresent) {
+      if (match[3]) {
+        // Month Year provided
+        const endMonth = getMonthNumber(match[3]);
+        result.end = `${match[4]}-${endMonth.toString().padStart(2, '0')}-01`;
+      } else {
+        // Just year provided
+        result.end = `${match[4]}-01-01`;
       }
-      break;
     }
+    return result;
   }
-  
+
+  // Try Year - Year pattern: 2020 - 2024
+  match = line.match(/\b(\d{4})\s*[-–]\s*(\d{4})\b/);
+  if (match) {
+    result.start = `${match[1]}-01-01`;
+    if (!result.isPresent) {
+      result.end = `${match[2]}-01-01`;
+    }
+    return result;
+  }
+
+  // Try Month/Year format: 01/2020
+  match = line.match(/(\d{1,2})\/(\d{4})/);
+  if (match) {
+    const month = match[1].padStart(2, '0');
+    result.start = `${match[2]}-${month}-01`;
+    return result;
+  }
+
+  // Try single Month Year: January 2020 or Jan 2020
+  match = line.match(/(\w+)\s+(\d{4})/);
+  if (match && match[1].match(/^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i)) {
+    const month = getMonthNumber(match[1]);
+    result.start = `${match[2]}-${month.toString().padStart(2, '0')}-01`;
+    return result;
+  }
+
+  // Try duration format: 6 years 1 month (extract years as duration)
+  match = line.match(/(\d+)\s+years?(?:\s+(\d+)\s+months?)?/i);
+  if (match && result.isPresent) {
+    const years = parseInt(match[1]);
+    // Assume duration started (years) ago
+    const now = new Date();
+    const startYear = now.getFullYear() - years;
+    result.start = `${startYear}-01-01`;
+    return result;
+  }
+
   return result;
 }
 

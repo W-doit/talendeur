@@ -54,28 +54,93 @@ const MEANINGFUL_WORDS = new Set([
   'integrate', 'deploy', 'migrate', 'upgrade', 'troubleshoot', 'debug', 'test', 'review'
 ]);
 
-export const BiographyWordCloud = () => {
-  const { user } = useAuth();
+interface BiographyWordCloudProps {
+  userId?: string;
+  accessTokenOverride?: string | null;
+}
+
+export const BiographyWordCloud = ({ userId, accessTokenOverride }: BiographyWordCloudProps = {}) => {
+  const { user, accessToken } = useAuth();
   const [words, setWords] = useState<WordFrequency[]>([]);
 
   useEffect(() => {
-    if (!user?.profile) return;
+    const fetchProfileData = async () => {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      const effectiveUserId = userId ?? user?.id;
+      const effectiveToken = accessTokenOverride !== undefined ? (accessTokenOverride || supabaseKey) : (accessToken || supabaseKey);
+      if (!effectiveUserId) return;
 
-    const bio = (user.profile as { bio?: string }).bio || '';
-    
-    if (!bio) return;
+      try {
+        const headers = {
+          apikey: supabaseKey,
+          Authorization: `Bearer ${effectiveToken}`,
+        };
 
-    // Extract words and count frequency, filtering for meaningful nouns and verbs
-    const wordCounts: { [key: string]: number } = {};
-    const cleanedText = bio
-      .toLowerCase()
-      .replace(/[^\w\s]/g, ' ')
-      .split(/\s+/)
-      .filter(word => 
-        word.length > 3 && 
-        !STOP_WORDS.has(word) &&
-        MEANINGFUL_WORDS.has(word) // Only include nouns and verbs
-      );
+        // Fetch all profile-related data in parallel
+        const [workResponse, educationResponse, certificationsResponse, profileResponse] = await Promise.all([
+          fetch(`${supabaseUrl}/rest/v1/work_experience?user_id=eq.${effectiveUserId}&select=*`, { headers }),
+          fetch(`${supabaseUrl}/rest/v1/education_history?user_id=eq.${effectiveUserId}&select=*`, { headers }),
+          fetch(`${supabaseUrl}/rest/v1/certifications?user_id=eq.${effectiveUserId}&select=*`, { headers }),
+          fetch(`${supabaseUrl}/rest/v1/profile?user_id=eq.${effectiveUserId}&select=bio`, { headers }),
+        ]);
+
+        const [workData, educationData, certificationsData, profileData] = await Promise.all([
+          workResponse.ok ? workResponse.json() : Promise.resolve([]),
+          educationResponse.ok ? educationResponse.json() : Promise.resolve([]),
+          certificationsResponse.ok ? certificationsResponse.json() : Promise.resolve([]),
+          profileResponse.ok ? profileResponse.json() : Promise.resolve([]),
+        ]);
+
+        // Combine all text sources
+        const textSources = [];
+        
+        // Add bio
+        const bio = profileData?.[0]?.bio || '';
+        if (bio) textSources.push(bio);
+
+        // Add work experience
+        workData.forEach((work: any) => {
+          if (work.job_title) textSources.push(work.job_title);
+          if (work.company) textSources.push(work.company);
+        });
+
+        // Add education
+        educationData.forEach((edu: any) => {
+          if (edu.institution) textSources.push(edu.institution);
+          if (edu.qualification_type) textSources.push(edu.qualification_type);
+          if (edu.subject) textSources.push(edu.subject);
+        });
+
+        // Add certifications
+        certificationsData.forEach((cert: any) => {
+          if (cert.course_name) textSources.push(cert.course_name);
+          if (cert.certification_type) textSources.push(cert.certification_type);
+        });
+
+        if (textSources.length === 0) {
+          setWords([]);
+          return;
+        }
+
+        // Combine all text
+        const combinedText = textSources.join(' ');
+
+        // Extract words and count frequency, filtering for meaningful nouns and verbs
+        const wordCounts: { [key: string]: number } = {};
+        const cleanedText = combinedText
+          .toLowerCase()
+          .replace(/[^\w\s]/g, ' ')
+          .split(/\s+/)
+          .filter(word => 
+            word.length > 3 && 
+            !STOP_WORDS.has(word) &&
+            MEANINGFUL_WORDS.has(word) // Only include nouns and verbs
+          );
+
+        cleanedText.forEach(word => {
+          wordCounts[word] = (wordCounts[word] || 0) + 1;
+        });
 
     cleanedText.forEach(word => {
       wordCounts[word] = (wordCounts[word] || 0) + 1;
@@ -84,7 +149,7 @@ export const BiographyWordCloud = () => {
     // Convert to array and sort by frequency
     const sortedWords = Object.entries(wordCounts)
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 25); // Top 25 words
+      .slice(0, 20); // Top 20 words
 
     if (sortedWords.length === 0) {
       setWords([]);
@@ -94,51 +159,75 @@ export const BiographyWordCloud = () => {
     const maxCount = sortedWords[0]?.[1] || 1;
     const minCount = sortedWords[sortedWords.length - 1]?.[1] || 1;
 
-    // Create word cloud data with random positioning
-    const cloudWords = sortedWords.map(([text, count], index) => {
-      // Size based on frequency (much larger range for bigger words)
-      const normalizedSize = ((count - minCount) / (maxCount - minCount)) * 200 + 80;
+    // Simple collision detection helper
+    const hasCollision = (x: number, y: number, size: number, rotation: number, placedWords: WordFrequency[]) => {
+      const buffer = 15; // Minimum distance between words
+      for (const word of placedWords) {
+        const distance = Math.sqrt(Math.pow(x - word.x, 2) + Math.pow(y - word.y, 2));
+        const minDistance = (size + word.size) / 6 + buffer; // Scale based on combined sizes
+        if (distance < minDistance) {
+          return true;
+        }
+      }
+      return false;
+    };
+
+    // Create word cloud data with collision avoidance
+    const cloudWords: WordFrequency[] = [];
+    
+    sortedWords.forEach(([text, count], index) => {
+      // Size based on frequency with bigger range
+      const normalizedSize = ((count - minCount) / (maxCount - minCount)) * 260 + 100;
       
-      // More varied rotations including vertical orientations
-      const rotations = [0, 0, 90, -90, 45, -45, 30, -30, 60, -60, 15, -15, 75, -75];
+      // Varied rotations
+      const rotations = [0, 0, 0, 0, 90, -90, 45, -45, 30, -30, 15, -15];
       const rotation = rotations[Math.floor(Math.random() * rotations.length)];
       
-      // Position with better spacing - use grid-like positions with random offset
-      const cols = 5;
-      const rows = Math.ceil(sortedWords.length / cols);
-      const col = index % cols;
-      const row = Math.floor(index / cols);
+      let x = 0, y = 0;
+      let attempts = 0;
+      const maxAttempts = 100;
       
-      // Calculate position with spacing
-      const xBase = (100 / (cols + 1)) * (col + 1);
-      const yBase = (100 / (rows + 1)) * (row + 1);
+      // Try to find non-colliding position
+      if (index < 5) {
+        // Top 5 words - center-left area
+        while (attempts < maxAttempts) {
+          x = 20 + Math.random() * 40;
+          y = 25 + Math.random() * 50;
+          if (!hasCollision(x, y, normalizedSize, rotation, cloudWords)) break;
+          attempts++;
+        }
+      } else {
+        // Rest spread out more, biased towards center-left
+        while (attempts < maxAttempts) {
+          x = 10 + Math.random() * 60;
+          y = 10 + Math.random() * 80;
+          if (!hasCollision(x, y, normalizedSize, rotation, cloudWords)) break;
+          attempts++;
+        }
+      }
       
-      // Add random offset for organic look
-      const xOffset = (Math.random() - 0.5) * 15;
-      const yOffset = (Math.random() - 0.5) * 15;
-      
-      const x = Math.max(10, Math.min(90, xBase + xOffset));
-      const y = Math.max(10, Math.min(90, yBase + yOffset));
-      
-      return {
+      cloudWords.push({
         text,
         value: count,
         color: COLORS[index % COLORS.length],
         size: normalizedSize,
-        x,
-        y,
-        rotation
-      };
+        x: Math.max(12, Math.min(88, x)),
+        y: Math.max(12, Math.min(88, y)),
+        rotation: index < 5 ? [0, 0, 0, 15, -15][Math.floor(Math.random() * 5)] : rotation
+      });
     });
 
     setWords(cloudWords);
-  }, [user]);
+      } catch (error) {
+        console.error('Error fetching profile data for word cloud:', error);
+        setWords([]);
+      }
+    };
 
-  if (!user?.profile) return null;
+    fetchProfileData();
+  }, [user, accessToken, userId, accessTokenOverride]);
 
-  const bio = (user.profile as { bio?: string }).bio || '';
-
-  if (!bio || words.length === 0) {
+  if (words.length === 0) {
     return (
       <Card>
         <CardHeader>
@@ -162,20 +251,21 @@ export const BiographyWordCloud = () => {
       </CardHeader>
       <CardContent>
         <div className="relative bg-gradient-to-br from-blue-50/30 via-purple-50/20 to-pink-50/30 rounded-lg border border-gray-200 p-6 overflow-hidden">
-          <div className="relative w-full h-[320px]">
+          <div className="relative w-full h-[350px]">
             {words.map((word, index) => (
               <div
                 key={index}
-                className="absolute font-bold cursor-pointer transition-all duration-300 hover:scale-110 hover:z-50 whitespace-nowrap"
+                className="absolute font-bold cursor-pointer transition-all duration-300 hover:scale-110 hover:z-50"
                 style={{
                   left: `${word.x}%`,
                   top: `${word.y}%`,
-                  fontSize: `${Math.max(16, word.size / 3.5)}px`,
+                  fontSize: `${Math.max(18, word.size / 3)}px`,
                   color: word.color,
                   transform: `translate(-50%, -50%) rotate(${word.rotation}deg)`,
-                  textShadow: '1px 1px 2px rgba(255,255,255,0.8)',
+                  textShadow: '2px 2px 4px rgba(255,255,255,0.9)',
                   fontWeight: 600 + (word.value * 100),
                   animation: `cloudFadeIn 0.8s ease-out ${index * 0.05}s both`,
+                  whiteSpace: 'nowrap',
                 }}
                 title={`"${word.text}" appears ${word.value} time${word.value !== 1 ? 's' : ''}`}
               >

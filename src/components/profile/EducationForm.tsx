@@ -43,7 +43,9 @@ export const EducationForm = ({ importedData }: EducationFormProps = {}) => {
   useEffect(() => {
     console.log('EducationForm useEffect - importedData:', importedData);
     console.log('EducationForm useEffect - hasImportedData:', hasImportedData);
-    if (importedData && importedData.length > 0 && !hasImportedData) {
+    console.log('EducationForm useEffect - importedData?.length:', importedData?.length);
+    
+    if (importedData && Array.isArray(importedData) && importedData.length > 0) {
       console.log('Pre-filling education with imported data:', importedData);
       const mappedData = importedData.map(edu => ({
         institution: edu.institution || '',
@@ -54,17 +56,24 @@ export const EducationForm = ({ importedData }: EducationFormProps = {}) => {
         still_studying: edu.still_studying || false,
       }));
       console.log('Mapped education data:', mappedData);
-      setEducations(mappedData);
+      // Merge with existing educations instead of replacing
+      setEducations(prev => {
+        // Add imported data to top if not already there
+        const merged = [...mappedData, ...prev];
+        return merged;
+      });
       setHasImportedData(true);
       setLoading(false);
+    } else if (!importedData || (Array.isArray(importedData) && importedData.length === 0)) {
+      // Reset hasImportedData if no data to allow fresh imports
+      setHasImportedData(false);
     }
   }, [importedData, hasImportedData]);
 
   const fetchEducation = useCallback(async () => {
-    // Don't fetch if we have imported data or already tried
-    if (hasFetched || (importedData && importedData.length > 0)) {
-      console.log('Skipping fetch - hasFetched:', hasFetched, 'importedData exists:', !!(importedData && importedData.length > 0));
-      setLoading(false);
+    // Always fetch database records first
+    if (hasFetched) {
+      console.log('Skipping fetch - already fetched');
       return;
     }
     
@@ -91,7 +100,28 @@ export const EducationForm = ({ importedData }: EducationFormProps = {}) => {
       
       if (error) throw error;
       
-      setEducations(data || []);
+      const normalized = (data || []).map((edu) => ({
+        ...edu,
+        still_studying: !!edu.still_studying,
+        end_date: edu.end_date ?? '',
+      }));
+      
+      // If there's imported data, merge it with existing data
+      if (importedData && Array.isArray(importedData) && importedData.length > 0) {
+        console.log('Merging imported data with existing data');
+        const mappedImported = importedData.map(edu => ({
+          institution: edu.institution || '',
+          qualification_type: edu.qualification_type || '',
+          subject: edu.subject || '',
+          start_date: edu.start_date || '',
+          end_date: edu.end_date || '',
+          still_studying: edu.still_studying || false,
+        }));
+        // Add imported data first so new entries appear at the top
+        setEducations([...mappedImported, ...normalized]);
+      } else {
+        setEducations(normalized);
+      }
       setHasFetched(true); // Mark as fetched
     } catch (error) {
       console.error('Error fetching education:', error);
@@ -122,7 +152,15 @@ export const EducationForm = ({ importedData }: EducationFormProps = {}) => {
 
   const updateEducation = (index: number, field: keyof Education, value: string | boolean) => {
     const updated = [...educations];
-    updated[index] = { ...updated[index], [field]: value };
+    if (field === 'still_studying') {
+      updated[index] = {
+        ...updated[index],
+        still_studying: value as boolean,
+        end_date: value ? '' : updated[index].end_date,
+      };
+    } else {
+      updated[index] = { ...updated[index], [field]: value };
+    }
     setEducations(updated);
   };
 
@@ -152,7 +190,10 @@ export const EducationForm = ({ importedData }: EducationFormProps = {}) => {
 
     setSaving(true);
     try {
-      for (const edu of educations) {
+      const updatedEducations = [...educations];
+
+      for (let index = 0; index < educations.length; index += 1) {
+        const edu = educations[index];
         if (!edu.institution || !edu.qualification_type) continue;
 
         if (edu.id) {
@@ -163,14 +204,14 @@ export const EducationForm = ({ importedData }: EducationFormProps = {}) => {
               qualification_type: edu.qualification_type,
               subject: edu.subject,
               start_date: edu.start_date,
-              end_date: edu.end_date,
+              end_date: edu.still_studying ? null : edu.end_date,
               still_studying: edu.still_studying,
             })
             .eq('id', edu.id);
 
           if (error) throw error;
         } else {
-          const { error } = await supabase
+          const { data, error } = await supabase
             .from('education_history')
             .insert({
               user_id: user.id,
@@ -178,15 +219,19 @@ export const EducationForm = ({ importedData }: EducationFormProps = {}) => {
               qualification_type: edu.qualification_type,
               subject: edu.subject,
               start_date: edu.start_date,
-              end_date: edu.end_date,
+              end_date: edu.still_studying ? null : edu.end_date,
               still_studying: edu.still_studying,
-            });
+            })
+            .select('id')
+            .single();
 
           if (error) throw error;
+
+          updatedEducations[index] = { ...edu, id: data?.id };
         }
       }
 
-      await fetchEducation();
+      setEducations(updatedEducations);
     } catch (error) {
       console.error('Error saving education:', error);
     } finally {

@@ -19,7 +19,12 @@ interface CategoryCount {
   color: string;
 }
 
-export const CertificationsChart = () => {
+interface CertificationsChartProps {
+  userId?: string;
+  accessTokenOverride?: string | null;
+}
+
+export const CertificationsChart = ({ userId, accessTokenOverride }: CertificationsChartProps = {}) => {
   const { user, accessToken } = useAuth();
   const [certifications, setCertifications] = useState<Certification[]>([]);
   const [categoryData, setCategoryData] = useState<CategoryCount[]>([]);
@@ -29,17 +34,19 @@ export const CertificationsChart = () => {
     const COLORS = ['#9EBC9E', '#CFC6B8', '#FFCFD2', '#FFAFC5', '#AA778A', '#553E4E'];
     
     const fetchCertifications = async () => {
-      if (!user || !accessToken) return;
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      const effectiveUserId = userId ?? user?.id;
+      const effectiveToken = accessTokenOverride !== undefined ? (accessTokenOverride || supabaseKey) : (accessToken || supabaseKey);
+      if (!effectiveUserId) return;
 
       try {
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-        const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
         const response = await fetch(
-          `${supabaseUrl}/rest/v1/certifications?user_id=eq.${user.id}&select=*&order=date_attained.desc`,
+          `${supabaseUrl}/rest/v1/certifications?user_id=eq.${effectiveUserId}&select=*&order=date_attained.desc`,
           {
             headers: {
               'apikey': supabaseKey,
-              'Authorization': `Bearer ${accessToken}`,
+              'Authorization': `Bearer ${effectiveToken}`,
             }
           }
         );
@@ -73,7 +80,7 @@ export const CertificationsChart = () => {
     };
 
     fetchCertifications();
-  }, [user, accessToken]);
+  }, [user, accessToken, userId, accessTokenOverride]);
 
   if (loading) {
     return (
