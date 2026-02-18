@@ -10,12 +10,13 @@ from datetime import datetime
 # 0. CONNECT TO SUPABASE
 # ======================================================
 SUPABASE_URL = "https://clmnzuqgybreszqphvgt.supabase.co"
-SUPABASE_KEY = "sb_publishable___RjeUinWtk3BcJ0YQvCWw_mGAFIdXn"
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+SUPABASE_KEY = "sb_publishable___RjeUinWtk3BcJ0YQvCWw_mGAFIdXn"  # public API key for authentication
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)  # initialiazes a client to interact with Supabase
 
 # ======================================================
 # 1. SYNTHETIC QUESTIONS & OPTIONS (mocking supabase)
 # ======================================================
+# list of questions
 questions = [
     {"id": 1, "text": "Seniority Level", "answer_type": "multi_select"},
     {"id": 2, "text": "Skills Confidence", "answer_type": "scale", "scale_min": 1, "scale_max": 5},
@@ -25,6 +26,7 @@ questions = [
     {"id": 6, "text": "Company Culture Values", "answer_type": "multi_select"},
 ]
 
+# list of answer options for each question
 options = [
     # Seniority
     {"id": 101, "question_id": 1, "label": "Intern"},
@@ -58,13 +60,13 @@ options = [
     {"id": 505, "question_id": 6, "label": "Cross-functional Collaboration"},
 ]
 
-# Organize options by question_id
+# Organize(group) options by question_id for easy access later when assigning preferences to users
 options_by_question = {}
 for opt in options:
     options_by_question.setdefault(opt["question_id"], []).append(opt)
 
 # ======================================================
-# 2. USER ARCHETYPES
+# 2. USER ARCHETYPES -> it defines templates for different user types (called archetypes) and their attributes (which are bio, skills, education, and roles)
 # ======================================================
 USER_ARCHETYPES = {
     "data_scientist": {
@@ -99,20 +101,22 @@ USER_ARCHETYPES = {
     }
 }
 
+# extra skills to add randomness to user profiles (better simulation of real user profiles)
 NOISE_SKILLS = ["Excel", "Communication", "Git", "Problem Solving", "Time Management"]
 
 # ======================================================
 # 3. GENERATE USERS WITH RANDOM PREFERENCES
 # ======================================================
-def generate_users(n=5):
+
+def generate_users(n=100):  # creates n synthetic users with random elements from bio, skills, education, roles, and assigned preferences based on the defined archetypes and questions 
     users = []
     for _ in range(n):
-        archetype = random.choice(list(USER_ARCHETYPES.keys()))
+        archetype = random.choice(list(USER_ARCHETYPES.keys()))  # randomly selects an archetype for the user
         base = USER_ARCHETYPES[archetype]
 
-        skills = base["skills"].copy()
-        if random.random() < 0.3:
-            skills += random.sample(NOISE_SKILLS, 2)
+        skills = base["skills"].copy()  
+        if random.random() < 0.3:  # 30% chance to add noise skills to make profiles more realistic
+            skills += random.sample(NOISE_SKILLS, 2)  
 
         user_id = str(uuid.uuid4())
         user = {
@@ -122,17 +126,17 @@ def generate_users(n=5):
             "skills": skills,
             "education": random.choice(base["education"]),
             "roles": base["roles"],
-            "experience": random.randint(1, 10)  # Add the 'experience' column
+            "experience": random.randint(1, 10)  
         }
 
-        # Assign preferences (unchanged)
+        # Assign preferences for each question based on the options available, with some randomness to simulate real user choices
         assigned_preferences = []
         for q in questions:
             q_id = q["id"]
-            q_type = q.get("answer_type", "multi_select")
+            q_type = q.get("answer_type", "multi_select")  
             q_opts = options_by_question.get(q_id, [])
 
-            if q_type == "multi_select" and q_opts:
+            if q_type == "multi_select" and q_opts:  # randomly selects 1 to 3 options for multi-select questions
                 selected = random.sample(q_opts, k=random.randint(1, min(3, len(q_opts))))
                 for opt in selected:
                     assigned_preferences.append({
@@ -142,9 +146,9 @@ def generate_users(n=5):
                         "option_label": opt["label"],
                         "question_text": q["text"],
                         "scale_value": None,
-                        "created_at": datetime.utcnow()
+                        "created_at": datetime.utcnow() 
                     })
-            elif q_type == "scale":
+            elif q_type == "scale":  # for scale questions, assigns a random value within the defined scale range
                 scale_val = random.randint(q.get("scale_min", 1), q.get("scale_max", 5))
                 assigned_preferences.append({
                     "user_id": user_id,
@@ -156,11 +160,11 @@ def generate_users(n=5):
                     "created_at": datetime.utcnow()
                 })
 
-        user["assigned_preferences"] = assigned_preferences
+        user["assigned_preferences"] = assigned_preferences  # adds the generated preferences to the user profile
         users.append(user)
     return pd.DataFrame(users)
 
-df_users = generate_users(n=5)
+df_users = generate_users(n=5)  # generates 5 synthetic users with random preferences and stores them in a DataFrame for further processing in the recommendation system
 
 # ======================================================
 # 4. FETCH COMPANIES AND JOBS FROM SUPABASE
@@ -183,16 +187,16 @@ df_jobs = df_jobs.merge(
     left_on="company_id",
     right_on="id",
     how="left",
-    suffixes=("_job", "_company")  # Optional: Explicitly set suffixes
+    suffixes=("_job", "_company") 
 )
 
 # Drop redundant columns
 df_jobs.drop(columns=["id", "company_name_job"], inplace=True)  # Drop the redundant 'id' and 'company_name_x'
 
-# Rename the company_name column if needed
+# Rename the company_name column
 df_jobs.rename(columns={"company_name_company": "company_name"}, inplace=True)
 
-# Verify
+# Verify the merge results
 print("Columns in df_jobs after merge:", df_jobs.columns)
 print("First few rows of df_jobs after merge:")
 print(df_jobs.head())
@@ -200,13 +204,15 @@ print(df_jobs.head())
 # ======================================================
 # 5. TEXT EMBEDDINGS
 # ======================================================
-def build_user_text(df):
+# creates a single text representation for each user by combining their bio, skills, and roles, with extra weighting on skills and roles to emphasize their importance in the recommendation process
+def build_user_text(df):  
     return (
         df["bio"] + " " +
         ("skills "*3) + df["skills"].apply(lambda x: " ".join(x)) + " " +
         ("roles "*2) + df["roles"].apply(lambda x: " ".join(x))
     )
 
+# creates a single text representation for each job by combining the job post, technical skills, soft skills, and keywords, which will be used to compute similarity with user profiles
 def build_job_text(df):
     return (
         df["job_post"] + " " +
@@ -217,24 +223,25 @@ def build_job_text(df):
         df["keyword_3"]
     )
 
-df_users["profile_text"] = build_user_text(df_users)
-df_jobs["job_text"] = build_job_text(df_jobs)
+df_users["profile_text"] = build_user_text(df_users)  # creates a new column 'profile_text' in the df_users DataFrame by applying the build_user_text function
+df_jobs["job_text"] = build_job_text(df_jobs)  # creates a new column 'job_text' in the df_jobs DataFrame by applying the build_job_text function
 
-model = SentenceTransformer("all-MiniLM-L6-v2")
-user_embeddings = model.encode(df_users["profile_text"].tolist(), normalize_embeddings=True)
-job_embeddings = model.encode(df_jobs["job_text"].tolist(), normalize_embeddings=True)
-similarity_matrix = cosine_similarity(user_embeddings, job_embeddings)
+model = SentenceTransformer("all-MiniLM-L6-v2")  # initializes a sentence transformer model that will be used to encode the user profiles and job descriptions into vector embeddings for similarity computation
+user_embeddings = model.encode(df_users["profile_text"].tolist(), normalize_embeddings=True)  # encodes the user profile texts into vector embeddings and normalizes them to unit length for cosine similarity calculations
+job_embeddings = model.encode(df_jobs["job_text"].tolist(), normalize_embeddings=True)  # encodes the job description texts into vector embeddings and normalizes them to unit length for cosine similarity calculations
+similarity_matrix = cosine_similarity(user_embeddings, job_embeddings)  # computes the cosine similarity between user embeddings and job embeddings, resulting in a matrix where each entry represents the similarity score between a user and a job, which will be used as the base score for the recommendation system
 
 # ======================================================
 # 6. SCORING FUNCTION
 # ======================================================
-def hybrid_score_verbose(user_idx, job_idx):
+# calculates a comprehensive score for a given user and job by combining: base cosine similarity, job fit, and company fit
+def hybrid_score_verbose(user_idx, job_idx):  
     user = df_users.iloc[user_idx]
     job = df_jobs.iloc[job_idx]
     base = similarity_matrix[user_idx, job_idx]
     breakdown = {"base_cosine": base}
 
-    # --- Job Fit Score ---
+    # --- Job Fit Score ---> how well the user's profile matches the job requirements in each of these areas
     # Technical Skills
     user_skills = set(user["skills"])
     job_skills = set(job["technical_skills"].split(", "))
@@ -252,7 +259,7 @@ def hybrid_score_verbose(user_idx, job_idx):
     education_match = 1 if user["education"] == job["education"] else 0
     education_status = "matches" if education_match else "does not match"
 
-    # Certifications (if available)
+    # Certifications 
     user_certifications = set(user.get("certifications", []))
     job_certifications = set(job["certifications"].split(", "))
     certifications_match = len(user_certifications.intersection(job_certifications)) / len(job_certifications) if job_certifications else 0
@@ -287,7 +294,7 @@ def hybrid_score_verbose(user_idx, job_idx):
         }
     }
 
-    # --- Company Fit Score ---
+    # --- Company Fit Score ---> evaluates how well the company's characteristics align with the user's preferences
     # Company Type
     user_company_types = [p["option_label"] for p in user["assigned_preferences"] if p["option_label"] and p["question_text"].lower() == "company type"]
     company_type_match = 1 if any(ct.lower() in job["company_name"].lower() for ct in user_company_types) else 0
@@ -335,10 +342,10 @@ def hybrid_score_verbose(user_idx, job_idx):
         }
     }
 
-    # --- Technical Skills Bonus ---
-    breakdown["technical_skills_bonus"] = 0.1 * technical_skills_match
+    # --- Technical Skills Bonus ---> adds a bonus to the score based on the percentage of technical skills that match between the user and the job, weighted at 10% of the total score
+    breakdown["technical_skills_bonus"] = 0.1 * technical_skills_match  
 
-    # --- Keywords Bonus ---
+    # --- Keywords Bonus ---> adds a bonus to the score based on the percentage of keywords that match between the user's preferences and the job's keywords, weighted at 8% of the total score
     user_keywords = set([p["option_label"] for p in user["assigned_preferences"] if p["option_label"] and p["question_text"].lower() in ["main goals", "company culture values"]])
     job_keywords = set([job["keyword_1"], job["keyword_2"], job["keyword_3"]])
     keywords_match = len(user_keywords.intersection(job_keywords)) / len(job_keywords) if job_keywords else 0
@@ -350,8 +357,10 @@ def hybrid_score_verbose(user_idx, job_idx):
     breakdown["total_score"] = total_score
 
     # Scale up Job Fit and Company Fit Scores
-    scaled_job_fit = breakdown["job_fit_score"] * 0.5  # Increase weight
-    scaled_company_fit = breakdown["company_fit_score"] * 0.3  # Increase weight
+    # they are currently weighted at 0.40 and 0.20 respectively in their calculations, but we want to give them more influence in the final score
+    # so we will scale them up to contribute more significantly to the total score 
+    scaled_job_fit = breakdown["job_fit_score"] * 0.5  
+    scaled_company_fit = breakdown["company_fit_score"] * 0.3  
 
     # Add scaled scores to total_bonus
     total_bonus = sum([v for k, v in breakdown.items() if k != "base_cosine" and isinstance(v, (int, float))]) + scaled_job_fit + scaled_company_fit
@@ -359,12 +368,12 @@ def hybrid_score_verbose(user_idx, job_idx):
 
     return total_score, breakdown
 
-def filter_jobs_for_user(user_row):
+def filter_jobs_for_user(user_row):  # filters the job postings to only include those that match the user's primary role
     user_role = user_row["roles"][0].lower()  # Use the first role
     eligible_jobs = df_jobs[df_jobs["job_post"].str.lower().str.contains(user_role)]
     return eligible_jobs
 
-def recommend_jobs_verbose(user_index, top_n=5):
+def recommend_jobs_verbose(user_index, top_n=5):  # generates job recommendations for a given user index
     user_row = df_users.iloc[user_index]
     print(f"User role: {user_row['roles'][0]}")
     eligible_jobs = filter_jobs_for_user(user_row)
@@ -376,7 +385,7 @@ def recommend_jobs_verbose(user_index, top_n=5):
         print(f"Accessing index: {idx}")  # Debug line
         score, breakdown = hybrid_score_verbose(user_index, idx)
         results.append({
-            "company_name": eligible_jobs.loc[idx, "company_name"],  # Use .loc for clarity
+            "company_name": eligible_jobs.loc[idx, "company_name"], 
             "role": eligible_jobs.loc[idx, "job_post"],
             "job_id": eligible_jobs.loc[idx, "job_id"],
             "score": score,
@@ -385,7 +394,7 @@ def recommend_jobs_verbose(user_index, top_n=5):
 
     if not results:
         return pd.DataFrame()
-    return pd.DataFrame(results).sort_values("score", ascending=False).head(top_n)
+    return pd.DataFrame(results).sort_values("score", ascending=False).head(top_n)  # sorts the results by score in descending order and returns the top N recommendations as a DataFrame
 
 # ======================================================
 # 7. TESTING
