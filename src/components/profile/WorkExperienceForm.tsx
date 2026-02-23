@@ -32,7 +32,9 @@ export const WorkExperienceForm = ({ importedData }: WorkExperienceFormProps = {
   useEffect(() => {
     console.log('WorkExperienceForm useEffect - importedData:', importedData);
     console.log('WorkExperienceForm useEffect - hasImportedData:', hasImportedData);
-    if (importedData && importedData.length > 0 && !hasImportedData) {
+    console.log('WorkExperienceForm useEffect - importedData?.length:', importedData?.length);
+    
+    if (importedData && Array.isArray(importedData) && importedData.length > 0) {
       console.log('Pre-filling work experience with imported data:', importedData);
       const mappedData = importedData.map(exp => ({
         job_title: exp.job_title || '',
@@ -42,17 +44,24 @@ export const WorkExperienceForm = ({ importedData }: WorkExperienceFormProps = {
         still_work_here: exp.still_work_here || false,
       }));
       console.log('Mapped work experience data:', mappedData);
-      setExperiences(mappedData);
+      // Merge with existing experiences instead of replacing
+      setExperiences(prev => {
+        // Add imported data to top if not already there
+        const merged = [...mappedData, ...prev];
+        return merged;
+      });
       setHasImportedData(true);
       setLoading(false);
+    } else if (!importedData || (Array.isArray(importedData) && importedData.length === 0)) {
+      // Reset hasImportedData if no data to allow fresh imports
+      setHasImportedData(false);
     }
   }, [importedData, hasImportedData]);
 
   const fetchExperiences = useCallback(async () => {
-    // Don't fetch if we have imported data or already tried
-    if (hasFetched || (importedData && importedData.length > 0)) {
-      console.log('Skipping fetch - hasFetched:', hasFetched, 'importedData exists:', !!(importedData && importedData.length > 0));
-      setLoading(false);
+    // Always fetch database records first
+    if (hasFetched) {
+      console.log('Skipping fetch - already fetched');
       return;
     }
     
@@ -80,7 +89,27 @@ export const WorkExperienceForm = ({ importedData }: WorkExperienceFormProps = {
 
       if (error) throw error;
       
-      setExperiences(data || []);
+      const normalized = (data || []).map((exp) => ({
+        ...exp,
+        still_work_here: !!exp.still_work_here,
+        end_date: exp.end_date ?? '',
+      }));
+      
+      // If there's imported data, merge it with existing data
+      if (importedData && Array.isArray(importedData) && importedData.length > 0) {
+        console.log('Merging imported data with existing data');
+        const mappedImported = importedData.map(exp => ({
+          job_title: exp.job_title || '',
+          company: exp.company || '',
+          start_date: exp.start_date || '',
+          end_date: exp.end_date || '',
+          still_work_here: exp.still_work_here || false,
+        }));
+        // Add imported data first so new entries appear at the top
+        setExperiences([...mappedImported, ...normalized]);
+      } else {
+        setExperiences(normalized);
+      }
       setHasFetched(true); // Mark as fetched
     } catch (error) {
       console.error('Error fetching work experience:', error);
@@ -111,7 +140,15 @@ export const WorkExperienceForm = ({ importedData }: WorkExperienceFormProps = {
 
   const updateExperience = (index: number, field: keyof WorkExperience, value: string | boolean) => {
     const updated = [...experiences];
-    updated[index] = { ...updated[index], [field]: value };
+    if (field === 'still_work_here') {
+      updated[index] = {
+        ...updated[index],
+        still_work_here: value as boolean,
+        end_date: value ? '' : updated[index].end_date,
+      };
+    } else {
+      updated[index] = { ...updated[index], [field]: value };
+    }
     setExperiences(updated);
   };
 
@@ -143,7 +180,10 @@ export const WorkExperienceForm = ({ importedData }: WorkExperienceFormProps = {
 
     setSaving(true);
     try {
-      for (const exp of experiences) {
+      const updatedExperiences = [...experiences];
+
+      for (let index = 0; index < experiences.length; index += 1) {
+        const exp = experiences[index];
         // Skip empty entries
         if (!exp.job_title || !exp.company) continue;
 
@@ -155,31 +195,34 @@ export const WorkExperienceForm = ({ importedData }: WorkExperienceFormProps = {
               job_title: exp.job_title,
               company: exp.company,
               start_date: exp.start_date,
-              end_date: exp.end_date,
+              end_date: exp.still_work_here ? null : exp.end_date,
               still_work_here: exp.still_work_here,
             })
             .eq('id', exp.id);
 
           if (error) throw error;
         } else {
-          // Insert new
-          const { error } = await supabase
+          // Insert new and capture id to avoid duplicates on subsequent saves
+          const { data, error } = await supabase
             .from('work_experience')
             .insert({
               user_id: user.id,
               job_title: exp.job_title,
               company: exp.company,
               start_date: exp.start_date,
-              end_date: exp.end_date,
+              end_date: exp.still_work_here ? null : exp.end_date,
               still_work_here: exp.still_work_here,
-            });
+            })
+            .select('id')
+            .single();
 
           if (error) throw error;
+
+          updatedExperiences[index] = { ...exp, id: data?.id };
         }
       }
 
-      // Refresh the list
-      await fetchExperiences();
+      setExperiences(updatedExperiences);
     } catch (error) {
       console.error('Error saving work experience:', error);
     } finally {

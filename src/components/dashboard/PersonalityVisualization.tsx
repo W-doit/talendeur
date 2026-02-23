@@ -44,22 +44,53 @@ const TRAIT_INFO = {
   },
 };
 
-export const PersonalityVisualization = () => {
+interface PersonalityVisualizationProps {
+  userId?: string;
+  accessTokenOverride?: string | null;
+}
+
+export const PersonalityVisualization = ({ userId, accessTokenOverride }: PersonalityVisualizationProps = {}) => {
   const { user, accessToken } = useAuth();
   const [traits, setTraits] = useState<PersonalityTraits | null>(null);
   const [facets, setFacets] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  const splitTraitLabel = (label: string) => {
+    if (label.length <= 12) return [label];
+    const midpoint = Math.ceil(label.length / 2);
+    return [label.slice(0, midpoint), label.slice(midpoint)];
+  };
+
+  const renderPolarAngleAxisTick = (props: { x: number; y: number; payload: { value: string } }) => {
+    const { x, y, payload } = props;
+    const lines = splitTraitLabel(payload.value);
+    const lineHeight = 12;
+    const totalHeight = lines.length * lineHeight;
+    const startDy = -(totalHeight - lineHeight) / 2;
+
+    return (
+      <text x={x} y={y} textAnchor="middle" fill="#6b7280" fontSize={11} dominantBaseline="central">
+        {lines.map((line, index) => (
+          <tspan key={line} x={x} dy={index === 0 ? startDy : lineHeight}>
+            {line}
+          </tspan>
+        ))}
+      </text>
+    );
+  };
+
   const fetchPersonalityData = useCallback(async () => {
-    if (!user || !accessToken) {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    const effectiveUserId = userId ?? user?.id;
+    const effectiveToken = accessTokenOverride !== undefined ? (accessTokenOverride || supabaseKey) : (accessToken || supabaseKey);
+    if (!effectiveUserId) {
       setLoading(false);
       return;
     }
 
     try {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-      const authHeader = `Bearer ${accessToken}`;
+      const authHeader = `Bearer ${effectiveToken}`;
       
       // Fetch personality traits via REST API
       const traitsResponse = await fetch(
@@ -99,7 +130,7 @@ export const PersonalityVisualization = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, accessToken]);
+  }, [user, accessToken, userId, accessTokenOverride]);
 
   useEffect(() => {
     fetchPersonalityData();
@@ -210,10 +241,10 @@ export const PersonalityVisualization = () => {
           {/* Radar Chart */}
           <div>
             <h3 className="text-lg font-semibold mb-4">Trait Overview</h3>
-            <ResponsiveContainer width="100%" height={350}>
-              <RadarChart data={radarData}>
+            <ResponsiveContainer width="100%" height={360}>
+              <RadarChart data={radarData} margin={{ top: 20, right: 40, bottom: 20, left: 40 }}>
                 <PolarGrid stroke="#e5e7eb" />
-                <PolarAngleAxis dataKey="trait" tick={{ fill: '#6b7280', fontSize: 12 }} />
+                <PolarAngleAxis dataKey="trait" tick={renderPolarAngleAxisTick} />
                 <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: '#9ca3af', fontSize: 10 }} />
                 <Radar
                   name="Personality"

@@ -18,7 +18,12 @@ interface ChartData {
   icon: typeof Leaf;
 }
 
-export const ESGChart = () => {
+interface ESGChartProps {
+  userId?: string;
+  accessTokenOverride?: string | null;
+}
+
+export const ESGChart = ({ userId, accessTokenOverride }: ESGChartProps = {}) => {
   const { user, accessToken } = useAuth();
   const [esgData, setEsgData] = useState<ChartData[]>([]);
   const [totalScore, setTotalScore] = useState(0);
@@ -26,17 +31,19 @@ export const ESGChart = () => {
 
   useEffect(() => {
     const fetchESG = async () => {
-      if (!user || !accessToken) return;
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      const effectiveUserId = userId ?? user?.id;
+      const effectiveToken = accessTokenOverride !== undefined ? (accessTokenOverride || supabaseKey) : (accessToken || supabaseKey);
+      if (!effectiveUserId) return;
 
       try {
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-        const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
         const response = await fetch(
-          `${supabaseUrl}/rest/v1/esg_scores?user_id=eq.${user.id}&select=*`,
+          `${supabaseUrl}/rest/v1/esg_scores?user_id=eq.${effectiveUserId}&select=*`,
           {
             headers: {
               'apikey': supabaseKey,
-              'Authorization': `Bearer ${accessToken}`,
+              'Authorization': `Bearer ${effectiveToken}`,
             }
           }
         );
@@ -78,7 +85,7 @@ export const ESGChart = () => {
     };
 
     fetchESG();
-  }, [user, accessToken]);
+  }, [user, accessToken, userId, accessTokenOverride]);
 
   if (loading) {
     return (

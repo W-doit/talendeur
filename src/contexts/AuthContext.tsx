@@ -159,6 +159,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           headline: profileData.headline || undefined,
           profilePic: profileData.profile_pic || '',
           cv: profileData.cv_url || '',
+          videoUrl: profileData.video_url || '',
           interests: skillData?.interests || [],
           skills: {
             soft: skillData?.soft_skills || 70,
@@ -191,6 +192,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           email: profileData.email,
           headline: profileData.headline || undefined,
           logo: orgData?.logo || '',
+          videoUrl: profileData.video_url || '',
           website: orgData?.website || '',
           about: orgData?.about || '',
           needs: orgData?.needs || [],
@@ -570,6 +572,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       if ('cv' in profileData) {
         profileUpdate.cv_url = profileData.cv;
+      }
+
+      if ('videoUrl' in profileData) {
+        profileUpdate.video_url = profileData.videoUrl;
       }
 
       console.log('Updating profile table with:', profileUpdate);

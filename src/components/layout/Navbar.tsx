@@ -31,16 +31,18 @@ const Navbar: React.FC = () => {
         <div className="flex items-center space-x-4">
           {user ? (
             <>
-              <Link to="/profile">
-                <Button variant="outline" className="bg-white/70 text-talendeur-primary hover:bg-white/90 text-base">
-                  {user.userType === 'jobseeker' ? (
-                    <User className="mr-2 h-5 w-5" />
-                  ) : (
-                    <Building className="mr-2 h-5 w-5" />
-                  )}
-                  Profile
-                </Button>
-              </Link>
+              <Button
+                variant="outline"
+                className="bg-white/70 text-talendeur-primary hover:bg-white/90 text-base"
+                onClick={() => navigate('/profile', { state: { mode: 'view' } })}
+              >
+                {user.userType === 'jobseeker' ? (
+                  <User className="mr-2 h-5 w-5" />
+                ) : (
+                  <Building className="mr-2 h-5 w-5" />
+                )}
+                Profile
+              </Button>
               <Link to="/matches">
                 <Button variant="outline" className="bg-white/70 text-talendeur-primary hover:bg-white/90 text-base">
                   Matches

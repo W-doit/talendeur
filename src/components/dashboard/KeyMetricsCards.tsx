@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { GraduationCap, Briefcase, TrendingUp, Award } from 'lucide-react';
 
@@ -11,14 +10,23 @@ interface ProfileMetrics {
   total_jobs: number;
 }
 
-export const KeyMetricsCards = () => {
+interface KeyMetricsCardsProps {
+  userId?: string;
+  accessTokenOverride?: string | null;
+}
+
+export const KeyMetricsCards = ({ userId, accessTokenOverride }: KeyMetricsCardsProps = {}) => {
   const { user, accessToken } = useAuth();
   const [metrics, setMetrics] = useState<ProfileMetrics | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchMetrics = async () => {
-      if (!user || !accessToken) return;
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      const effectiveUserId = userId ?? user?.id;
+      const effectiveToken = accessTokenOverride !== undefined ? (accessTokenOverride || supabaseKey) : (accessToken || supabaseKey);
+      if (!effectiveUserId) return;
 
       try {
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -39,7 +47,7 @@ export const KeyMetricsCards = () => {
 
         // Fetch education via REST API
         const educationResponse = await fetch(
-          `${supabaseUrl}/rest/v1/education?user_id=eq.${user.id}&select=degree`,
+          `${supabaseUrl}/rest/v1/education?user_id=eq.${effectiveUserId}&select=degree`,
           {
             headers: {
               'apikey': supabaseKey,
@@ -91,7 +99,7 @@ export const KeyMetricsCards = () => {
     };
 
     fetchMetrics();
-  }, [user, accessToken]);
+  }, [user, accessToken, userId, accessTokenOverride]);
 
   if (loading) {
     return (
