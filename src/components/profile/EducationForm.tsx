@@ -197,13 +197,30 @@ export const EducationForm = ({ importedData, onSaveComplete }: EducationFormPro
 
     setSaving(true);
     try {
+      // If we have imported data (no IDs), delete all existing entries first to avoid duplicates
+      const hasNewImports = educations.some(edu => !edu.id && (edu.institution || edu.qualification_type));
+      
+      if (hasNewImports) {
+        console.log('Detected imported data - deleting old education entries to avoid duplicates');
+        const { error: deleteError } = await supabase
+          .from('education_history')
+          .delete()
+          .eq('user_id', user.id);
+        
+        if (deleteError) {
+          console.error('Error deleting old education:', deleteError);
+          throw deleteError;
+        }
+      }
+
       const updatedEducations = [...educations];
 
       for (let index = 0; index < educations.length; index += 1) {
         const edu = educations[index];
         if (!edu.institution || !edu.qualification_type) continue;
 
-        if (edu.id) {
+        if (edu.id && !hasNewImports) {
+          // Update existing (only if not replacing all with imports)
           const { error } = await supabase
             .from('education_history')
             .update({
@@ -218,6 +235,7 @@ export const EducationForm = ({ importedData, onSaveComplete }: EducationFormPro
 
           if (error) throw error;
         } else {
+          // Insert new
           const { data, error } = await supabase
             .from('education_history')
             .insert({

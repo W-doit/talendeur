@@ -187,6 +187,22 @@ export const WorkExperienceForm = ({ importedData, onSaveComplete }: WorkExperie
 
     setSaving(true);
     try {
+      // If we have imported data (no IDs), delete all existing entries first to avoid duplicates
+      const hasNewImports = experiences.some(exp => !exp.id && (exp.job_title || exp.company));
+      
+      if (hasNewImports) {
+        console.log('Detected imported data - deleting old work experience entries to avoid duplicates');
+        const { error: deleteError } = await supabase
+          .from('work_experience')
+          .delete()
+          .eq('user_id', user.id);
+        
+        if (deleteError) {
+          console.error('Error deleting old work experience:', deleteError);
+          throw deleteError;
+        }
+      }
+
       const updatedExperiences = [...experiences];
 
       for (let index = 0; index < experiences.length; index += 1) {
@@ -194,8 +210,8 @@ export const WorkExperienceForm = ({ importedData, onSaveComplete }: WorkExperie
         // Skip empty entries
         if (!exp.job_title || !exp.company) continue;
 
-        if (exp.id) {
-          // Update existing
+        if (exp.id && !hasNewImports) {
+          // Update existing (only if not replacing all with imports)
           const { error } = await supabase
             .from('work_experience')
             .update({

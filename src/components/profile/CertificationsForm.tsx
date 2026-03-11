@@ -41,6 +41,83 @@ export const CertificationsForm = ({ importedData, onSaveComplete }: Certificati
   const [hasFetched, setHasFetched] = useState(false);
   const [hasImportedData, setHasImportedData] = useState(false);
 
+  const saveCertifications = async () => {
+    if (!user) return;
+
+    setSaving(true);
+    try {
+      // If we have imported data (no IDs), delete all existing entries first to avoid duplicates
+      const hasNewImports = certifications.some(cert => !cert.id && (cert.course_name || cert.certification_type));
+      
+      if (hasNewImports) {
+        console.log('Detected imported data - deleting old certification entries to avoid duplicates');
+        const { error: deleteError } = await supabase
+          .from('certifications')
+          .delete()
+          .eq('user_id', user.id);
+        
+        if (deleteError) {
+          console.error('Error deleting old certifications:', deleteError);
+          throw deleteError;
+        }
+      }
+
+      const updatedCertifications = [...certifications];
+
+      for (let index = 0; index < certifications.length; index += 1) {
+        const cert = certifications[index];
+        if (!cert.course_name || !cert.certification_type) continue;
+
+        if (cert.id && !hasNewImports) {
+          // Update existing (only if not replacing all with imports)
+          const { error } = await supabase
+            .from('certifications')
+            .update({
+              course_name: cert.course_name,
+              certification_type: cert.certification_type,
+              date_attained: cert.date_attained,
+              details: cert.details,
+            })
+            .eq('id', cert.id);
+
+          if (error) throw error;
+        } else {
+          // Insert new
+          const { data, error } = await supabase
+            .from('certifications')
+            .insert({
+              user_id: user.id,
+              course_name: cert.course_name,
+              certification_type: cert.certification_type,
+              date_attained: cert.date_attained,
+              details: cert.details,
+            })
+            .select('id')
+            .single();
+
+          if (error) throw error;
+
+          updatedCertifications[index] = { ...cert, id: data?.id };
+        }
+      }
+
+      setCertifications(updatedCertifications);
+      
+      // After auto-save, refetch to ensure we have fresh data with IDs
+      if (hasNewImports) {
+        setHasFetched(false); // Allow refetch
+      }
+      
+      if (onSaveComplete) {
+        onSaveComplete();
+      }
+    } catch (error) {
+      console.error('Error saving certifications:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   // Pre-fill with imported data immediately on mount
   useEffect(() => {
     if (importedData && Array.isArray(importedData) && importedData.length > 0 && !hasImportedData) {
@@ -146,60 +223,6 @@ export const CertificationsForm = ({ importedData, onSaveComplete }: Certificati
 
     const updated = certifications.filter((_, i) => i !== index);
     setCertifications(updated);
-  };
-
-  const saveCertifications = async () => {
-    if (!user) return;
-
-    setSaving(true);
-    try {
-      const updatedCertifications = [...certifications];
-
-      for (let index = 0; index < certifications.length; index += 1) {
-        const cert = certifications[index];
-        if (!cert.course_name || !cert.certification_type) continue;
-
-        if (cert.id) {
-          const { error } = await supabase
-            .from('certifications')
-            .update({
-              course_name: cert.course_name,
-              certification_type: cert.certification_type,
-              date_attained: cert.date_attained,
-              details: cert.details,
-            })
-            .eq('id', cert.id);
-
-          if (error) throw error;
-        } else {
-          const { data, error } = await supabase
-            .from('certifications')
-            .insert({
-              user_id: user.id,
-              course_name: cert.course_name,
-              certification_type: cert.certification_type,
-              date_attained: cert.date_attained,
-              details: cert.details,
-            })
-            .select('id')
-            .single();
-
-          if (error) throw error;
-
-          updatedCertifications[index] = { ...cert, id: data?.id };
-        }
-      }
-
-      setCertifications(updatedCertifications);
-      
-      if (onSaveComplete) {
-        onSaveComplete();
-      }
-    } catch (error) {
-      console.error('Error saving certifications:', error);
-    } finally {
-      setSaving(false);
-    }
   };
 
   if (loading) {

@@ -2,7 +2,6 @@
 import React, { ReactNode } from 'react';
 import Navbar from './Navbar';
 import Footer from './Footer';
-import FeedbackButton from '@/components/FeedbackButton';
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -16,7 +15,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         {children}
       </main>
       <Footer />
-      <FeedbackButton />
     </div>
   );
 };

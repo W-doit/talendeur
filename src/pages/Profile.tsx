@@ -5,6 +5,7 @@ import { useAuth, UserType, JobSeekerProfile, OrganizationProfile } from '@/cont
 import JobSeekerProfileForm from '@/components/profile/JobSeekerProfileForm';
 import OrganizationProfileForm from '@/components/profile/OrganizationProfileForm';
 import MainLayout from '@/components/layout/MainLayout';
+import FeedbackButton from '@/components/FeedbackButton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -603,6 +604,7 @@ const Profile: React.FC = () => {
           )}
         </div>
       </div>
+      <FeedbackButton />
     </MainLayout>
   );
 };
