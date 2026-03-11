@@ -3,14 +3,9 @@
   command = "npm run build"
 
 [[redirects]]
-  from = "/profile/:userId"
-  to = "/profile/:userId"
+  from = "/*"
+  to = "/index.html"
   status = 200
-  force = false
-  
-# Pre-render public profiles for social media crawlers
-[[plugins]]
-  package = "@netlify/plugin-nextjs"
 
 [build.environment]
   # Enable pre-rendering
