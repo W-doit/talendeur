@@ -60,11 +60,43 @@ yarn dev
 
 ### Environment Setup
 
-Create a `.env` file in the root directory with the following variables (to be updated once Supabase is integrated-in progress):
+Create a `.env` file in the root directory with:
 ```env
 VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+VITE_CV_PARSER_API_URL=your_fastapi_cv_parser_url
 ```
+
+## Key Features
+
+### User Profiles
+- **Job Seekers**: Skills, work experience, education, certifications, references, personality tests, CV upload
+- **Organizations**: Company info, logo, website, brief description, multiple contact persons (with primary contact)
+- **Dashboard Preview**: Generate shareable dashboard screenshots for social media (LinkedIn, etc.)
+- **Public Profiles**: SEO-optimized with Open Graph meta tags
+
+### CV Parsing
+- Upload LinkedIn PDF or CV
+- Automatic extraction via FastAPI microservice
+- Auto-populates profile fields (work experience, education, certifications)
+- Immediate file upload to Supabase storage
+
+### Social Sharing
+- LinkedIn share integration with pre-filled text and hashtags
+- Dashboard screenshot generation (html2canvas)
+- Open Graph images stored in Supabase
+- Dynamic meta tags for better social previews
+
+### Matching System
+- Tinder-style swipe interface (currently "Coming Soon")
+- Skills-based matching algorithm (in development)
+- Match list and detail views
+
+### Organization Contacts
+- Multiple contact persons per organization
+- Primary contact designation
+- Email validation and mailto links
+- Public visibility of all contacts
 
 ## Overview
 
@@ -117,10 +149,12 @@ Talendeur
 - **Data Fetching**: TanStack React Query
 - **Icons**: Lucide React
 - **Charts**: Recharts
-- **Backend**: Supabase (to be implemented)
-- **Authentication**: Currently mocked, to be replaced with Supabase Auth
+- **Backend**: Supabase (PostgreSQL + Auth + Storage)
+- **Authentication**: Supabase Auth with email/password
 - **Database**: Supabase PostgreSQL
-- **Storage**: Supabase Storage (to be implemented for CV uploads)
+- **Storage**: Supabase Storage (CVs, profile pictures, logos, OG images)
+- **CV Parsing**: FastAPI microservice (external)
+- **Social Sharing**: Open Graph meta tags + dashboard screenshots
 
 ## Application Flow Diagram
 
@@ -173,82 +207,20 @@ function calculateSkillScore(profile: JobSeekerProfile, criteria: SkillCriteria)
   };
 
   // Calculate weighted score
-  const weightedScore =
-    (profile.skills.soft * weights.soft) +
-    (profile.skills.hard * weights.hard) +
-    (profile.skills.feedback * weights.feedback) +
-    (profile.skills.learning * weights.learning);
+   Database Schema
 
-  // Apply organization's preference adjustments
-  const adjustedScore = applyPreferenceAdjustments(weightedScore, criteria);
+See `database/schema.sql` for the complete schema. Key tables:
+- `profile`: User profiles (job seekers & organizations)
+- `organization_details`: Organization-specific data
+- `organization_contacts`: Multiple contact persons per organization (one-to-many)
+- `work_experience`, `education_history`, `certifications`: Job seeker data
+- `jobseeker_skill_rating`: Skills and personality scores
+- `matches`: Match relationships
 
-  // Normalize to 0-100 scale
-  return Math.min(Math.max(adjustedScore, 0), 100);
-}
-
-// Apply organization-specific preferences
-function applyPreferenceAdjustments(score: number, criteria: SkillCriteria): number {
-  let adjustedScore = score;
-
-  // Boost score if interests match organization needs
-  const interestMatchBonus = calculateInterestMatchBonus(criteria.interests);
-  adjustedScore += interestMatchBonus;
-
-  // Apply industry-specific adjustments
-  if (criteria.industryFocus) {
-    adjustedScore = applyIndustryAdjustments(adjustedScore, criteria.industryFocus);
-  }
-
-  return adjustedScore;
-}
-```
-
-## Next Steps
-
-### 1. Supabase Database Integration
-- Create database tables for:
-  - `profiles`: Store user profile information
-  - `organizations`: Store organization information
-  - `matches`: Track match status between users and organizations
-  - `skills`: Store skill ratings and evaluation data
-
-Here's a sample SQL schema to implement:
-
-```sql
--- Users profiles table
-CREATE TABLE public.profiles (
-  id UUID PRIMARY KEY REFERENCES auth.users(id),
-  name TEXT NOT NULL,
-  email TEXT NOT NULL,
-  profile_pic TEXT,
-  cv_url TEXT,
-  bio TEXT,
-  user_type TEXT NOT NULL CHECK (user_type IN ('jobseeker', 'organization'))
-);
-
--- Job seeker specific info
-CREATE TABLE public.jobseeker_details (
-  profile_id UUID PRIMARY KEY REFERENCES public.profiles(id),
-  interests TEXT[],
-  soft_skills INTEGER CHECK (soft_skills >= 0 AND soft_skills <= 100),
-  hard_skills INTEGER CHECK (hard_skills >= 0 AND hard_skills <= 100),
-  feedback_score INTEGER CHECK (feedback_score >= 0 AND feedback_score <= 100),
-  learning_score INTEGER CHECK (learning_score >= 0 AND learning_score <= 100)
-);
-
--- Organization specific info
-CREATE TABLE public.organization_details (
-  profile_id UUID PRIMARY KEY REFERENCES public.profiles(id),
-  logo TEXT,
-  website TEXT,
-  about TEXT,
-  needs TEXT[]
-);
-
--- Matches table
-CREATE TABLE public.matches (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  jobseeker_id UUID REFERENCES public.profiles(id),
+Run migrations in `database/` folder:
+- `organization-profile-migration.sql`: Adds organization contacts table and brief description
+- `og-image-migration.sql`: Adds Open Graph image URL column
+- `og-images-storage.sql`: Creates storage bucket for social media previewles(id),
   organization_id UUID REFERENCES public.profiles(id),
   jobseeker_approved BOOLEAN DEFAULT FALSE,
   organization_approved BOOLEAN DEFAULT FALSE,

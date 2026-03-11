@@ -24,8 +24,9 @@ import { CertificationsForm } from '@/components/profile/CertificationsForm';
 import { ReferencesForm } from '@/components/profile/ReferencesForm';
 import { ReferencesDisplay } from '@/components/dashboard/ReferencesDisplay';
 import { PersonalityTest } from '@/components/profile/PersonalityTest';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Camera } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { generateDashboardPreview } from '@/lib/dashboard-screenshot';
 
 const Profile: React.FC = () => {
   const { user, createProfile, loading } = useAuth();
@@ -38,6 +39,8 @@ const Profile: React.FC = () => {
   const [importedData, setImportedData] = useState<any>(null);
   const [isVideoOpen, setIsVideoOpen] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
+  const dashboardRef = React.useRef<HTMLDivElement>(null);
 
   const getVideoEmbedUrl = (url: string) => {
     try {
@@ -83,6 +86,32 @@ const Profile: React.FC = () => {
     } catch (error) {
       console.error('Failed to copy profile URL:', error);
       toast({ title: 'Copy failed', description: 'Please try again.' });
+    }
+  };
+
+  const handleGeneratePreview = async () => {
+    if (!dashboardRef.current || !user?.id) return;
+    
+    setIsGeneratingPreview(true);
+    try {
+      const imageUrl = await generateDashboardPreview(dashboardRef.current, user.id);
+      
+      toast({
+        title: 'Preview generated!',
+        description: 'Your dashboard preview has been created and will appear when sharing your profile link.',
+        duration: 5000,
+      });
+      
+      console.log('Dashboard preview URL:', imageUrl);
+    } catch (error) {
+      console.error('Failed to generate preview:', error);
+      toast({
+        title: 'Generation failed',
+        description: error instanceof Error ? error.message : 'Could not generate preview',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsGeneratingPreview(false);
     }
   };
   
@@ -300,9 +329,13 @@ const Profile: React.FC = () => {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="start">
+                            <DropdownMenuItem onClick={handleGeneratePreview} disabled={isGeneratingPreview}>
+                              <Camera className="h-4 w-4 mr-2" />
+                              {isGeneratingPreview ? 'Generating...' : 'Generate Share Preview'}
+                            </DropdownMenuItem>
                             <DropdownMenuItem asChild>
                               <a
-                                href={`https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(publicProfileUrl)}&title=${encodeURIComponent(`${user.profile.name} - Talendeur Profile`)}&summary=${encodeURIComponent((user.profile as any).headline || 'View my profile on Talendeur')}`}
+                                href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(publicProfileUrl)}&text=${encodeURIComponent(`Check out my professional profile on Talendeur! #Talendeur ${publicProfileUrl}`)}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                               >
@@ -320,26 +353,74 @@ const Profile: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex flex-col md:flex-row gap-8">
-                {/* Left column: Timeline (all date-based items) */}
-                <div className="w-full md:w-1/3 flex flex-col gap-8">
-                    <Timeline refreshTrigger={refreshTrigger} />
-                    <CertificationsChart />
-                  </div>
-                  {/* Right column: Visualizations and info boxes */}
-                  <div className="w-full md:w-2/3 flex flex-col gap-8">
-                    <KeyMetricsCards />
+              <div ref={dashboardRef} className="flex flex-col md:flex-row gap-8">
+                {/* Job Seeker Dashboard Elements */}
+                {user.userType === 'jobseeker' && (
+                  <>
+                    {/* Left column: Timeline (all date-based items) */}
+                    <div className="w-full md:w-1/3 flex flex-col gap-8">
+                      <Timeline refreshTrigger={refreshTrigger} />
+                      <CertificationsChart />
+                    </div>
+                    {/* Right column: Visualizations and info boxes */}
+                    <div className="w-full md:w-2/3 flex flex-col gap-8">
+                      <KeyMetricsCards />
+                      {(user.profile as any).videoUrl && (
+                        <Card>
+                          <Collapsible open={isVideoOpen} onOpenChange={setIsVideoOpen}>
+                            <CardHeader className="flex flex-row items-center justify-between">
+                              <CardTitle>Video Profile</CardTitle>
+                              <CollapsibleTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="bg-white/70 text-talendeur-primary hover:bg-white/90 border-talendeur-primary"
+                                  aria-label={isVideoOpen ? 'Collapse video profile' : 'Expand video profile'}
+                                >
+                                  <ChevronDown className={`h-4 w-4 transition-transform ${isVideoOpen ? 'rotate-180' : ''}`} />
+                                </Button>
+                              </CollapsibleTrigger>
+                            </CardHeader>
+                            <CollapsibleContent>
+                              <CardContent>
+                                <div className="relative w-full overflow-hidden rounded-lg border border-gray-200">
+                                  <div className="aspect-video">
+                                    <iframe
+                                      src={getVideoEmbedUrl((user.profile as any).videoUrl)}
+                                      title="Profile video"
+                                      className="h-full w-full"
+                                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                      allowFullScreen
+                                    />
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </CollapsibleContent>
+                          </Collapsible>
+                        </Card>
+                      )}
+                      <BiographyWordCloud />
+                      <SkillsRadarChart />
+                      <PersonalityVisualization />
+                      <ESGChart />
+                    </div>
+                  </>
+                )}
+
+                {/* Organization Dashboard Elements */}
+                {user.userType === 'organization' && (
+                  <div className="w-full flex flex-col gap-8">
                     {(user.profile as any).videoUrl && (
                       <Card>
                         <Collapsible open={isVideoOpen} onOpenChange={setIsVideoOpen}>
                           <CardHeader className="flex flex-row items-center justify-between">
-                            <CardTitle>Video Profile</CardTitle>
+                            <CardTitle>Organization Video</CardTitle>
                             <CollapsibleTrigger asChild>
                               <Button
                                 variant="outline"
                                 size="sm"
                                 className="bg-white/70 text-talendeur-primary hover:bg-white/90 border-talendeur-primary"
-                                aria-label={isVideoOpen ? 'Collapse video profile' : 'Expand video profile'}
+                                aria-label={isVideoOpen ? 'Collapse video' : 'Expand video'}
                               >
                                 <ChevronDown className={`h-4 w-4 transition-transform ${isVideoOpen ? 'rotate-180' : ''}`} />
                               </Button>
@@ -351,7 +432,7 @@ const Profile: React.FC = () => {
                                 <div className="aspect-video">
                                   <iframe
                                     src={getVideoEmbedUrl((user.profile as any).videoUrl)}
-                                    title="Profile video"
+                                    title="Organization video"
                                     className="h-full w-full"
                                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                     allowFullScreen
@@ -363,22 +444,33 @@ const Profile: React.FC = () => {
                         </Collapsible>
                       </Card>
                     )}
-                    <BiographyWordCloud />
-                    <SkillsRadarChart />
-                    <PersonalityVisualization />
-                    <ESGChart />
+                    
+                    {(user.profile as OrganizationProfile).about && (
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>About</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-gray-700 whitespace-pre-wrap">{(user.profile as OrganizationProfile).about}</p>
+                        </CardContent>
+                      </Card>
+                    )}
                   </div>
+                )}
               </div>
 
-              {/* Full-width International Experience Map */}
-              <div className="w-full">
-                <InternationalExperienceMap />
-              </div>
+              {/* Full-width sections - only for job seekers */}
+              {user.userType === 'jobseeker' && (
+                <>
+                  <div className="w-full">
+                    <InternationalExperienceMap />
+                  </div>
 
-              {/* Full-width References */}
-              <div className="w-full">
-                <ReferencesDisplay />
-              </div>
+                  <div className="w-full">
+                    <ReferencesDisplay />
+                  </div>
+                </>
+              )}
 
               {/* Interests and Needs sections */}
               <div className="flex flex-col gap-8">
@@ -474,17 +566,22 @@ const Profile: React.FC = () => {
                   <TabsContent value="work" className="mt-6">
                     <WorkExperienceForm 
                       importedData={importedData?.parsedData?.workExperience}
+                      onSaveComplete={() => setRefreshTrigger(prev => prev + 1)}
                     />
                   </TabsContent>
 
                   <TabsContent value="education" className="mt-6">
                     <EducationForm 
                       importedData={importedData?.parsedData?.education}
+                      onSaveComplete={() => setRefreshTrigger(prev => prev + 1)}
                     />
                   </TabsContent>
 
                   <TabsContent value="certifications" className="mt-6">
-                    <CertificationsForm />
+                    <CertificationsForm 
+                      importedData={importedData?.parsedData?.certifications}
+                      onSaveComplete={() => setRefreshTrigger(prev => prev + 1)}
+                    />
                   </TabsContent>
 
                   <TabsContent value="references" className="mt-6">

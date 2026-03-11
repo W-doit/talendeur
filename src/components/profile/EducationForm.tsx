@@ -29,9 +29,10 @@ const QUALIFICATION_TYPES = [
 
 interface EducationFormProps {
   importedData?: any[];
+  onSaveComplete?: () => void;
 }
 
-export const EducationForm = ({ importedData }: EducationFormProps = {}) => {
+export const EducationForm = ({ importedData, onSaveComplete }: EducationFormProps = {}) => {
   const { user } = useAuth();
   const [educations, setEducations] = useState<Education[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,6 +65,12 @@ export const EducationForm = ({ importedData }: EducationFormProps = {}) => {
       });
       setHasImportedData(true);
       setLoading(false);
+      
+      // Auto-save imported data
+      console.log('Auto-saving imported education data...');
+      setTimeout(() => {
+        saveEducations();
+      }, 500); // Small delay to ensure state is set
     } else if (!importedData || (Array.isArray(importedData) && importedData.length === 0)) {
       // Reset hasImportedData if no data to allow fresh imports
       setHasImportedData(false);
@@ -232,6 +239,10 @@ export const EducationForm = ({ importedData }: EducationFormProps = {}) => {
       }
 
       setEducations(updatedEducations);
+      
+      if (onSaveComplete) {
+        onSaveComplete();
+      }
     } catch (error) {
       console.error('Error saving education:', error);
     } finally {

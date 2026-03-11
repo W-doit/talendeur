@@ -18,9 +18,10 @@ interface WorkExperience {
 
 interface WorkExperienceFormProps {
   importedData?: any[];
+  onSaveComplete?: () => void;
 }
 
-export const WorkExperienceForm = ({ importedData }: WorkExperienceFormProps = {}) => {
+export const WorkExperienceForm = ({ importedData, onSaveComplete }: WorkExperienceFormProps = {}) => {
   const { user } = useAuth();
   const [experiences, setExperiences] = useState<WorkExperience[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,6 +53,12 @@ export const WorkExperienceForm = ({ importedData }: WorkExperienceFormProps = {
       });
       setHasImportedData(true);
       setLoading(false);
+      
+      // Auto-save imported data
+      console.log('Auto-saving imported work experience data...');
+      setTimeout(() => {
+        saveExperiences();
+      }, 500); // Small delay to ensure state is set
     } else if (!importedData || (Array.isArray(importedData) && importedData.length === 0)) {
       // Reset hasImportedData if no data to allow fresh imports
       setHasImportedData(false);
@@ -223,6 +230,10 @@ export const WorkExperienceForm = ({ importedData }: WorkExperienceFormProps = {
       }
 
       setExperiences(updatedExperiences);
+      
+      if (onSaveComplete) {
+        onSaveComplete();
+      }
     } catch (error) {
       console.error('Error saving work experience:', error);
     } finally {

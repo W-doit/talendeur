@@ -23,11 +23,29 @@ export async function uploadCV(file: File, userId: string): Promise<string> {
       throw new Error('CV file size must be less than 10MB');
     }
 
-    // Generate a unique filename
-    const fileName = `${userId}-${Date.now()}.pdf`;
+    // Use a consistent filename with timestamp to track versions
+    const fileName = `cv-${Date.now()}.pdf`;
     const filePath = `${userId}/${fileName}`;
 
-    // Upload the file to Supabase Storage
+    // First, delete all old CV files for this user to avoid clutter
+    try {
+      const { data: existingFiles } = await supabase.storage
+        .from(CV_BUCKET)
+        .list(userId);
+      
+      if (existingFiles && existingFiles.length > 0) {
+        const filesToDelete = existingFiles.map(f => `${userId}/${f.name}`);
+        await supabase.storage
+          .from(CV_BUCKET)
+          .remove(filesToDelete);
+        console.log('Deleted old CV files:', filesToDelete);
+      }
+    } catch (deleteError) {
+      console.warn('Could not delete old CV files:', deleteError);
+      // Continue with upload even if deletion fails
+    }
+
+    // Upload the new file to Supabase Storage
     const { data, error } = await supabase.storage
       .from(CV_BUCKET)
       .upload(filePath, file, {

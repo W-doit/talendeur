@@ -14,6 +14,7 @@ import { InternationalExperienceMap } from '@/components/dashboard/International
 import { BiographyWordCloud } from '@/components/dashboard/BiographyWordCloud';
 import { PersonalityVisualization } from '@/components/dashboard/PersonalityVisualization';
 import { ReferencesDisplay } from '@/components/dashboard/ReferencesDisplay';
+import { updateMetaTags, resetMetaTags } from '@/lib/meta-tags';
 import type { JobSeekerProfile, OrganizationProfile, UserType } from '@/contexts/AuthContext';
 
 // Extend existing profile types with optional videoUrl
@@ -89,6 +90,7 @@ const PublicProfile: React.FC = () => {
 
         const profileUserType = profileData.user_type as UserType;
         setUserType(profileUserType);
+        console.log('Public profile user type:', profileUserType, 'User ID:', userId);
 
         if (profileUserType === 'jobseeker') {
           const skillResponse = await fetch(
@@ -133,6 +135,28 @@ const PublicProfile: React.FC = () => {
           const orgDataArray = await orgResponse.json();
           const orgData = orgDataArray?.[0];
 
+          // Load organization contacts
+          const contactsResponse = await fetch(
+            `${supabaseUrl}/rest/v1/organization_contacts?organization_id=eq.${profileData.user_id}&select=*&order=is_primary.desc,created_at.asc`,
+            {
+              headers: {
+                apikey: supabaseKey,
+                Authorization: `Bearer ${supabaseKey}`,
+              },
+            }
+          );
+          const contactsData = await contactsResponse.json();
+          const contacts = Array.isArray(contactsData) ? contactsData.map((c: any) => ({
+            id: c.id,
+            contactName: c.contact_name,
+            contactEmail: c.contact_email,
+            contactRole: c.contact_role,
+            isPrimary: c.is_primary,
+          })) : [];
+
+          console.log('Organization data:', orgData);
+          console.log('Organization contacts:', contacts);
+
           setProfile({
             id: profileData.user_id,
             name: orgData?.company_name || '',
@@ -143,6 +167,7 @@ const PublicProfile: React.FC = () => {
             website: orgData?.website || '',
             about: orgData?.about || '',
             needs: orgData?.needs || [],
+            contacts: contacts,
           } as PublicProfileData);
         }
       } catch (error) {
@@ -155,6 +180,65 @@ const PublicProfile: React.FC = () => {
 
     fetchPublicProfile();
   }, [userId, supabaseKey, supabaseUrl]);
+
+  // Update meta tags when profile loads
+  useEffect(() => {
+    if (!profile) {
+      resetMetaTags();
+      return;
+    }
+
+    const isJobSeeker = 'skills' in profile;
+    const name = isJobSeeker 
+      ? profile.name 
+      : (profile as OrganizationProfile).name;
+    
+    const headline = (profile as any).headline || '';
+    const bio = isJobSeeker 
+      ? (profile as JobSeekerProfile).bio 
+      : (profile as OrganizationProfile).about;
+    
+    // Use OG image if available (dashboard preview), otherwise fall back to profile pic/logo
+    const ogImageUrl = (profile as any).og_image_url;
+    const profileImageUrl = isJobSeeker 
+      ? (profile as JobSeekerProfile).profilePic 
+      : (profile as OrganizationProfile).logo;
+    
+    const imageUrl = ogImageUrl || profileImageUrl || '/Talendeur_logo.png';
+
+    const title = headline 
+      ? `${name} - ${headline} | Talendeur` 
+      : `${name} | Talendeur`;
+    
+    // Add hashtag to description for social media
+    const baseDescription = bio 
+      ? bio.substring(0, 140) + (bio.length > 140 ? '...' : '')
+      : `View ${name}'s professional profile on Talendeur`;
+    
+    const description = `${baseDescription} #Talendeur`;
+
+    const keywords = [
+      'Talendeur',
+      name,
+      isJobSeeker ? 'job seeker' : 'organization',
+      'talent matching',
+      'professional profile',
+      'career opportunities'
+    ];
+
+    updateMetaTags({
+      title,
+      description,
+      image: imageUrl,
+      type: 'profile',
+      keywords,
+    });
+
+    // Cleanup: Reset meta tags when component unmounts
+    return () => {
+      resetMetaTags();
+    };
+  }, [profile]);
 
   if (loading) {
     return (
@@ -223,10 +307,36 @@ const PublicProfile: React.FC = () => {
                     )}
                     {userType === 'organization' && (profile as OrganizationProfile).website && (
                       <p className="text-gray-600 mt-1">
-                        <a href={(profile as OrganizationProfile).website} target="_blank" rel="noopener noreferrer" className="hover:underline">
-                          {(profile as OrganizationProfile).website}
+                        <a href={(profile as OrganizationProfile).website} target="_blank" rel="noopener noreferrer" className="hover:underline text-talendeur-primary">
+                          🌐 {(profile as OrganizationProfile).website}
                         </a>
                       </p>
+                    )}
+                    {userType === 'organization' && (profile as OrganizationProfile).contacts && (profile as OrganizationProfile).contacts!.length > 0 && (
+                      <div className="mt-4 space-y-3">
+                        <p className="font-semibold text-gray-800 text-sm">Contact Persons:</p>
+                        <div className="space-y-2">
+                          {(profile as OrganizationProfile).contacts!.map((contact, index) => (
+                            <div key={index} className="text-sm text-gray-600 p-2 bg-gray-50 rounded border">
+                              <div className="flex items-center gap-2">
+                                <p className="font-medium text-gray-900">{contact.contactName}</p>
+                                {contact.isPrimary && (
+                                  <span className="text-xs bg-talendeur-primary text-white px-2 py-0.5 rounded">Primary</span>
+                                )}
+                              </div>
+                              <p className="text-gray-500">{contact.contactRole}</p>
+                              <p>
+                                <a 
+                                  href={`mailto:${contact.contactEmail}`} 
+                                  className="hover:underline text-talendeur-primary"
+                                >
+                                  ✉️ {contact.contactEmail}
+                                </a>
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -234,65 +344,127 @@ const PublicProfile: React.FC = () => {
             </div>
           </div>
 
+          {/* Debug log */}
+          {console.log('Rendering dashboard - userType:', userType, 'isJobSeeker:', userType === 'jobseeker')}
+
           <div className="flex flex-col md:flex-row gap-8">
-            {/* Left column: Timeline (all date-based items) */}
-            <div className="w-full md:w-1/3 flex flex-col gap-8">
-              <Timeline userId={profile.id} accessTokenOverride={null} />
-              <CertificationsChart userId={profile.id} accessTokenOverride={null} />
-            </div>
-            {/* Right column: Visualizations and info boxes */}
-            <div className="w-full md:w-2/3 flex flex-col gap-8">
-              <KeyMetricsCards userId={profile.id} accessTokenOverride={null} />
-              {profile.videoUrl && (
-                <Card>
-                  <Collapsible open={isVideoOpen} onOpenChange={setIsVideoOpen}>
-                    <CardHeader className="flex flex-row items-center justify-between">
-                      <CardTitle>Video Profile</CardTitle>
-                      <CollapsibleTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="bg-white/70 text-talendeur-primary hover:bg-white/90 border-talendeur-primary"
-                          aria-label={isVideoOpen ? 'Collapse video profile' : 'Expand video profile'}
-                        >
-                          <ChevronDown className={`h-4 w-4 transition-transform ${isVideoOpen ? 'rotate-180' : ''}`} />
-                        </Button>
-                      </CollapsibleTrigger>
-                    </CardHeader>
-                    <CollapsibleContent>
-                      <CardContent>
-                        <div className="relative w-full overflow-hidden rounded-lg border border-gray-200">
-                          <div className="aspect-video">
-                            <iframe
-                              src={getVideoEmbedUrl(profile.videoUrl)}
-                              title="Profile video"
-                              className="h-full w-full"
-                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                              allowFullScreen
-                            />
+            {/* Job Seeker Dashboard Elements */}
+            {userType === 'jobseeker' && (
+              <>
+                {/* Left column: Timeline (all date-based items) */}
+                <div className="w-full md:w-1/3 flex flex-col gap-8">
+                  <Timeline userId={profile.id} accessTokenOverride={null} />
+                  <CertificationsChart userId={profile.id} accessTokenOverride={null} />
+                </div>
+                {/* Right column: Visualizations and info boxes */}
+                <div className="w-full md:w-2/3 flex flex-col gap-8">
+                  <KeyMetricsCards userId={profile.id} accessTokenOverride={null} />
+                  {profile.videoUrl && (
+                    <Card>
+                      <Collapsible open={isVideoOpen} onOpenChange={setIsVideoOpen}>
+                        <CardHeader className="flex flex-row items-center justify-between">
+                          <CardTitle>Video Profile</CardTitle>
+                          <CollapsibleTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="bg-white/70 text-talendeur-primary hover:bg-white/90 border-talendeur-primary"
+                              aria-label={isVideoOpen ? 'Collapse video profile' : 'Expand video profile'}
+                            >
+                              <ChevronDown className={`h-4 w-4 transition-transform ${isVideoOpen ? 'rotate-180' : ''}`} />
+                            </Button>
+                          </CollapsibleTrigger>
+                        </CardHeader>
+                        <CollapsibleContent>
+                          <CardContent>
+                            <div className="relative w-full overflow-hidden rounded-lg border border-gray-200">
+                              <div className="aspect-video">
+                                <iframe
+                                  src={getVideoEmbedUrl(profile.videoUrl)}
+                                  title="Profile video"
+                                  className="h-full w-full"
+                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                  allowFullScreen
+                                />
+                              </div>
+                            </div>
+                          </CardContent>
+                        </CollapsibleContent>
+                      </Collapsible>
+                    </Card>
+                  )}
+                  <BiographyWordCloud userId={profile.id} accessTokenOverride={null} />
+                  <SkillsRadarChart userId={profile.id} accessTokenOverride={null} />
+                  <PersonalityVisualization userId={profile.id} accessTokenOverride={null} />
+                  <ESGChart userId={profile.id} accessTokenOverride={null} />
+                </div>
+              </>
+            )}
+
+            {/* Organization Dashboard Elements */}
+            {userType === 'organization' && (
+              <div className="w-full flex flex-col gap-8">
+                {profile.videoUrl && (
+                  <Card>
+                    <Collapsible open={isVideoOpen} onOpenChange={setIsVideoOpen}>
+                      <CardHeader className="flex flex-row items-center justify-between">
+                        <CardTitle>Organization Video</CardTitle>
+                        <CollapsibleTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="bg-white/70 text-talendeur-primary hover:bg-white/90 border-talendeur-primary"
+                            aria-label={isVideoOpen ? 'Collapse video' : 'Expand video'}
+                          >
+                            <ChevronDown className={`h-4 w-4 transition-transform ${isVideoOpen ? 'rotate-180' : ''}`} />
+                          </Button>
+                        </CollapsibleTrigger>
+                      </CardHeader>
+                      <CollapsibleContent>
+                        <CardContent>
+                          <div className="relative w-full overflow-hidden rounded-lg border border-gray-200">
+                            <div className="aspect-video">
+                              <iframe
+                                src={getVideoEmbedUrl(profile.videoUrl)}
+                                title="Organization video"
+                                className="h-full w-full"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                              />
+                            </div>
                           </div>
-                        </div>
-                      </CardContent>
-                    </CollapsibleContent>
-                  </Collapsible>
-                </Card>
-              )}
-              <BiographyWordCloud userId={profile.id} accessTokenOverride={null} />
-              <SkillsRadarChart userId={profile.id} accessTokenOverride={null} />
-              <PersonalityVisualization userId={profile.id} accessTokenOverride={null} />
-              <ESGChart userId={profile.id} accessTokenOverride={null} />
-            </div>
+                        </CardContent>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  </Card>
+                )}
+                
+                {(profile as OrganizationProfile).about && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>About</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-gray-700 whitespace-pre-wrap">{(profile as OrganizationProfile).about}</p>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Full-width International Experience Map */}
-          <div className="w-full">
-            <InternationalExperienceMap userId={profile.id} accessTokenOverride={null} />
-          </div>
+          {/* Full-width sections - only for job seekers */}
+          {userType === 'jobseeker' && (
+            <>
+              <div className="w-full">
+                <InternationalExperienceMap userId={profile.id} accessTokenOverride={null} />
+              </div>
 
-          {/* Full-width References */}
-          <div className="w-full">
-            <ReferencesDisplay userId={profile.id} accessTokenOverride={null} />
-          </div>
+              <div className="w-full">
+                <ReferencesDisplay userId={profile.id} accessTokenOverride={null} />
+              </div>
+            </>
+          )}
 
           {/* Interests and Needs sections */}
           <div className="flex flex-col gap-8">

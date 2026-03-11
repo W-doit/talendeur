@@ -23,6 +23,14 @@ export interface JobSeekerProfile {
   bio: string;
 }
 
+export interface OrganizationContact {
+  id?: string;
+  contactName: string;
+  contactEmail: string;
+  contactRole: string;
+  isPrimary?: boolean;
+}
+
 export interface OrganizationProfile {
   id: string;
   name: string;
@@ -32,6 +40,7 @@ export interface OrganizationProfile {
   website: string;
   about: string;
   needs: string[];
+  contacts?: OrganizationContact[];
 }
 
 export type AuthUser = {
@@ -186,6 +195,26 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const orgData = orgDataArray[0];
         console.log('Organization data loaded:', !!orgData);
 
+        // Load organization contacts
+        const contactsResponse = await fetch(
+          `${supabaseUrl}/rest/v1/organization_contacts?organization_id=eq.${profileData.user_id}&select=*&order=is_primary.desc,created_at.asc`,
+          {
+            headers: {
+              'apikey': supabaseKey,
+              'Authorization': authHeader,
+            }
+          }
+        );
+        
+        const contactsData = await contactsResponse.json();
+        const contacts = Array.isArray(contactsData) ? contactsData.map((c: any) => ({
+          id: c.id,
+          contactName: c.contact_name,
+          contactEmail: c.contact_email,
+          contactRole: c.contact_role,
+          isPrimary: c.is_primary,
+        })) : [];
+
         fullProfile = {
           id: profileData.user_id,
           name: orgData?.company_name || '',
@@ -196,6 +225,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           website: orgData?.website || '',
           about: orgData?.about || '',
           needs: orgData?.needs || [],
+          contacts: contacts,
         };
       }
 
@@ -634,6 +664,42 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           throw orgError;
         }
         console.log('Organization details updated successfully');
+
+        // Handle contacts update if provided
+        if ('contacts' in profileData && profileData.contacts) {
+          const contacts = (profileData as OrganizationProfile).contacts || [];
+          
+          // Delete all existing contacts for this organization
+          const { error: deleteError } = await supabase
+            .from('organization_contacts')
+            .delete()
+            .eq('organization_id', user.id);
+
+          if (deleteError) {
+            console.error('Error deleting old contacts:', deleteError);
+          }
+
+          // Insert new contacts
+          if (contacts.length > 0) {
+            const contactsToInsert = contacts.map(contact => ({
+              organization_id: user.id,
+              contact_name: contact.contactName,
+              contact_email: contact.contactEmail,
+              contact_role: contact.contactRole,
+              is_primary: contact.isPrimary || false,
+            }));
+
+            const { error: insertError } = await supabase
+              .from('organization_contacts')
+              .insert(contactsToInsert);
+
+            if (insertError) {
+              console.error('Error inserting contacts:', insertError);
+              throw insertError;
+            }
+            console.log(`Inserted ${contacts.length} contact(s)`);
+          }
+        }
       }
 
       console.log('Reloading user profile...');

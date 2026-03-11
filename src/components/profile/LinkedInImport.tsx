@@ -4,21 +4,26 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/components/ui/use-toast';
 import { Linkedin, Upload, FileText, CheckCircle } from 'lucide-react';
-import { parsePDF, ParsedData } from '@/lib/pdf-parser';
+import { parseCV } from '@/lib/cv-parser-api';
+import { ParsedData } from '@/lib/pdf-parser';
 
 interface LinkedInImportProps {
   onImport: (data: ParsedData, pdfFile: File) => void;
   currentCV?: string;
   onCVRemove?: () => void;
+  onParsingStart?: () => void;
+  onParsingEnd?: () => void;
 }
 
-export const LinkedInImport: React.FC<LinkedInImportProps> = ({ onImport, currentCV, onCVRemove }) => {
+export const LinkedInImport: React.FC<LinkedInImportProps> = ({ onImport, currentCV, onCVRemove, onParsingStart, onParsingEnd }) => {
   const [uploading, setUploading] = useState(false);
   const [fileName, setFileName] = useState<string>('');
   const { toast } = useToast();
 
   const handlePDFUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
+    
+    console.log('PDF upload started, file:', file);
     
     if (!file) return;
     
@@ -33,12 +38,15 @@ export const LinkedInImport: React.FC<LinkedInImportProps> = ({ onImport, curren
 
     setUploading(true);
     setFileName(file.name);
+    
+    if (onParsingStart) onParsingStart();
 
     try {
-      // Parse PDF and extract data
-      const parsedData = await parsePDF(file);
+      console.log('Calling parseCV API...');
+      // Parse PDF using FastAPI microservice
+      const parsedData = await parseCV(file);
       
-      console.log('Parsed PDF data:', parsedData);
+      console.log('Parsed CV data from FastAPI:', parsedData);
       
       // Check if we extracted any meaningful data
       const hasData = 
@@ -54,6 +62,7 @@ export const LinkedInImport: React.FC<LinkedInImportProps> = ({ onImport, curren
           description: 'Could not extract data from PDF. Please check the file or enter manually.',
           variant: 'destructive',
         });
+        if (onParsingEnd) onParsingEnd();
         return;
       }
 
@@ -65,8 +74,11 @@ export const LinkedInImport: React.FC<LinkedInImportProps> = ({ onImport, curren
         description: `Extracted data from ${file.name}. Review and edit the pre-filled information below.`,
       });
       
+      if (onParsingEnd) onParsingEnd();
+      
     } catch (error) {
       console.error('PDF upload error:', error);
+      if (onParsingEnd) onParsingEnd();
       toast({
         title: 'Upload failed',
         description: error instanceof Error ? error.message : 'Could not parse PDF',

@@ -2,15 +2,13 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useMatch } from '@/contexts/MatchContext';
 import MainLayout from '@/components/layout/MainLayout';
-import MatchCard from '@/components/matching/MatchCard';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { RefreshCw } from 'lucide-react';
+import { Rocket, ArrowLeft } from 'lucide-react';
 
 const FindMatches: React.FC = () => {
   const { user } = useAuth();
-  const { currentPotential, approve, reject, loading, loadMorePotentials } = useMatch();
   const navigate = useNavigate();
   
   // Redirect to login if no user
@@ -28,41 +26,44 @@ const FindMatches: React.FC = () => {
 
   return (
     <MainLayout>
-      <div className="container max-w-4xl mx-auto py-12 px-4">
-        <h1 className="text-3xl font-bold mb-2">Find {user.userType === 'jobseeker' ? 'Organisations' : 'Talent'}</h1>
-        <p className="text-muted-foreground mb-8">
-          Swipe right to express interest, or left to pass
-        </p>
-        
-        <div className="flex flex-col items-center justify-center">
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-16">
-              <div className="w-16 h-16 border-4 border-talendeur-primary border-t-transparent rounded-full animate-spin"></div>
-              <p className="mt-4 text-lg">Loading potential matches...</p>
+      <div className="container max-w-2xl mx-auto py-12 px-4 flex items-center justify-center min-h-[60vh]">
+        <Card className="w-full">
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <div className="bg-gradient-to-r from-talendeur-orange to-talendeur-primary p-4 rounded-full">
+                <Rocket className="h-12 w-12 text-white" />
+              </div>
             </div>
-          ) : currentPotential ? (
-            <MatchCard 
-              profile={currentPotential}
-              onApprove={approve}
-              onReject={reject}
-            />
-          ) : (
-            <div className="text-center py-16">
-              <h3 className="text-2xl font-bold mb-4">No more profiles to show</h3>
-              <p className="text-muted-foreground mb-6">
-                You've gone through all available profiles. Check back later or refresh to see if there are any new matches.
+            <CardTitle className="text-3xl font-bold">Coming Soon!</CardTitle>
+            <CardDescription className="text-lg mt-2">
+              The matching feature is currently under development
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="text-center space-y-6">
+            <p className="text-muted-foreground">
+              We're working hard to bring you an amazing experience to find {user.userType === 'jobseeker' ? 'organizations' : 'talented professionals'}. 
+              Stay tuned!
+            </p>
+            <div className="space-y-3">
+              <p className="text-sm font-semibold text-talendeur-primary">
+                What's Coming:
               </p>
-              <Button 
-                onClick={loadMorePotentials}
-                className="bg-talendeur-primary hover:bg-talendeur-primary-dark"
-                disabled={loading}
-              >
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Refresh Profiles
-              </Button>
+              <ul className="text-sm text-muted-foreground space-y-2">
+                <li>✨ AI-powered matching algorithm</li>
+                <li>💬 Direct messaging with matches</li>
+                <li>📊 Compatibility scores</li>
+                <li>🎯 Smart recommendations</li>
+              </ul>
             </div>
-          )}
-        </div>
+            <Button
+              onClick={() => navigate('/profile')}
+              className="bg-gradient-to-r from-talendeur-orange to-talendeur-primary hover:opacity-90 text-white"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Profile
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     </MainLayout>
   );

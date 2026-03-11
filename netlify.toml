@@ -1,0 +1,23 @@
+[build]
+  publish = "dist"
+  command = "npm run build"
+
+[[redirects]]
+  from = "/profile/:userId"
+  to = "/profile/:userId"
+  status = 200
+  force = false
+  
+# Pre-render public profiles for social media crawlers
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[build.environment]
+  # Enable pre-rendering
+  VITE_PRERENDER = "true"
+
+# Cache headers for OG images
+[[headers]]
+  for = "/storage/v1/object/public/og-images/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

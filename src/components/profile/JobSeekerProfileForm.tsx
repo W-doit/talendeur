@@ -42,6 +42,7 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({
   const [uploadingImage, setUploadingImage] = useState(false);
   const [cvFile, setCvFile] = useState<File | null>(null);
   const [uploadingCV, setUploadingCV] = useState(false);
+  const [isParsing, setIsParsing] = useState(false);
 
   // Restore imported data when coming back to this tab
   React.useEffect(() => {
@@ -162,8 +163,35 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({
     }
   };
 
-  const handleLinkedInImport = (data: ParsedData, pdfFile: File) => {
+  const handleLinkedInImport = async (data: ParsedData, pdfFile: File) => {
     console.log('handleLinkedInImport called with data:', data);
+    setIsParsing(false); // Parsing complete
+    
+    // Immediately upload the CV file to storage
+    let cvUrl = formData.cv;
+    if (pdfFile && user?.id) {
+      console.log('Uploading imported CV immediately...', pdfFile);
+      setUploadingCV(true);
+      try {
+        cvUrl = await uploadCV(pdfFile, user.id);
+        console.log('Imported CV uploaded successfully:', cvUrl);
+        
+        // Update formData with the new CV URL
+        setFormData(prev => ({
+          ...prev,
+          cv: cvUrl,
+        }));
+      } catch (uploadError) {
+        console.error('CV upload error:', uploadError);
+        toast({
+          title: 'CV upload failed',
+          description: 'Could not upload CV file. Please try again.',
+          variant: 'destructive',
+        });
+      } finally {
+        setUploadingCV(false);
+      }
+    }
     
     // Store data in parent component to persist across tab changes
     if (onDataImport) {
@@ -172,7 +200,7 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({
       onDataImport(importedDataToPass);
     }
     
-    // Store the PDF file to be uploaded
+    // Store the PDF file to be uploaded later (backup)
     setCvFile(pdfFile);
     
     // Pre-fill profile information - combine all updates in one setState call
@@ -184,6 +212,7 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({
       headline: data.profile.headline || prev.headline,
       bio: data.profile.bio || prev.bio,
       email: data.profile.email || prev.email,
+      cv: cvUrl, // Use the uploaded CV URL
     }));
 
     // Show success message with details
@@ -217,6 +246,8 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({
         onImport={handleLinkedInImport}
         currentCV={formData.cv}
         onCVRemove={() => setFormData(prev => ({ ...prev, cv: '' }))}
+        onParsingStart={() => setIsParsing(true)}
+        onParsingEnd={() => setIsParsing(false)}
       />
       
       <Card>
@@ -269,7 +300,7 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({
                 placeholder="https://youtube.com/watch?v=... or https://vimeo.com/..."
                 type="url"
               />
-              <p className="text-xs text-gray-500 mt-1">Add a link to your 2-minute profile video (YouTube, Vimeo, etc.)</p>
+              <p className="text-xs text-gray-500 mt-1">Upload a video to YouTube or Vimeo and add the link here (2-minute max recommended)</p>
             </div>
             
             <div>
@@ -291,9 +322,9 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({
         <Button 
           type="submit" 
           className="bg-gradient-to-r from-white via-talendeur-orange to-talendeur-primary hover:opacity-90"
-          disabled={isSubmitting || uploadingImage || uploadingCV}
+          disabled={isSubmitting || uploadingImage || uploadingCV || isParsing}
         >
-          {uploadingImage ? 'Uploading image...' : uploadingCV ? 'Uploading CV...' : isSubmitting ? 'Saving...' : 'Save Profile'}
+          {isParsing ? 'Parsing CV...' : uploadingImage ? 'Uploading image...' : uploadingCV ? 'Uploading CV...' : isSubmitting ? 'Saving...' : 'Save Profile'}
         </Button>
       </div>
     </form>

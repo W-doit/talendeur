@@ -28,12 +28,42 @@ const CERTIFICATION_TYPES = [
   'Other'
 ];
 
-export const CertificationsForm = () => {
+interface CertificationsFormProps {
+  importedData?: any[];
+  onSaveComplete?: () => void;
+}
+
+export const CertificationsForm = ({ importedData, onSaveComplete }: CertificationsFormProps = {}) => {
   const { user } = useAuth();
   const [certifications, setCertifications] = useState<Certification[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [hasFetched, setHasFetched] = useState(false); // Track if we've already fetched
+  const [hasFetched, setHasFetched] = useState(false);
+  const [hasImportedData, setHasImportedData] = useState(false);
+
+  // Pre-fill with imported data immediately on mount
+  useEffect(() => {
+    if (importedData && Array.isArray(importedData) && importedData.length > 0 && !hasImportedData) {
+      console.log('Pre-filling certifications with imported data:', importedData);
+      const mappedData = importedData.map(cert => ({
+        course_name: cert.course_name || '',
+        certification_type: cert.certification_type || '',
+        date_attained: cert.date_attained || '',
+        details: cert.details || '',
+      }));
+      setCertifications(prev => [...mappedData, ...prev]);
+      setHasImportedData(true);
+      setLoading(false);
+      
+      // Auto-save imported data
+      console.log('Auto-saving imported certifications data...');
+      setTimeout(() => {
+        saveCertifications();
+      }, 500);
+    } else if (!importedData || (Array.isArray(importedData) && importedData.length === 0)) {
+      setHasImportedData(false);
+    }
+  }, [importedData, hasImportedData]);
 
   const fetchCertifications = useCallback(async () => {
     // Don't refetch if we already tried
@@ -161,6 +191,10 @@ export const CertificationsForm = () => {
       }
 
       setCertifications(updatedCertifications);
+      
+      if (onSaveComplete) {
+        onSaveComplete();
+      }
     } catch (error) {
       console.error('Error saving certifications:', error);
     } finally {
