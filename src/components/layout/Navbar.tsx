@@ -33,7 +33,7 @@ const Navbar: React.FC = () => {
             <>
               <Button
                 variant="outline"
-                className="bg-white/70 text-talendeur-primary hover:bg-white/90 text-base"
+                className="bg-white/70 text-talendeur-primary hover:bg-talendeur-primary hover:text-white text-base transition-colors"
                 onClick={() => navigate('/profile', { state: { mode: 'view' } })}
               >
                 {user.userType === 'jobseeker' ? (
@@ -44,18 +44,18 @@ const Navbar: React.FC = () => {
                 Profile
               </Button>
               <Link to="/matches">
-                <Button variant="outline" className="bg-white/70 text-talendeur-primary hover:bg-white/90 text-base">
+                <Button variant="outline" className="bg-white/70 text-talendeur-primary hover:bg-talendeur-primary hover:text-white text-base transition-colors">
                   Matches
                 </Button>
               </Link>
               <Link to="/find">
-                <Button variant="outline" className="bg-white/70 text-talendeur-primary hover:bg-white/90 text-base">
+                <Button variant="outline" className="bg-white/70 text-talendeur-primary hover:bg-talendeur-primary hover:text-white text-base transition-colors">
                   Find {user.userType === 'jobseeker' ? 'Organizations' : 'Talent'}
                 </Button>
               </Link>
               <Button 
                 variant="outline"
-                className="bg-white/70 text-talendeur-primary hover:bg-white/90"
+                className="bg-white/70 text-talendeur-primary hover:bg-talendeur-primary hover:text-white transition-colors"
                 onClick={handleLogout}
               >
                 <LogOut className="h-5 w-5" />
@@ -64,12 +64,12 @@ const Navbar: React.FC = () => {
           ) : (
             <>
               <Link to="/login">
-                <Button variant="outline" className="bg-white/70 text-talendeur-primary hover:bg-white/90">
+                <Button variant="outline" className="bg-white/70 text-talendeur-primary hover:bg-talendeur-primary hover:text-white transition-colors">
                   Login
                 </Button>
               </Link>
               <Link to="/register">
-                <Button variant="outline" className="bg-white/70 text-talendeur-primary hover:bg-white/90">
+                <Button variant="outline" className="bg-white/70 text-talendeur-primary hover:bg-talendeur-primary hover:text-white transition-colors">
                   Register
                 </Button>
               </Link>

@@ -34,7 +34,8 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({
     bio: profile?.bio || '',
     profilePic: profile?.profilePic || '',
     cv: profile?.cv || '',
-    videoUrl: (profile as any)?.videoUrl || ''
+    videoUrl: (profile as any)?.videoUrl || '',
+    portfolioUrl: (profile as any)?.portfolioUrl || ''
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -301,6 +302,19 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({
                 type="url"
               />
               <p className="text-xs text-gray-500 mt-1">Upload a video to YouTube or Vimeo and add the link here (2-minute max recommended)</p>
+            </div>
+            
+            <div>
+              <label htmlFor="portfolioUrl" className="block text-sm font-medium mb-1">Portfolio Link (Optional)</label>
+              <Input
+                id="portfolioUrl"
+                name="portfolioUrl"
+                value={(formData as any).portfolioUrl || ''}
+                onChange={handleChange}
+                placeholder="https://yourportfolio.com or https://github.com/yourusername"
+                type="url"
+              />
+              <p className="text-xs text-gray-500 mt-1">Add a link to your portfolio, GitHub, Behance, or personal website</p>
             </div>
             
             <div>

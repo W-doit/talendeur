@@ -224,6 +224,19 @@ const OrganizationProfileForm: React.FC<OrganizationProfileFormProps> = ({ onSav
             </div>
             
             <div>
+              <label htmlFor="portfolioUrl" className="block text-sm font-medium mb-1">Portfolio/Projects Link (Optional)</label>
+              <Input
+                id="portfolioUrl"
+                name="portfolioUrl"
+                value={(formData as any).portfolioUrl || ''}
+                onChange={handleChange}
+                placeholder="https://yourcompany.com/projects or https://github.com/yourorg"
+                type="url"
+              />
+              <p className="text-xs text-gray-500 mt-1">Add a link to showcase your organization's projects, case studies, or portfolio</p>
+            </div>
+            
+            <div>
               <label htmlFor="website" className="block text-sm font-medium mb-1">Website</label>
               <Input
                 id="website"

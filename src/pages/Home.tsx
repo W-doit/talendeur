@@ -9,19 +9,19 @@ const Home: React.FC = () => {
     <MainLayout>
       {/* Hero Section */}
       <section className="bg-gradient-to-r from-white via-talendeur-orange to-talendeur-primary py-20 px-4 text-white">
-        <div className="container mx-auto max-w-6xl">
+        <div className="container mx-auto max-w-7xl">
           <div className="flex flex-col md:flex-row items-center justify-between gap-12">
-            <div className="flex-1 mt-8 md:mt-0">
+            <div className="flex-1 order-2 md:order-1">
               <div className="relative">
                 <div className="absolute -top-6 -left-6 w-full h-full bg-talendeur-orange rounded-xl"></div>
                 <img 
-                  src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=1000&auto=format&fit=crop"
+                  src="/colab.png"
                   alt="Team collaborating" 
                   className="w-full rounded-xl shadow-xl relative z-10"
                 />
               </div>
             </div>
-            <div className="flex-1 text-center md:text-right">
+            <div className="flex-1 text-center md:text-right order-1 md:order-2">
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
                 Let perfect opportunities <span className="text-white drop-shadow-lg">discover you</span> with Talendeur
               </h1>
@@ -47,7 +47,7 @@ const Home: React.FC = () => {
 
       {/* How It Works */}
       <section className="py-20 px-4 bg-white dark:bg-talendeur-dark">
-        <div className="container mx-auto max-w-6xl">
+        <div className="container mx-auto max-w-7xl">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">How Talendeur Works</h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -68,7 +68,7 @@ const Home: React.FC = () => {
               <div className="w-16 h-16 bg-talendeur-orange rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">2</div>
               <h3 className="text-xl font-bold mb-3">Share Your Profile</h3>
               <p className="text-muted-foreground">
-                Share your Talendeur profile with a simple click on LinkedIn and other platforms
+                Share your Talendeur profile with a simple click on LinkedIn and other social platforms. Your unique snapshot preview showcases your skills and experience, making you stand out when opportunities come knocking
               </p>
             </div>
             
@@ -85,7 +85,7 @@ const Home: React.FC = () => {
 
       {/* Testimonials */}
       <section className="py-20 px-4 bg-muted/30">
-        <div className="container mx-auto max-w-6xl">
+        <div className="container mx-auto max-w-7xl">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Success Stories</h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -132,8 +132,8 @@ const Home: React.FC = () => {
       </section>
 
       {/* CTA */}
-      <section className="bg-gradient-to-r from-white via-talendeur-orange to-talendeur-primary py-16 px-4 text-white">
-        <div className="container mx-auto max-w-4xl text-center">
+      <section className="bg-gradient-to-r from-white via-talendeur-orange to-talendeur-primary py-20 px-4 text-white">
+        <div className="container mx-auto max-w-7xl text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to Find Your Perfect Match?</h2>
           <p className="text-xl mb-8 text-white/90 max-w-2xl mx-auto">
             Join Talendeur today and revolutionize the way you connect in the professional world.

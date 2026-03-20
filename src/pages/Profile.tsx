@@ -25,7 +25,7 @@ import { CertificationsForm } from '@/components/profile/CertificationsForm';
 import { ReferencesForm } from '@/components/profile/ReferencesForm';
 import { ReferencesDisplay } from '@/components/dashboard/ReferencesDisplay';
 import { PersonalityTest } from '@/components/profile/PersonalityTest';
-import { ChevronDown, Camera } from 'lucide-react';
+import { ChevronDown, ExternalLink } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { generateDashboardPreview } from '@/lib/dashboard-screenshot';
 
@@ -90,25 +90,30 @@ const Profile: React.FC = () => {
     }
   };
 
-  const handleGeneratePreview = async () => {
+  const handleShareToLinkedIn = async () => {
     if (!dashboardRef.current || !user?.id) return;
     
     setIsGeneratingPreview(true);
     try {
+      // Generate and save the snapshot
       const imageUrl = await generateDashboardPreview(dashboardRef.current, user.id);
       
-      toast({
-        title: 'Preview generated!',
-        description: 'Your dashboard preview has been created and will appear when sharing your profile link.',
-        duration: 5000,
-      });
-      
       console.log('Dashboard preview URL:', imageUrl);
-    } catch (error) {
-      console.error('Failed to generate preview:', error);
+      
+      // Open LinkedIn sharing dialog with the profile link
+      const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(publicProfileUrl)}&text=${encodeURIComponent(`Check out my professional profile on Talendeur! #Talendeur ${publicProfileUrl}`)}`;
+      window.open(linkedInUrl, '_blank', 'noopener,noreferrer');
+      
       toast({
-        title: 'Generation failed',
-        description: error instanceof Error ? error.message : 'Could not generate preview',
+        title: 'Sharing to LinkedIn',
+        description: 'Your profile preview has been generated and LinkedIn is opening.',
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('Failed to share profile:', error);
+      toast({
+        title: 'Share failed',
+        description: error instanceof Error ? error.message : 'Could not share profile',
         variant: 'destructive',
       });
     } finally {
@@ -272,18 +277,18 @@ const Profile: React.FC = () => {
                             <img 
                               src={imageUrl}
                               alt={user.profile.name}
-                              className={user.userType === 'jobseeker' ? 'h-28 w-28 rounded-full object-cover border-4 border-gray-200' : 'h-28 w-28 rounded-lg object-cover border-4 border-gray-200'}
+                              className={user.userType === 'jobseeker' ? 'h-40 w-40 rounded-full object-cover border-4 border-gray-200' : 'h-40 w-40 rounded-lg object-cover border-4 border-gray-200'}
                             />
                           );
                         } else {
                           return (
                             <div 
                               className={user.userType === 'jobseeker'
-                                ? 'h-28 w-28 rounded-full bg-gray-200 border-4 border-gray-300 flex items-center justify-center'
-                                : 'h-28 w-28 rounded-lg bg-gray-200 border-4 border-gray-300 flex items-center justify-center'
+                                ? 'h-40 w-40 rounded-full bg-gray-200 border-4 border-gray-300 flex items-center justify-center'
+                                : 'h-40 w-40 rounded-lg bg-gray-200 border-4 border-gray-300 flex items-center justify-center'
                               }
                             >
-                              <span className="text-4xl font-bold text-gray-600">
+                              <span className="text-5xl font-bold text-gray-600">
                                 {user.profile.name?.charAt(0).toUpperCase() || '?'}
                               </span>
                             </div>
@@ -315,7 +320,7 @@ const Profile: React.FC = () => {
                           onClick={() => setIsEditMode(true)}
                           size="sm"
                           variant="outline"
-                          className="bg-white/70 text-talendeur-primary hover:bg-white/90 border-talendeur-primary"
+                          className="bg-white/70 text-talendeur-primary hover:bg-talendeur-primary hover:text-white border-talendeur-primary transition-colors"
                         >
                           Edit Profile
                         </Button>
@@ -324,24 +329,14 @@ const Profile: React.FC = () => {
                             <Button
                               variant="outline"
                               size="sm"
-                              className="bg-white/70 text-talendeur-primary hover:bg-white/90 border-talendeur-primary"
+                              className="bg-white/70 text-talendeur-primary hover:bg-talendeur-primary hover:text-white border-talendeur-primary transition-colors"
                             >
                               Share your profile
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="start">
-                            <DropdownMenuItem onClick={handleGeneratePreview} disabled={isGeneratingPreview}>
-                              <Camera className="h-4 w-4 mr-2" />
-                              {isGeneratingPreview ? 'Generating...' : 'Generate Share Preview'}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem asChild>
-                              <a
-                                href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(publicProfileUrl)}&text=${encodeURIComponent(`Check out my professional profile on Talendeur! #Talendeur ${publicProfileUrl}`)}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                              >
-                                Share to LinkedIn
-                              </a>
+                            <DropdownMenuItem onClick={handleShareToLinkedIn} disabled={isGeneratingPreview}>
+                              {isGeneratingPreview ? 'Generating & Sharing...' : 'Share to LinkedIn'}
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={handleCopyProfileUrl}>
                               Copy URL
@@ -375,7 +370,7 @@ const Profile: React.FC = () => {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  className="bg-white/70 text-talendeur-primary hover:bg-white/90 border-talendeur-primary"
+                                  className="bg-white/70 text-talendeur-primary hover:bg-talendeur-primary hover:text-white border-talendeur-primary transition-colors"
                                   aria-label={isVideoOpen ? 'Collapse video profile' : 'Expand video profile'}
                                 >
                                   <ChevronDown className={`h-4 w-4 transition-transform ${isVideoOpen ? 'rotate-180' : ''}`} />
@@ -400,6 +395,24 @@ const Profile: React.FC = () => {
                           </Collapsible>
                         </Card>
                       )}
+                      {(user.profile as any).portfolioUrl && (
+                        <Card>
+                          <CardHeader>
+                            <CardTitle>Portfolio</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <a 
+                              href={(user.profile as any).portfolioUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-2 text-talendeur-primary hover:text-talendeur-orange transition-colors font-medium"
+                            >
+                              <ExternalLink size={18} />
+                              <span>Visit Portfolio</span>
+                            </a>
+                          </CardContent>
+                        </Card>
+                      )}
                       <BiographyWordCloud />
                       <SkillsRadarChart />
                       <PersonalityVisualization />
@@ -420,7 +433,7 @@ const Profile: React.FC = () => {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="bg-white/70 text-talendeur-primary hover:bg-white/90 border-talendeur-primary"
+                                className="bg-white/70 text-talendeur-primary hover:bg-talendeur-primary hover:text-white border-talendeur-primary transition-colors"
                                 aria-label={isVideoOpen ? 'Collapse video' : 'Expand video'}
                               >
                                 <ChevronDown className={`h-4 w-4 transition-transform ${isVideoOpen ? 'rotate-180' : ''}`} />
@@ -531,7 +544,7 @@ const Profile: React.FC = () => {
                       onClick={() => setIsEditMode(false)}
                       size="sm"
                       variant="outline"
-                      className="bg-white/70 text-talendeur-primary hover:bg-white/90"
+                      className="bg-white/70 text-talendeur-primary hover:bg-talendeur-primary hover:text-white transition-colors"
                     >
                       View Profile
                     </Button>

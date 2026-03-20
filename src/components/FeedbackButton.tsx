@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Star, MessageSquare, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -61,12 +61,24 @@ const StarRating = ({
   );
 };
 
-export default function FeedbackButton() {
+export default function FeedbackButton({ inFooter = false }: { inFooter?: boolean }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasSubmitted, setHasSubmitted] = useState(false);
+  const [isVisible, setIsVisible] = useState(inFooter); // Footer version is always visible
   const { user } = useAuth();
   const { toast } = useToast();
+
+  // Delayed appearance for floating button (not footer)
+  React.useEffect(() => {
+    if (inFooter) return; // Skip delay for footer version
+    
+    const timer = setTimeout(() => {
+      setIsVisible(true);
+    }, 12000); // 12 seconds delay
+
+    return () => clearTimeout(timer);
+  }, [inFooter]);
 
   const [formData, setFormData] = useState<FeedbackFormData>({
     usefulnessRating: 0,
@@ -178,18 +190,34 @@ export default function FeedbackButton() {
 
   return (
     <>
-      {/* Floating Feedback Button */}
-      <button
-        onClick={() => setIsOpen(true)}
-        className="fixed right-6 top-1/2 -translate-y-1/2 z-50 px-6 py-4 rounded-lg shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-105 flex items-center gap-3 group"
-        style={{ backgroundColor: '#9EBC9E', color: '#FFFFFF' }}
-        aria-label="Give us feedback"
-      >
-        <MessageSquare size={24} className="group-hover:rotate-12 transition-transform" />
-        <span className="font-semibold text-lg whitespace-nowrap">Give us feedback</span>
-      </button>
+      {/* Button - Footer version or Floating version */}
+      {inFooter ? (
+        <button
+          onClick={() => setIsOpen(true)}
+          className="text-sm text-gray-300 hover:text-white transition-colors flex items-center gap-2"
+        >
+          <MessageSquare size={16} />
+          Give Feedback
+        </button>
+      ) : (
+        <button
+          onClick={() => setIsOpen(true)}
+          className={`fixed bottom-6 right-6 z-50 rounded-full shadow-2xl hover:shadow-3xl transition-all duration-300 flex items-center gap-2 group overflow-hidden ${
+            isVisible ? 'translate-x-0 opacity-100' : 'translate-x-20 opacity-0'
+          }`}
+          style={{ backgroundColor: '#9EBC9E', color: '#FFFFFF' }}
+          aria-label="Give us feedback"
+        >
+          <div className="p-4 flex items-center gap-2">
+            <MessageSquare size={24} className="group-hover:rotate-12 transition-transform flex-shrink-0" />
+            <span className="font-semibold text-base whitespace-nowrap max-w-0 group-hover:max-w-xs transition-all duration-300 overflow-hidden">
+              Give us feedback
+            </span>
+          </div>
+        </button>
+      )}
 
-      {/* Feedback Dialog */}
+      {/* Feedback Dialog - Shared by both versions */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>

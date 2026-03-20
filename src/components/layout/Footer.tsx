@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
+import FeedbackButton from '@/components/FeedbackButton';
 
 const Footer: React.FC = () => {
   return (
@@ -33,9 +34,12 @@ const Footer: React.FC = () => {
           </div>
           
           <div>
-            <h4 className="font-semibold mb-4">Contact</h4>
-            <p className="text-sm text-gray-300 mb-2">info@talendeur.com</p>
-            <p className="text-sm text-gray-300">8 Saffron House, 43 Camborne Road, Sutton, SM2 6RF. United Kingdom</p>
+            <h4 className="font-semibold mb-4">Support</h4>
+            <ul className="space-y-2">
+              <li><FeedbackButton inFooter={true} /></li>
+              <li><a href="mailto:info@talendeur.com" className="text-sm text-gray-300 hover:text-white">info@talendeur.com</a></li>
+              <li className="text-sm text-gray-300">8 Saffron House, 43 Camborne Road, Sutton, SM2 6RF. United Kingdom</li>
+            </ul>
             <div className="mt-4 flex space-x-4">
               <a href="#" className="text-gray-300 hover:text-white">
                 <span className="sr-only">Twitter</span>
