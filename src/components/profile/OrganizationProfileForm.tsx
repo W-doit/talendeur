@@ -157,10 +157,12 @@ const OrganizationProfileForm: React.FC<OrganizationProfileFormProps> = ({ onSav
 
       setLogoFile(null);
       
-      // Call the onSaveComplete callback if provided
-      if (onSaveComplete) {
-        onSaveComplete();
-      }
+      // Show success toast - stay on form for review
+      toast({
+        title: 'Profile saved',
+        description: 'Your organization profile has been updated successfully.',
+        duration: 3000,
+      });
     } catch (error) {
       console.error('Profile update error:', error);
     } finally {

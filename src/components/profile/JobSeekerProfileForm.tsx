@@ -153,7 +153,14 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({
       setCvFile(null);
       setImageFile(null);
       
-      // Call the onSaveComplete callback if provided
+      // Show success toast - stay on form to allow reviewing all tabs
+      toast({
+        title: 'Profile saved',
+        description: 'Your profile has been updated successfully.',
+        duration: 3000,
+      });
+      
+      // Call the onSaveComplete callback if provided (for tab navigation)
       if (onSaveComplete) {
         onSaveComplete();
       }
@@ -226,9 +233,9 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({
     if (data.skills.length > 0) extractedItems.push(`${data.skills.length} skills`);
 
     toast({
-      title: 'Data extracted successfully',
-      description: `Found: ${extractedItems.join(', ')}. Please review the pre-filled information and click Save to update your profile.`,
-      duration: 6000,
+      title: 'CV data extracted successfully! ✓',
+      description: `Found: ${extractedItems.join(', ')}. Please review each tab below (Work Experience, Education, Certifications) to verify the information. Don't forget to complete the Personality Test before viewing your profile!`,
+      duration: 10000,
     });
 
     // TODO: Store the parsed work experience, education, certifications in state

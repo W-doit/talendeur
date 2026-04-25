@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, Trash2, Award } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 interface Certification {
   id?: string;
@@ -35,11 +36,92 @@ interface CertificationsFormProps {
 
 export const CertificationsForm = ({ importedData, onSaveComplete }: CertificationsFormProps = {}) => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [certifications, setCertifications] = useState<Certification[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [hasFetched, setHasFetched] = useState(false);
-  const [hasImportedData, setHasImportedData] = useState(false);
+  const [dataSource, setDataSource] = useState<'none' | 'imported' | 'database'>('none');
+
+  // PRIORITY 1: Handle imported data first
+  useEffect(() => {
+    console.log('CertificationsForm - checking importedData:', importedData?.length);
+    
+    if (importedData && Array.isArray(importedData) && importedData.length > 0) {
+      console.log('Pre-filling certifications with imported CV data:', importedData);
+      const mappedData = importedData.map(cert => ({
+        course_name: cert.course_name || '',
+        certification_type: cert.certification_type || '',
+        date_attained: cert.date_attained || '',
+        details: cert.details || '',
+      }));
+      console.log('Mapped certifications data:', mappedData);
+      
+      // Set imported data (replaces any existing data)
+      setCertifications(mappedData);
+      setDataSource('imported');
+      setLoading(false);
+      
+      console.log('Certifications data pre-filled from CV. User should review and save.');
+    } else if (dataSource === 'imported') {
+      // Reset when imported data is cleared
+      console.log('Imported data cleared, will fetch from database');
+      setDataSource('none');
+    }
+  }, [importedData, dataSource]);
+
+  // PRIORITY 2: Fetch from database only if no imported data
+  useEffect(() => {
+    const fetchCertifications = async () => {
+      // Skip if we already have imported data or already fetched from database
+      if (dataSource !== 'none') {
+        console.log(`Skipping fetch - data source is: ${dataSource}`);
+        return;
+      }
+      
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      console.log('Fetching certifications from database...');
+
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        
+        if (!sessionData.session) {
+          console.error('CertificationsForm: No active session!');
+          setLoading(false);
+          return;
+        }
+        
+        const { data, error } = await supabase
+          .from('certifications')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('date_attained', { ascending: false });
+
+        if (error) throw error;
+        
+        console.log(`Loaded ${(data || []).length} certifications from database`);
+        // Normalize data to ensure no null values in form inputs
+        const normalized = (data || []).map(cert => ({
+          ...cert,
+          date_attained: cert.date_attained || '',
+          details: cert.details || ''
+        }));
+        setCertifications(normalized);
+        setDataSource('database');
+      } catch (error) {
+        console.error('Error fetching certifications:', error);
+        setCertifications([]);
+        setDataSource('database'); // Mark as attempted
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCertifications();
+  }, [user, dataSource]);
 
   const saveCertifications = async () => {
     if (!user) return;
@@ -75,7 +157,7 @@ export const CertificationsForm = ({ importedData, onSaveComplete }: Certificati
             .update({
               course_name: cert.course_name,
               certification_type: cert.certification_type,
-              date_attained: cert.date_attained,
+              date_attained: cert.date_attained || null,
               details: cert.details,
             })
             .eq('id', cert.id);
@@ -89,7 +171,7 @@ export const CertificationsForm = ({ importedData, onSaveComplete }: Certificati
               user_id: user.id,
               course_name: cert.course_name,
               certification_type: cert.certification_type,
-              date_attained: cert.date_attained,
+              date_attained: cert.date_attained || null,
               details: cert.details,
             })
             .select('id')
@@ -103,10 +185,14 @@ export const CertificationsForm = ({ importedData, onSaveComplete }: Certificati
 
       setCertifications(updatedCertifications);
       
-      // After auto-save, refetch to ensure we have fresh data with IDs
-      if (hasNewImports) {
-        setHasFetched(false); // Allow refetch
-      }
+      // After save, mark as database source (data is now persisted)
+      setDataSource('database');
+      
+      toast({
+        title: 'Certifications saved',
+        description: 'Your certifications have been updated successfully.',
+        duration: 3000,
+      });
       
       if (onSaveComplete) {
         onSaveComplete();
@@ -117,74 +203,6 @@ export const CertificationsForm = ({ importedData, onSaveComplete }: Certificati
       setSaving(false);
     }
   };
-
-  // Pre-fill with imported data immediately on mount
-  useEffect(() => {
-    if (importedData && Array.isArray(importedData) && importedData.length > 0 && !hasImportedData) {
-      console.log('Pre-filling certifications with imported data:', importedData);
-      const mappedData = importedData.map(cert => ({
-        course_name: cert.course_name || '',
-        certification_type: cert.certification_type || '',
-        date_attained: cert.date_attained || '',
-        details: cert.details || '',
-      }));
-      setCertifications(prev => [...mappedData, ...prev]);
-      setHasImportedData(true);
-      setLoading(false);
-      
-      // Auto-save imported data
-      console.log('Auto-saving imported certifications data...');
-      setTimeout(() => {
-        saveCertifications();
-      }, 500);
-    } else if (!importedData || (Array.isArray(importedData) && importedData.length === 0)) {
-      setHasImportedData(false);
-    }
-  }, [importedData, hasImportedData]);
-
-  const fetchCertifications = useCallback(async () => {
-    // Don't refetch if we already tried
-    if (hasFetched) {
-      setLoading(false);
-      return;
-    }
-    
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      
-      if (!sessionData.session) {
-        console.error('CertificationsForm: No active session!');
-        setLoading(false);
-        return;
-      }
-      
-      const { data, error } = await supabase
-        .from('certifications')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('date_attained', { ascending: false });
-
-      if (error) throw error;
-      
-      setCertifications(data || []);
-      setHasFetched(true); // Mark as fetched
-    } catch (error) {
-      console.error('Error fetching certifications:', error);
-      setCertifications([]);
-      setHasFetched(true); // Mark as attempted even on error
-    } finally {
-      setLoading(false);
-    }
-  }, [user, hasFetched]);
-
-  useEffect(() => {
-    fetchCertifications();
-  }, [fetchCertifications]);
 
   const addNewCertification = () => {
     setCertifications([

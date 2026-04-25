@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Plus, Trash2, GraduationCap } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 interface Education {
   id?: string;
@@ -34,20 +35,18 @@ interface EducationFormProps {
 
 export const EducationForm = ({ importedData, onSaveComplete }: EducationFormProps = {}) => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [educations, setEducations] = useState<Education[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [hasFetched, setHasFetched] = useState(false); // Track if we've already fetched
-  const [hasImportedData, setHasImportedData] = useState(false); // Track if imported data was loaded
+  const [dataSource, setDataSource] = useState<'none' | 'imported' | 'database'>('none');
 
-  // Pre-fill with imported data immediately on mount
+  // PRIORITY 1: Handle imported data first
   useEffect(() => {
-    console.log('EducationForm useEffect - importedData:', importedData);
-    console.log('EducationForm useEffect - hasImportedData:', hasImportedData);
-    console.log('EducationForm useEffect - importedData?.length:', importedData?.length);
+    console.log('EducationForm - checking importedData:', importedData?.length);
     
     if (importedData && Array.isArray(importedData) && importedData.length > 0) {
-      console.log('Pre-filling education with imported data:', importedData);
+      console.log('Pre-filling education with imported CV data:', importedData);
       const mappedData = importedData.map(edu => ({
         institution: edu.institution || '',
         qualification_type: edu.qualification_type || '',
@@ -57,91 +56,73 @@ export const EducationForm = ({ importedData, onSaveComplete }: EducationFormPro
         still_studying: edu.still_studying || false,
       }));
       console.log('Mapped education data:', mappedData);
-      // Merge with existing educations instead of replacing
-      setEducations(prev => {
-        // Add imported data to top if not already there
-        const merged = [...mappedData, ...prev];
-        return merged;
-      });
-      setHasImportedData(true);
+      
+      // Set imported data (replaces any existing data)
+      setEducations(mappedData);
+      setDataSource('imported');
       setLoading(false);
       
-      // Auto-save imported data
-      console.log('Auto-saving imported education data...');
-      setTimeout(() => {
-        saveEducations();
-      }, 500); // Small delay to ensure state is set
-    } else if (!importedData || (Array.isArray(importedData) && importedData.length === 0)) {
-      // Reset hasImportedData if no data to allow fresh imports
-      setHasImportedData(false);
+      console.log('Education data pre-filled from CV. User should review and save.');
+    } else if (dataSource === 'imported') {
+      // Reset when imported data is cleared
+      console.log('Imported data cleared, will fetch from database');
+      setDataSource('none');
     }
-  }, [importedData, hasImportedData]);
+  }, [importedData, dataSource]);
 
-  const fetchEducation = useCallback(async () => {
-    // Always fetch database records first
-    if (hasFetched) {
-      console.log('Skipping fetch - already fetched');
-      return;
-    }
-    
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      
-      if (!sessionData.session) {
-        console.error('EducationForm: No active session!');
-        setLoading(false);
+  // PRIORITY 2: Fetch from database only if no imported data
+  useEffect(() => {
+    const fetchEducation = async () => {
+      // Skip if we already have imported data or already fetched from database
+      if (dataSource !== 'none') {
+        console.log(`Skipping fetch - data source is: ${dataSource}`);
         return;
       }
       
-      
-      const { data, error } = await supabase
-        .from('education_history')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('start_date', { ascending: false });
-      
-      if (error) throw error;
-      
-      const normalized = (data || []).map((edu) => ({
-        ...edu,
-        still_studying: !!edu.still_studying,
-        end_date: edu.end_date ?? '',
-      }));
-      
-      // If there's imported data, merge it with existing data
-      if (importedData && Array.isArray(importedData) && importedData.length > 0) {
-        console.log('Merging imported data with existing data');
-        const mappedImported = importedData.map(edu => ({
-          institution: edu.institution || '',
-          qualification_type: edu.qualification_type || '',
-          subject: edu.subject || '',
-          start_date: edu.start_date || '',
-          end_date: edu.end_date || '',
-          still_studying: edu.still_studying || false,
-        }));
-        // Add imported data first so new entries appear at the top
-        setEducations([...mappedImported, ...normalized]);
-      } else {
-        setEducations(normalized);
+      if (!user) {
+        setLoading(false);
+        return;
       }
-      setHasFetched(true); // Mark as fetched
-    } catch (error) {
-      console.error('Error fetching education:', error);
-      setEducations([]);
-      setHasFetched(true); // Mark as attempted even on error
-    } finally {
-      setLoading(false);
-    }
-  }, [user, hasFetched, importedData]);
 
-  useEffect(() => {
+      console.log('Fetching education from database...');
+
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        
+        if (!sessionData.session) {
+          console.error('EducationForm: No active session!');
+          setLoading(false);
+          return;
+        }
+        
+        const { data, error } = await supabase
+          .from('education_history')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('start_date', { ascending: false });
+        
+        if (error) throw error;
+        
+        const normalized = (data || []).map((edu) => ({
+          ...edu,
+          still_studying: !!edu.still_studying,
+          end_date: edu.end_date ?? '',
+        }));
+        
+        console.log(`Loaded ${normalized.length} education entries from database`);
+        setEducations(normalized);
+        setDataSource('database');
+      } catch (error) {
+        console.error('Error fetching education:', error);
+        setEducations([]);
+        setDataSource('database'); // Mark as attempted
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchEducation();
-  }, [fetchEducation]);
+  }, [user, dataSource]);
 
   const addNewEducation = () => {
     setEducations([
@@ -227,8 +208,8 @@ export const EducationForm = ({ importedData, onSaveComplete }: EducationFormPro
               institution: edu.institution,
               qualification_type: edu.qualification_type,
               subject: edu.subject,
-              start_date: edu.start_date,
-              end_date: edu.still_studying ? null : edu.end_date,
+              start_date: edu.start_date || null,
+              end_date: edu.still_studying ? null : (edu.end_date || null),
               still_studying: edu.still_studying,
             })
             .eq('id', edu.id);
@@ -243,8 +224,8 @@ export const EducationForm = ({ importedData, onSaveComplete }: EducationFormPro
               institution: edu.institution,
               qualification_type: edu.qualification_type,
               subject: edu.subject,
-              start_date: edu.start_date,
-              end_date: edu.still_studying ? null : edu.end_date,
+              start_date: edu.start_date || null,
+              end_date: edu.still_studying ? null : (edu.end_date || null),
               still_studying: edu.still_studying,
             })
             .select('id')
@@ -257,6 +238,15 @@ export const EducationForm = ({ importedData, onSaveComplete }: EducationFormPro
       }
 
       setEducations(updatedEducations);
+      
+      // After save, mark as database source (data is now persisted)
+      setDataSource('database');
+      
+      toast({
+        title: 'Education saved',
+        description: 'Your education history has been updated successfully.',
+        duration: 3000,
+      });
       
       if (onSaveComplete) {
         onSaveComplete();

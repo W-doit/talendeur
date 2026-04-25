@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Plus, Trash2, Briefcase } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 interface WorkExperience {
   id?: string;
@@ -23,20 +24,18 @@ interface WorkExperienceFormProps {
 
 export const WorkExperienceForm = ({ importedData, onSaveComplete }: WorkExperienceFormProps = {}) => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [experiences, setExperiences] = useState<WorkExperience[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [hasFetched, setHasFetched] = useState(false); // Track if we've already fetched
-  const [hasImportedData, setHasImportedData] = useState(false); // Track if imported data was loaded
+  const [dataSource, setDataSource] = useState<'none' | 'imported' | 'database'>('none');
 
-  // Pre-fill with imported data immediately on mount
+  // PRIORITY 1: Handle imported data first
   useEffect(() => {
-    console.log('WorkExperienceForm useEffect - importedData:', importedData);
-    console.log('WorkExperienceForm useEffect - hasImportedData:', hasImportedData);
-    console.log('WorkExperienceForm useEffect - importedData?.length:', importedData?.length);
+    console.log('WorkExperienceForm - checking importedData:', importedData?.length);
     
     if (importedData && Array.isArray(importedData) && importedData.length > 0) {
-      console.log('Pre-filling work experience with imported data:', importedData);
+      console.log('Pre-filling work experience with imported CV data:', importedData);
       const mappedData = importedData.map(exp => ({
         job_title: exp.job_title || '',
         company: exp.company || '',
@@ -45,92 +44,73 @@ export const WorkExperienceForm = ({ importedData, onSaveComplete }: WorkExperie
         still_work_here: exp.still_work_here || false,
       }));
       console.log('Mapped work experience data:', mappedData);
-      // Merge with existing experiences instead of replacing
-      setExperiences(prev => {
-        // Add imported data to top if not already there
-        const merged = [...mappedData, ...prev];
-        return merged;
-      });
-      setHasImportedData(true);
+      
+      // Set imported data (replaces any existing data)
+      setExperiences(mappedData);
+      setDataSource('imported');
       setLoading(false);
       
-      // Auto-save imported data
-      console.log('Auto-saving imported work experience data...');
-      setTimeout(() => {
-        saveExperiences();
-      }, 500); // Small delay to ensure state is set
-    } else if (!importedData || (Array.isArray(importedData) && importedData.length === 0)) {
-      // Reset hasImportedData if no data to allow fresh imports
-      setHasImportedData(false);
+      console.log('Work experience data pre-filled from CV. User should review and save.');
+    } else if (dataSource === 'imported') {
+      // Reset when imported data is cleared
+      console.log('Imported data cleared, will fetch from database');
+      setDataSource('none');
     }
-  }, [importedData, hasImportedData]);
+  }, [importedData, dataSource]);
 
-  const fetchExperiences = useCallback(async () => {
-    // Always fetch database records first
-    if (hasFetched) {
-      console.log('Skipping fetch - already fetched');
-      return;
-    }
-    
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-
-    try {
-      // Verify session before query
-      const { data: sessionData } = await supabase.auth.getSession();
-      
-      if (!sessionData.session) {
-        console.error('WorkExperienceForm: No active session!');
-        setLoading(false);
+  // PRIORITY 2: Fetch from database only if no imported data
+  useEffect(() => {
+    const fetchExperiences = async () => {
+      // Skip if we already have imported data or already fetched from database
+      if (dataSource !== 'none') {
+        console.log(`Skipping fetch - data source is: ${dataSource}`);
         return;
       }
       
-      
-      const { data, error } = await supabase
-        .from('work_experience')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('start_date', { ascending: false });
-
-      if (error) throw error;
-      
-      const normalized = (data || []).map((exp) => ({
-        ...exp,
-        still_work_here: !!exp.still_work_here,
-        end_date: exp.end_date ?? '',
-      }));
-      
-      // If there's imported data, merge it with existing data
-      if (importedData && Array.isArray(importedData) && importedData.length > 0) {
-        console.log('Merging imported data with existing data');
-        const mappedImported = importedData.map(exp => ({
-          job_title: exp.job_title || '',
-          company: exp.company || '',
-          start_date: exp.start_date || '',
-          end_date: exp.end_date || '',
-          still_work_here: exp.still_work_here || false,
-        }));
-        // Add imported data first so new entries appear at the top
-        setExperiences([...mappedImported, ...normalized]);
-      } else {
-        setExperiences(normalized);
+      if (!user) {
+        setLoading(false);
+        return;
       }
-      setHasFetched(true); // Mark as fetched
-    } catch (error) {
-      console.error('Error fetching work experience:', error);
-      // Set empty array so form still shows
-      setExperiences([]);
-      setHasFetched(true); // Mark as attempted even on error
-    } finally {
-      setLoading(false);
-    }
-  }, [user, hasFetched, importedData]);
 
-  useEffect(() => {
+      console.log('Fetching work experience from database...');
+
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        
+        if (!sessionData.session) {
+          console.error('WorkExperienceForm: No active session!');
+          setLoading(false);
+          return;
+        }
+        
+        const { data, error } = await supabase
+          .from('work_experience')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('start_date', { ascending: false });
+
+        if (error) throw error;
+        
+        const normalized = (data || []).map((exp) => ({
+          ...exp,
+          still_work_here: !!exp.still_work_here,
+          end_date: exp.end_date ?? '',
+        }));
+        
+        console.log(`Loaded ${normalized.length} work experiences from database`);
+        setExperiences(normalized);
+        setDataSource('database');
+      } catch (error) {
+        console.error('Error fetching work experience:', error);
+        setExperiences([]);
+        setDataSource('database'); // Mark as attempted
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchExperiences();
-  }, [fetchExperiences]);
+  }, [user, dataSource]);
 
   const addNewExperience = () => {
     setExperiences([
@@ -217,8 +197,8 @@ export const WorkExperienceForm = ({ importedData, onSaveComplete }: WorkExperie
             .update({
               job_title: exp.job_title,
               company: exp.company,
-              start_date: exp.start_date,
-              end_date: exp.still_work_here ? null : exp.end_date,
+              start_date: exp.start_date || null,
+              end_date: exp.still_work_here ? null : (exp.end_date || null),
               still_work_here: exp.still_work_here,
             })
             .eq('id', exp.id);
@@ -232,8 +212,8 @@ export const WorkExperienceForm = ({ importedData, onSaveComplete }: WorkExperie
               user_id: user.id,
               job_title: exp.job_title,
               company: exp.company,
-              start_date: exp.start_date,
-              end_date: exp.still_work_here ? null : exp.end_date,
+              start_date: exp.start_date || null,
+              end_date: exp.still_work_here ? null : (exp.end_date || null),
               still_work_here: exp.still_work_here,
             })
             .select('id')
@@ -246,6 +226,15 @@ export const WorkExperienceForm = ({ importedData, onSaveComplete }: WorkExperie
       }
 
       setExperiences(updatedExperiences);
+      
+      // After save, mark as database source (data is now persisted)
+      setDataSource('database');
+      
+      toast({
+        title: 'Work experience saved',
+        description: 'Your work experience has been updated successfully.',
+        duration: 3000,
+      });
       
       if (onSaveComplete) {
         onSaveComplete();
