@@ -1,7 +1,20 @@
 import { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Brain } from 'lucide-react';
-import { ResponsiveSunburst } from '@nivo/sunburst';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Sparkles } from 'lucide-react';
+import { 
+  RadarChart, 
+  PolarGrid, 
+  PolarAngleAxis, 
+  PolarRadiusAxis, 
+  Radar, 
+  ResponsiveContainer,
+  Tooltip,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Cell
+} from 'recharts';
 
 interface AIProficiencyData {
   ai_tool_usage: number;
@@ -24,36 +37,55 @@ interface AIProficiencyChartProps {
   tools?: AIToolsUsed[];
 }
 
+interface CategoryData {
+  category: string;
+  score: number;
+  fullMark: 5;
+  color: string;
+  description: string;
+}
+
 const CATEGORY_LABELS: Record<string, string> = {
   ai_tool_usage: 'AI Tools',
-  generative_ai_prompting: 'Generative AI',
+  generative_ai_prompting: 'Gen AI',
   data_analysis_ai: 'Data & AI',
-  machine_learning: 'Machine Learning',
-  ai_strategy_implementation: 'AI Strategy',
-  ai_ethics_governance: 'AI Ethics'
+  machine_learning: 'ML',
+  ai_strategy_implementation: 'Strategy',
+  ai_ethics_governance: 'Ethics'
 };
 
-// Using personality test color palette
-const PROFICIENCY_COLORS = [
-  '#FFCFD2', // Level 1 - light pink (Extraversion)
-  '#FFAFC5', // Level 2 - pink (Agreeableness)
-  '#AA778A', // Level 3 - mauve (Neuroticism)
-  '#9EBC9E', // Level 4 - sage green (Openness)
-  '#CFC6B8', // Level 5 - beige/tan (Conscientiousness)
-];
-
-// Alternative: Category-specific colors from personality traits
-const CATEGORY_COLORS: Record<string, string> = {
-  ai_tool_usage: '#9EBC9E',           // Sage green
-  generative_ai_prompting: '#FFAFC5', // Pink
-  data_analysis_ai: '#CFC6B8',        // Beige
-  machine_learning: '#AA778A',        // Mauve
-  ai_strategy_implementation: '#FFCFD2', // Light pink
-  ai_ethics_governance: '#9EBC9E'     // Sage green
+const CATEGORY_INFO: Record<string, { color: string; description: string }> = {
+  ai_tool_usage: {
+    color: '#9EBC9E',
+    description: 'Proficiency with AI tools and platforms'
+  },
+  generative_ai_prompting: {
+    color: '#FFAFC5',
+    description: 'Skill in prompting and using generative AI'
+  },
+  data_analysis_ai: {
+    color: '#CFC6B8',
+    description: 'AI-powered data analysis capabilities'
+  },
+  machine_learning: {
+    color: '#AA778A',
+    description: 'Machine learning and model development'
+  },
+  ai_strategy_implementation: {
+    color: '#FFCFD2',
+    description: 'Strategic AI implementation and planning'
+  },
+  ai_ethics_governance: {
+    color: '#9EBC9E',
+    description: 'Understanding of AI ethics and governance'
+  }
 };
+
+const LEVEL_NAMES = ['Beginner', 'Novice', 'Intermediate', 'Advanced', 'Expert'];
 
 export const AIProficiencyChart = ({ data, tools = [] }: AIProficiencyChartProps) => {
-  const [sunburstData, setSunburstData] = useState<any>(null);
+  const [radarData, setRadarData] = useState<CategoryData[]>([]);
+  const [topTools, setTopTools] = useState<any[]>([]);
 
   useEffect(() => {
     console.log('AIProficiencyChart - received data:', data);
@@ -71,79 +103,70 @@ export const AIProficiencyChart = ({ data, tools = [] }: AIProficiencyChartProps
       return;
     }
 
-    // Build hierarchical structure for sunburst
-    const categories = [
-      { key: 'ai_tool_usage', label: CATEGORY_LABELS.ai_tool_usage, value: data.ai_tool_usage },
-      { key: 'generative_ai_prompting', label: CATEGORY_LABELS.generative_ai_prompting, value: data.generative_ai_prompting },
-      { key: 'data_analysis_ai', label: CATEGORY_LABELS.data_analysis_ai, value: data.data_analysis_ai },
-      { key: 'machine_learning', label: CATEGORY_LABELS.machine_learning, value: data.machine_learning },
-      { key: 'ai_strategy_implementation', label: CATEGORY_LABELS.ai_strategy_implementation, value: data.ai_strategy_implementation },
-      { key: 'ai_ethics_governance', label: CATEGORY_LABELS.ai_ethics_governance, value: data.ai_ethics_governance }
+    // Build radar chart data
+    const categories: CategoryData[] = [
+      {
+        category: CATEGORY_LABELS.ai_tool_usage,
+        score: data.ai_tool_usage,
+        fullMark: 5,
+        color: CATEGORY_INFO.ai_tool_usage.color,
+        description: CATEGORY_INFO.ai_tool_usage.description
+      },
+      {
+        category: CATEGORY_LABELS.generative_ai_prompting,
+        score: data.generative_ai_prompting,
+        fullMark: 5,
+        color: CATEGORY_INFO.generative_ai_prompting.color,
+        description: CATEGORY_INFO.generative_ai_prompting.description
+      },
+      {
+        category: CATEGORY_LABELS.data_analysis_ai,
+        score: data.data_analysis_ai,
+        fullMark: 5,
+        color: CATEGORY_INFO.data_analysis_ai.color,
+        description: CATEGORY_INFO.data_analysis_ai.description
+      },
+      {
+        category: CATEGORY_LABELS.machine_learning,
+        score: data.machine_learning,
+        fullMark: 5,
+        color: CATEGORY_INFO.machine_learning.color,
+        description: CATEGORY_INFO.machine_learning.description
+      },
+      {
+        category: CATEGORY_LABELS.ai_strategy_implementation,
+        score: data.ai_strategy_implementation,
+        fullMark: 5,
+        color: CATEGORY_INFO.ai_strategy_implementation.color,
+        description: CATEGORY_INFO.ai_strategy_implementation.description
+      },
+      {
+        category: CATEGORY_LABELS.ai_ethics_governance,
+        score: data.ai_ethics_governance,
+        fullMark: 5,
+        color: CATEGORY_INFO.ai_ethics_governance.color,
+        description: CATEGORY_INFO.ai_ethics_governance.description
+      }
     ];
 
-    // Map tools to categories
-    const toolsByCategory: Record<string, AIToolsUsed[]> = {
-      ai_tool_usage: [],
-      generative_ai_prompting: [],
-      data_analysis_ai: [],
-      machine_learning: [],
-      ai_strategy_implementation: [],
-      ai_ethics_governance: []
-    };
+    setRadarData(categories);
 
-    tools.forEach(tool => {
-      // Map tool categories to our main categories
-      const categoryMap: Record<string, string> = {
-        'generative_ai': 'generative_ai_prompting',
-        'ml_framework': 'machine_learning',
-        'data_science': 'data_analysis_ai',
-        'ai_platform': 'ai_tool_usage',
-        'productivity': 'ai_tool_usage'
-      };
-      
-      const mainCategory = categoryMap[tool.tool_category] || 'ai_tool_usage';
-      if (toolsByCategory[mainCategory]) {
-        toolsByCategory[mainCategory].push(tool);
-      }
-    });
+    // Get top tools by proficiency level
+    const sortedTools = [...tools]
+      .filter(tool => tool.proficiency_level > 0)
+      .sort((a, b) => b.proficiency_level - a.proficiency_level)
+      .slice(0, 8)
+      .map(tool => ({
+        name: tool.tool_name,
+        score: tool.proficiency_level,
+        category: tool.tool_category
+      }));
 
-    // Build sunburst structure
-    const children = categories
-      .filter(cat => cat.value > 0) // Only include categories with proficiency
-      .map(category => {
-        const categoryTools = toolsByCategory[category.key] || [];
-        
-        // If category has tools, create children for them
-        const toolChildren = categoryTools.map(tool => ({
-          name: tool.tool_name,
-          value: tool.proficiency_level,
-          proficiency: tool.proficiency_level
-        }));
-
-        // If no tools, create a single child representing the category proficiency
-        const children = toolChildren.length > 0 
-          ? toolChildren 
-          : [{ name: `${category.label} Skills`, value: category.value, proficiency: category.value }];
-
-        return {
-          name: category.label,
-          value: category.value,
-          proficiency: category.value,
-          children
-        };
-      });
-
-    const hierarchicalData = {
-      name: 'AI Proficiency',
-      children
-    };
-
-    console.log('AIProficiencyChart - sunburst data:', hierarchicalData);
-    setSunburstData(hierarchicalData);
+    setTopTools(sortedTools);
   }, [data, tools]);
 
-  if (!data || !sunburstData) {
-    console.log('AIProficiencyChart - not rendering: no data or sunburst data');
+  if (!data || radarData.length === 0) {
+    console.log('AIProficiencyChart - not rendering: no data');
     return null;
   }
 
@@ -153,90 +176,121 @@ export const AIProficiencyChart = ({ data, tools = [] }: AIProficiencyChartProps
     <Card className="w-full">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Brain className="h-5 w-5 text-talendeur-primary" />
-          AI Proficiency
+          <Sparkles className="h-5 w-5 text-talendeur-primary" />
+          AI Proficiency Profile
           {yearsExp > 0 && (
             <span className="text-sm font-normal text-muted-foreground ml-auto">
               {yearsExp} {yearsExp === 1 ? 'year' : 'years'} experience
             </span>
           )}
         </CardTitle>
+        <CardDescription>
+          Your AI skills and tool proficiency levels
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        <div style={{ height: '500px' }}>
-          <ResponsiveSunburst
-            data={sunburstData}
-            margin={{ top: 10, right: 10, bottom: 10, left: 10 }}
-            id="name"
-            value="value"
-            cornerRadius={2}
-            borderWidth={2}
-            borderColor={{ from: 'color', modifiers: [['darker', 0.3]] }}
-            colors={(node) => {
-              // Use category-specific colors for main categories (depth 1)
-              if (node.depth === 1) {
-                // Map category labels to their keys
-                const labelToKey: Record<string, string> = {
-                  'AI Tools': 'ai_tool_usage',
-                  'Generative AI': 'generative_ai_prompting',
-                  'Data & AI': 'data_analysis_ai',
-                  'Machine Learning': 'machine_learning',
-                  'AI Strategy': 'ai_strategy_implementation',
-                  'AI Ethics': 'ai_ethics_governance'
-                };
-                const categoryKey = labelToKey[node.data.name];
-                if (categoryKey && CATEGORY_COLORS[categoryKey]) {
-                  return CATEGORY_COLORS[categoryKey];
-                }
-              }
-              // Use proficiency-based colors for tools (child nodes at depth 2)
-              const proficiency = node.data.proficiency || 1;
-              return PROFICIENCY_COLORS[Math.min(proficiency - 1, 4)];
-            }}
-            childColor={{ from: 'color', modifiers: [['brighter', 0.2]] }}
-            enableArcLabels={true}
-            arcLabelsSkipAngle={10}
-            arcLabelsTextColor={{ from: 'color', modifiers: [['darker', 2]] }}
-            arcLabel={(node) => {
-              // For categories (depth 1), show category name
-              if (node.depth === 1) {
-                return String(node.id);
-              }
-              // For tools (depth 2), show proficiency level
-              const proficiency = node.data.proficiency || 1;
-              const levelNames = ['L1', 'L2', 'L3', 'L4', 'L5'];
-              return `${node.id} (${levelNames[proficiency - 1]})`;
-            }}
-            tooltip={({ id, value, data }) => {
-              const proficiency = data.proficiency || 1;
-              const levels = ['Beginner', 'Novice', 'Intermediate', 'Advanced', 'Expert'];
-              return (
-                <div className="bg-white p-3 border border-gray-200 rounded shadow-lg">
-                  <p className="font-semibold">{id}</p>
-                  <p className="text-sm text-gray-600">
-                    Level {proficiency}/5: {levels[proficiency - 1]}
-                  </p>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Radar Chart */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4">Category Overview</h3>
+            <ResponsiveContainer width="100%" height={360}>
+              <RadarChart data={radarData} margin={{ top: 20, right: 40, bottom: 20, left: 40 }}>
+                <PolarGrid stroke="#e5e7eb" />
+                <PolarAngleAxis 
+                  dataKey="category" 
+                  tick={{ fill: '#6b7280', fontSize: 11 }}
+                />
+                <PolarRadiusAxis 
+                  angle={90} 
+                  domain={[0, 5]} 
+                  tick={{ fill: '#9ca3af', fontSize: 10 }}
+                  tickCount={6}
+                />
+                <Radar
+                  name="Proficiency"
+                  dataKey="score"
+                  stroke="#D1163E"
+                  fill="#D1163E"
+                  fillOpacity={0.2}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'white',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '8px',
+                    padding: '8px 12px',
+                  }}
+                  formatter={(value: number) => [
+                    `Level ${value}/5: ${LEVEL_NAMES[value - 1] || 'N/A'}`,
+                    'Proficiency'
+                  ]}
+                />
+              </RadarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Category Scores */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold mb-4">Detailed Scores</h3>
+            {radarData.map((item) => (
+              <div key={item.category} className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <div className="font-semibold text-gray-900">{item.category}</div>
+                    <div className="text-xs text-gray-500">{item.description}</div>
+                  </div>
+                  <div className="text-2xl font-bold" style={{ color: item.color }}>
+                    {item.score}/5
+                  </div>
                 </div>
-              );
-            }}
-            animate={true}
-            motionConfig="gentle"
-          />
-        </div>
-        <div className="mt-4 flex items-center justify-center gap-6 text-xs text-gray-600">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: PROFICIENCY_COLORS[0] }} />
-            <span>Level 1</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: PROFICIENCY_COLORS[2] }} />
-            <span>Level 3</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: PROFICIENCY_COLORS[4] }} />
-            <span>Level 5</span>
+                <div className="w-full bg-gray-200 rounded-full h-3">
+                  <div
+                    className="h-3 rounded-full transition-all duration-500"
+                    style={{
+                      width: `${(item.score / 5) * 100}%`,
+                      backgroundColor: item.color,
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
           </div>
         </div>
+
+        {/* Top Tools Bar Chart */}
+        {topTools.length > 0 && (
+          <div className="mt-8">
+            <h3 className="text-lg font-semibold mb-4">Top AI Tools & Proficiency</h3>
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={topTools} layout="vertical">
+                <XAxis type="number" domain={[0, 5]} />
+                <YAxis dataKey="name" type="category" width={120} tick={{ fontSize: 12 }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'white',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '8px',
+                  }}
+                  formatter={(value: number) => `Level ${value}/5: ${LEVEL_NAMES[value - 1]}`}
+                />
+                <Bar dataKey="score" radius={[0, 8, 8, 0]} barSize={20}>
+                  {topTools.map((entry, index) => {
+                    // Get color based on tool category
+                    const categoryMap: Record<string, string> = {
+                      'generative_ai': CATEGORY_INFO.generative_ai_prompting.color,
+                      'ml_framework': CATEGORY_INFO.machine_learning.color,
+                      'data_science': CATEGORY_INFO.data_analysis_ai.color,
+                      'ai_platform': CATEGORY_INFO.ai_tool_usage.color,
+                      'productivity': CATEGORY_INFO.ai_tool_usage.color
+                    };
+                    const color = categoryMap[entry.category] || CATEGORY_INFO.ai_tool_usage.color;
+                    return <Cell key={`cell-${index}`} fill={color} />;
+                  })}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

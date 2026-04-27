@@ -40,6 +40,13 @@ export const LinkedInImport: React.FC<LinkedInImportProps> = ({ onImport, curren
     setFileName(file.name);
     
     if (onParsingStart) onParsingStart();
+    
+    // Show helpful message while parsing
+    toast({
+      title: 'Processing your CV...',
+      description: 'While we extract your data, please fill in your AI Proficiency and Personality Test. We\'ll notify you when ready for review.',
+      duration: 8000,
+    });
 
     try {
       console.log('Calling parseCV API...');
@@ -70,8 +77,9 @@ export const LinkedInImport: React.FC<LinkedInImportProps> = ({ onImport, curren
       onImport(parsedData, file);
       
       toast({
-        title: 'PDF imported successfully',
-        description: `Extracted data from ${file.name}. Review and edit the pre-filled information below.`,
+        title: 'CV data extracted successfully!',
+        description: 'Please review the pre-filled information in each section when you\'re ready.',
+        duration: 5000,
       });
       
       if (onParsingEnd) onParsingEnd();

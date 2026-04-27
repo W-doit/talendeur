@@ -17,12 +17,14 @@ interface JobSeekerProfileFormProps {
   onSaveComplete?: () => void;
   importedData?: { parsedData: any; pdfFile: File } | null;
   onDataImport?: (data: any) => void;
+  onParsingStart?: () => void;
 }
 
 const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({ 
   onSaveComplete,
   importedData,
-  onDataImport 
+  onDataImport,
+  onParsingStart
 }) => {
   const { user, updateProfile } = useAuth();
   const profile = user?.profile as JobSeekerProfile | null;
@@ -254,7 +256,10 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({
         onImport={handleLinkedInImport}
         currentCV={formData.cv}
         onCVRemove={() => setFormData(prev => ({ ...prev, cv: '' }))}
-        onParsingStart={() => setIsParsing(true)}
+        onParsingStart={() => {
+          setIsParsing(true);
+          if (onParsingStart) onParsingStart();
+        }}
         onParsingEnd={() => setIsParsing(false)}
       />
       

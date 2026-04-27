@@ -604,9 +604,9 @@ const Profile: React.FC = () => {
                     <TabsTrigger value="basic">Basic Info</TabsTrigger>
                     <TabsTrigger value="work">Work</TabsTrigger>
                     <TabsTrigger value="education">Education</TabsTrigger>
-                    <TabsTrigger value="ai-skills">AI Skills</TabsTrigger>
                     <TabsTrigger value="certifications">Certifications</TabsTrigger>
                     <TabsTrigger value="references">References</TabsTrigger>
+                    <TabsTrigger value="ai-skills">AI Skills</TabsTrigger>
                     <TabsTrigger value="personality">Personality</TabsTrigger>
                   </TabsList>
 
@@ -616,6 +616,10 @@ const Profile: React.FC = () => {
                         <JobSeekerProfileForm 
                           importedData={importedData}
                           onDataImport={setImportedData}
+                          onParsingStart={() => {
+                            // Redirect to AI Skills tab when CV parsing starts
+                            setActiveTab('ai-skills');
+                          }}
                           onSaveComplete={() => {
                             // After saving basic info, move to work experience tab
                             if (importedData?.parsedData?.workExperience?.length > 0) {
@@ -678,13 +682,15 @@ const Profile: React.FC = () => {
                           });
                         }
                         
-                        // After saving education, move to AI skills tab
-                        setActiveTab('ai-skills');
-                        toast({
-                          title: 'Moving to AI Skills',
-                          description: 'Share your AI knowledge and experience.',
-                          duration: 3000,
-                        });
+                        // After saving education, move to certifications tab
+                        if (importedData?.parsedData?.certifications?.length > 0) {
+                          setActiveTab('certifications');
+                          toast({
+                            title: 'Moving to Certifications',
+                            description: 'Please review and save your certifications.',
+                            duration: 3000,
+                          });
+                        }
                         setRefreshTrigger(prev => prev + 1);
                       }}
                     />
@@ -693,17 +699,13 @@ const Profile: React.FC = () => {
                   <TabsContent value="ai-skills" className="mt-6">
                     <AIProficiencyForm 
                       onSaveComplete={() => {
-                        // After saving AI skills, move to certifications tab
-                        if (importedData?.parsedData?.certifications?.length > 0) {
-                          setActiveTab('certifications');
-                          toast({
-                            title: 'Moving to Certifications',
-                            description: 'Please review and save your certifications.',
-                            duration: 3000,
-                          });
-                        } else {
-                          setActiveTab('certifications');
-                        }
+                        // After saving AI skills, move to personality test
+                        setActiveTab('personality');
+                        toast({
+                          title: 'Last step!',
+                          description: 'Complete the personality test to finish your profile.',
+                          duration: 3000,
+                        });
                         setRefreshTrigger(prev => prev + 1);
                       }}
                     />
@@ -725,12 +727,12 @@ const Profile: React.FC = () => {
                           });
                         }
                         
-                        // After saving certifications, suggest personality test
-                        setActiveTab('personality');
+                        // After saving certifications, move to references
+                        setActiveTab('references');
                         toast({
-                          title: 'Almost done!',
-                          description: 'Complete the personality test to finish your profile.',
-                          duration: 4000,
+                          title: 'Add references (optional)',
+                          description: 'Add professional references to strengthen your profile.',
+                          duration: 3000,
                         });
                         setRefreshTrigger(prev => prev + 1);
                       }}

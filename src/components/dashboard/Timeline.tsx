@@ -273,7 +273,7 @@ export const Timeline = ({ userId, accessTokenOverride, refreshTrigger }: Timeli
                   </div>
 
                   <div
-                    className={`absolute left-[21px] top-7 w-1.5 rounded-full ${getDurationBarStyles(event.type)}`}
+                    className={`absolute left-[22.5px] top-7 w-0.5 rounded-full ${getDurationBarStyles(event.type)}`}
                     style={{ height: `${durationHeight}px` }}
                   />
 
