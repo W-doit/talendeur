@@ -127,34 +127,51 @@ const PublicProfile: React.FC = () => {
           });
           
           // Fetch AI proficiency data for job seekers
-          console.log('Fetching AI proficiency for user:', profileData.user_id);
-          const aiProfResponse = await fetch(
-            `${supabaseUrl}/rest/v1/ai_proficiency?user_id=eq.${profileData.user_id}&select=*`,
-            {
-              headers: {
-                apikey: supabaseKey,
-                Authorization: `Bearer ${supabaseKey}`,
-              },
+          try {
+            const aiProfResponse = await fetch(
+              `${supabaseUrl}/rest/v1/ai_proficiency?user_id=eq.${profileData.user_id}&select=*`,
+              {
+                headers: {
+                  apikey: supabaseKey,
+                  Authorization: `Bearer ${supabaseKey}`,
+                  Accept: 'application/json',
+                },
+              }
+            );
+            if (aiProfResponse.ok) {
+              const aiProfDataArray = await aiProfResponse.json();
+              const aiProfData = aiProfDataArray?.[0];
+              setAIProficiencyData(aiProfData || null);
+            } else {
+              setAIProficiencyData(null);
             }
-          );
-          const aiProfDataArray = await aiProfResponse.json();
-          const aiProfData = aiProfDataArray?.[0];
-          console.log('AI proficiency data fetched:', aiProfData);
-          setAIProficiencyData(aiProfData || null);
+          } catch (error) {
+            console.error('AI proficiency table not available:', error);
+            setAIProficiencyData(null);
+          }
           
           // Fetch AI tools used
-          const aiToolsResponse = await fetch(
-            `${supabaseUrl}/rest/v1/ai_tools_used?user_id=eq.${profileData.user_id}&select=*`,
-            {
-              headers: {
-                apikey: supabaseKey,
-                Authorization: `Bearer ${supabaseKey}`,
-              },
+          try {
+            const aiToolsResponse = await fetch(
+              `${supabaseUrl}/rest/v1/ai_tools_used?user_id=eq.${profileData.user_id}&select=*`,
+              {
+                headers: {
+                  apikey: supabaseKey,
+                  Authorization: `Bearer ${supabaseKey}`,
+                  Accept: 'application/json',
+                },
+              }
+            );
+            if (aiToolsResponse.ok) {
+              const aiToolsDataArray = await aiToolsResponse.json();
+              setAIToolsData(aiToolsDataArray || []);
+            } else {
+              setAIToolsData([]);
             }
-          );
-          const aiToolsDataArray = await aiToolsResponse.json();
-          console.log('AI tools data fetched:', aiToolsDataArray);
-          setAIToolsData(aiToolsDataArray || []);
+          } catch (error) {
+            console.error('AI tools table not available:', error);
+            setAIToolsData([]);
+          }
         } else {
           const orgResponse = await fetch(
             `${supabaseUrl}/rest/v1/organization_details?organization_id=eq.${profileData.user_id}&select=*`,

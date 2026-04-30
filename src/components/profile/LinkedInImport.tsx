@@ -78,7 +78,7 @@ export const LinkedInImport: React.FC<LinkedInImportProps> = ({ onImport, curren
       
       toast({
         title: 'CV data extracted successfully!',
-        description: 'Please review the pre-filled information in each section when you\'re ready.',
+        description: 'Please review the pre-filled information (Skills Profile, Work, Education, etc.) in each section when you\'re ready.',
         duration: 5000,
       });
       

@@ -88,9 +88,6 @@ export const AIProficiencyChart = ({ data, tools = [] }: AIProficiencyChartProps
   const [topTools, setTopTools] = useState<any[]>([]);
 
   useEffect(() => {
-    console.log('AIProficiencyChart - received data:', data);
-    console.log('AIProficiencyChart - received tools:', tools);
-    
     if (!data) return;
 
     // Check if user has any proficiency
@@ -99,7 +96,6 @@ export const AIProficiencyChart = ({ data, tools = [] }: AIProficiencyChartProps
       .some(([, value]) => value > 1);
 
     if (!hasAnySkills) {
-      console.log('AIProficiencyChart - not rendering: all skills are level 1 or below');
       return;
     }
 
@@ -166,7 +162,6 @@ export const AIProficiencyChart = ({ data, tools = [] }: AIProficiencyChartProps
   }, [data, tools]);
 
   if (!data || radarData.length === 0) {
-    console.log('AIProficiencyChart - not rendering: no data');
     return null;
   }
 

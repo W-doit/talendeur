@@ -247,6 +247,9 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({
     console.log('Parsed work experience:', data.workExperience);
     console.log('Parsed certifications:', data.certifications);
     console.log('Parsed skills:', data.skills);
+    if (data.skills_dimensions) {
+      console.log('Parsed skills_dimensions:', data.skills_dimensions);
+    }
     console.log('Full parsed data object:', data);
   };
 

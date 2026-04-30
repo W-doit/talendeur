@@ -1,15 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
+import Wordcloud from '@visx/wordcloud/lib/Wordcloud';
+import { Text } from '@visx/text';
 
-interface WordFrequency {
+interface WordData {
   text: string;
   value: number;
-  color: string;
-  size: number;
-  x: number;
-  y: number;
-  rotation: number;
 }
 
 const COLORS = ['#9EBC9E', '#CFC6B8', '#FFCFD2', '#FFAFC5', '#AA778A', '#553E4E'];
@@ -61,7 +58,7 @@ interface BiographyWordCloudProps {
 
 export const BiographyWordCloud = ({ userId, accessTokenOverride }: BiographyWordCloudProps = {}) => {
   const { user, accessToken } = useAuth();
-  const [words, setWords] = useState<WordFrequency[]>([]);
+  const [words, setWords] = useState<WordData[]>([]);
 
   useEffect(() => {
     const fetchProfileData = async () => {
@@ -142,82 +139,13 @@ export const BiographyWordCloud = ({ userId, accessTokenOverride }: BiographyWor
           wordCounts[word] = (wordCounts[word] || 0) + 1;
         });
 
-    cleanedText.forEach(word => {
-      wordCounts[word] = (wordCounts[word] || 0) + 1;
-    });
+        // Convert to array and sort by frequency
+        const sortedWords = Object.entries(wordCounts)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 25) // Top 25 words
+          .map(([text, value]) => ({ text, value }));
 
-    // Convert to array and sort by frequency
-    const sortedWords = Object.entries(wordCounts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 20); // Top 20 words
-
-    if (sortedWords.length === 0) {
-      setWords([]);
-      return;
-    }
-
-    const maxCount = sortedWords[0]?.[1] || 1;
-    const minCount = sortedWords[sortedWords.length - 1]?.[1] || 1;
-
-    // Simple collision detection helper
-    const hasCollision = (x: number, y: number, size: number, rotation: number, placedWords: WordFrequency[]) => {
-      const buffer = 15; // Minimum distance between words
-      for (const word of placedWords) {
-        const distance = Math.sqrt(Math.pow(x - word.x, 2) + Math.pow(y - word.y, 2));
-        const minDistance = (size + word.size) / 6 + buffer; // Scale based on combined sizes
-        if (distance < minDistance) {
-          return true;
-        }
-      }
-      return false;
-    };
-
-    // Create word cloud data with collision avoidance
-    const cloudWords: WordFrequency[] = [];
-    
-    sortedWords.forEach(([text, count], index) => {
-      // Size based on frequency with bigger range
-      const normalizedSize = ((count - minCount) / (maxCount - minCount)) * 260 + 100;
-      
-      // Varied rotations
-      const rotations = [0, 0, 0, 0, 90, -90, 45, -45, 30, -30, 15, -15];
-      const rotation = rotations[Math.floor(Math.random() * rotations.length)];
-      
-      let x = 0, y = 0;
-      let attempts = 0;
-      const maxAttempts = 100;
-      
-      // Try to find non-colliding position
-      if (index < 5) {
-        // Top 5 words - center-left area
-        while (attempts < maxAttempts) {
-          x = 20 + Math.random() * 40;
-          y = 25 + Math.random() * 50;
-          if (!hasCollision(x, y, normalizedSize, rotation, cloudWords)) break;
-          attempts++;
-        }
-      } else {
-        // Rest spread out more, biased towards center-left
-        while (attempts < maxAttempts) {
-          x = 10 + Math.random() * 60;
-          y = 10 + Math.random() * 80;
-          if (!hasCollision(x, y, normalizedSize, rotation, cloudWords)) break;
-          attempts++;
-        }
-      }
-      
-      cloudWords.push({
-        text,
-        value: count,
-        color: COLORS[index % COLORS.length],
-        size: normalizedSize,
-        x: Math.max(12, Math.min(88, x)),
-        y: Math.max(12, Math.min(88, y)),
-        rotation: index < 5 ? [0, 0, 0, 15, -15][Math.floor(Math.random() * 5)] : rotation
-      });
-    });
-
-    setWords(cloudWords);
+        setWords(sortedWords);
       } catch (error) {
         console.error('Error fetching profile data for word cloud:', error);
         setWords([]);
@@ -226,6 +154,18 @@ export const BiographyWordCloud = ({ userId, accessTokenOverride }: BiographyWor
 
     fetchProfileData();
   }, [user, accessToken, userId, accessTokenOverride]);
+
+  const colors = COLORS;
+  const fontScale = useMemo(() => {
+    const maxValue = Math.max(...words.map(w => w.value), 1);
+    const minValue = Math.min(...words.map(w => w.value), 1);
+    return (word: WordData) => {
+      const value = word.value;
+      const normalized = (value - minValue) / (maxValue - minValue || 1);
+      const fontSize = 24 + normalized * 56;
+      return fontSize; // Font size range: 24-80px
+    };
+  }, [words]);
 
   if (words.length === 0) {
     return (
@@ -250,29 +190,40 @@ export const BiographyWordCloud = ({ userId, accessTokenOverride }: BiographyWor
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="relative bg-gradient-to-br from-blue-50/30 via-purple-50/20 to-pink-50/30 rounded-lg border border-gray-200 p-6 overflow-hidden">
-          <div className="relative w-full h-[350px]">
-            {words.map((word, index) => (
-              <div
-                key={index}
-                className="absolute font-bold cursor-pointer transition-all duration-300 hover:scale-110 hover:z-50"
-                style={{
-                  left: `${word.x}%`,
-                  top: `${word.y}%`,
-                  fontSize: `${Math.max(18, word.size / 3)}px`,
-                  color: word.color,
-                  transform: `translate(-50%, -50%) rotate(${word.rotation}deg)`,
-                  textShadow: '2px 2px 4px rgba(255,255,255,0.9)',
-                  fontWeight: 600 + (word.value * 100),
-                  animation: `cloudFadeIn 0.8s ease-out ${index * 0.05}s both`,
-                  whiteSpace: 'nowrap',
-                }}
-                title={`"${word.text}" appears ${word.value} time${word.value !== 1 ? 's' : ''}`}
-              >
-                {word.text}
-              </div>
-            ))}
-          </div>
+        <div className="relative bg-gradient-to-br from-blue-50/30 via-purple-50/20 to-pink-50/30 rounded-lg border border-gray-200 p-6">
+          <svg width="100%" height="320" viewBox="0 0 700 320">
+            <Wordcloud
+              words={words}
+              width={700}
+              height={320}
+              fontSize={fontScale}
+              font="Raleway, sans-serif"
+              padding={2}
+              spiral="archimedean"
+              rotate={() => {
+                const rotations = [0, 0, 0, 0, 90, -90];
+                return rotations[Math.floor(Math.random() * rotations.length)];
+              }}
+              random={() => 0.5}
+            >
+              {(cloudWords) => cloudWords.map((w, i) => (
+                    <Text
+                      key={w.text}
+                      fill={colors[i % colors.length]}
+                      textAnchor="middle"
+                      transform={`translate(${w.x}, ${w.y}) rotate(${w.rotate})`}
+                      fontSize={w.size}
+                      fontFamily={w.font}
+                      fontWeight={600}
+                      style={{
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {w.text}
+                    </Text>
+                  ))}
+            </Wordcloud>
+          </svg>
         </div>
 
         {/* Top Words Summary */}
@@ -281,9 +232,9 @@ export const BiographyWordCloud = ({ userId, accessTokenOverride }: BiographyWor
             <div 
               key={index}
               className="text-center p-3 rounded-lg border-2 hover:shadow-md transition-all hover:scale-105"
-              style={{ borderColor: word.color }}
+              style={{ borderColor: colors[index % colors.length] }}
             >
-              <div className="text-2xl font-bold" style={{ color: word.color }}>
+              <div className="text-2xl font-bold" style={{ color: colors[index % colors.length] }}>
                 #{index + 1}
               </div>
               <div className="text-sm font-semibold text-gray-700 mt-1 capitalize">
@@ -295,19 +246,6 @@ export const BiographyWordCloud = ({ userId, accessTokenOverride }: BiographyWor
             </div>
           ))}
         </div>
-
-        <style>{`
-          @keyframes cloudFadeIn {
-            from {
-              opacity: 0;
-              transform: translate(-50%, -50%) rotate(${Math.random() * 360}deg) scale(0.3);
-            }
-            to {
-              opacity: 1;
-              transform: translate(-50%, -50%) rotate(var(--rotation)) scale(1);
-            }
-          }
-        `}</style>
       </CardContent>
     </Card>
   );

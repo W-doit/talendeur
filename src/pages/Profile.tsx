@@ -23,6 +23,7 @@ import { AIProficiencyChart } from '@/components/dashboard/AIProficiencyChart';
 import { PersonalityVisualization } from '@/components/dashboard/PersonalityVisualization';
 import { WorkExperienceForm } from '@/components/profile/WorkExperienceForm';
 import { EducationForm } from '@/components/profile/EducationForm';
+import { SkillsProfileForm } from '@/components/profile/SkillsProfileForm';
 import { AIProficiencyForm } from '@/components/profile/AIProficiencyForm';
 import { CertificationsForm } from '@/components/profile/CertificationsForm';
 import { ReferencesForm } from '@/components/profile/ReferencesForm';
@@ -169,7 +170,6 @@ const Profile: React.FC = () => {
         if (proficiencyError && proficiencyError.code !== 'PGRST116') {
           console.error('Error fetching AI proficiency:', proficiencyError);
         } else {
-          console.log('Profile page - AI proficiency data:', proficiencyData);
           setAIProficiencyData(proficiencyData);
         }
         
@@ -182,7 +182,6 @@ const Profile: React.FC = () => {
         if (toolsError) {
           console.error('Error fetching AI tools:', toolsError);
         } else {
-          console.log('Profile page - AI tools data:', toolsData);
           setAIToolsData(toolsData || []);
         }
       } catch (err) {
@@ -402,7 +401,6 @@ const Profile: React.FC = () => {
                     {/* Right column: Visualizations and info boxes */}
                     <div className="w-full md:w-2/3 flex flex-col gap-8">
                       <KeyMetricsCards />
-                      <AIProficiencyChart data={aiProficiencyData} tools={aiToolsData} />
                       {(user.profile as any).videoUrl && (
                         <Card>
                           <Collapsible open={isVideoOpen} onOpenChange={setIsVideoOpen}>
@@ -437,6 +435,7 @@ const Profile: React.FC = () => {
                           </Collapsible>
                         </Card>
                       )}
+                      <AIProficiencyChart data={aiProficiencyData} tools={aiToolsData} />
                       {(user.profile as any).portfolioUrl && (
                         <Card>
                           <CardHeader>
@@ -600,12 +599,13 @@ const Profile: React.FC = () => {
 
               {user.userType === 'jobseeker' ? (
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" key={isEditMode ? 'edit' : 'view'}>
-                  <TabsList className="grid w-full grid-cols-7">
+                  <TabsList className="grid w-full grid-cols-8">
                     <TabsTrigger value="basic">Basic Info</TabsTrigger>
                     <TabsTrigger value="work">Work</TabsTrigger>
                     <TabsTrigger value="education">Education</TabsTrigger>
                     <TabsTrigger value="certifications">Certifications</TabsTrigger>
                     <TabsTrigger value="references">References</TabsTrigger>
+                    <TabsTrigger value="skills-profile">Skills Profile</TabsTrigger>
                     <TabsTrigger value="ai-skills">AI Skills</TabsTrigger>
                     <TabsTrigger value="personality">Personality</TabsTrigger>
                   </TabsList>
@@ -617,7 +617,8 @@ const Profile: React.FC = () => {
                           importedData={importedData}
                           onDataImport={setImportedData}
                           onParsingStart={() => {
-                            // Redirect to AI Skills tab when CV parsing starts
+                            // Redirect to AI Proficiency form when CV parsing starts
+                            // Skills Profile is auto-filled from parsed data and reviewed later
                             setActiveTab('ai-skills');
                           }}
                           onSaveComplete={() => {
@@ -741,6 +742,37 @@ const Profile: React.FC = () => {
 
                   <TabsContent value="references" className="mt-6">
                     <ReferencesForm />
+                  </TabsContent>
+
+                  <TabsContent value="skills-profile" className="mt-6">
+                    <SkillsProfileForm 
+                      parsedData={importedData?.parsedData?.skills_dimensions}
+                      onSaveComplete={() => {
+                        // After saving skills profile, move to AI skills
+                        setActiveTab('ai-skills');
+                        toast({
+                          title: 'Skills profile saved!',
+                          description: 'Now add your AI proficiency details.',
+                          duration: 3000,
+                        });
+                        setRefreshTrigger(prev => prev + 1);
+                      }}
+                    />
+                  </TabsContent>
+
+                  <TabsContent value="ai-skills" className="mt-6">
+                    <AIProficiencyForm 
+                      onSaveComplete={() => {
+                        // After saving AI skills, move to personality test
+                        setActiveTab('personality');
+                        toast({
+                          title: 'Last step!',
+                          description: 'Complete the personality test to finish your profile.',
+                          duration: 3000,
+                        });
+                        setRefreshTrigger(prev => prev + 1);
+                      }}
+                    />
                   </TabsContent>
 
                   <TabsContent value="personality" className="mt-6">
