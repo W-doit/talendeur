@@ -261,8 +261,6 @@ export const Timeline = ({ userId, accessTokenOverride, refreshTrigger }: Timeli
             {sortedEvents.map((event) => {
               const Icon = getEventIcon(event.type);
               const duration = event.type === 'work' ? calculateDuration(event.startDate, event.isCurrent ? null : event.endDate) : null;
-              const durationMonths = getDurationMonths(event.startDate, event.isCurrent ? null : event.endDate);
-              const durationHeight = Math.min(120, Math.max(16, durationMonths * 4));
 
               return (
                 <div key={`${event.type}-${event.id}`} className="relative pl-16">
@@ -271,11 +269,6 @@ export const Timeline = ({ userId, accessTokenOverride, refreshTrigger }: Timeli
                       <div className="absolute inset-0 rounded-full bg-primary animate-ping opacity-75"></div>
                     )}
                   </div>
-
-                  <div
-                    className={`absolute left-[21px] top-7 w-1.5 rounded-full ${getDurationBarStyles(event.type)}`}
-                    style={{ height: `${durationHeight}px` }}
-                  />
 
                   <div className={`rounded-lg border p-4 transition-all hover:shadow-lg ${getEventStyles(event.type, event.isCurrent)}`}>
                     <div className="flex items-start justify-between gap-4">

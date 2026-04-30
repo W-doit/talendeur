@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth, UserType, JobSeekerProfile, OrganizationProfile } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import JobSeekerProfileForm from '@/components/profile/JobSeekerProfileForm';
 import OrganizationProfileForm from '@/components/profile/OrganizationProfileForm';
 import MainLayout from '@/components/layout/MainLayout';
@@ -18,9 +19,12 @@ import { CertificationsChart } from '@/components/dashboard/CertificationsChart'
 import { ESGChart } from '@/components/dashboard/ESGChart';
 import { InternationalExperienceMap } from '@/components/dashboard/InternationalExperienceMap';
 import { BiographyWordCloud } from '@/components/dashboard/BiographyWordCloud';
+import { AIProficiencyChart } from '@/components/dashboard/AIProficiencyChart';
 import { PersonalityVisualization } from '@/components/dashboard/PersonalityVisualization';
 import { WorkExperienceForm } from '@/components/profile/WorkExperienceForm';
 import { EducationForm } from '@/components/profile/EducationForm';
+import { SkillsProfileForm } from '@/components/profile/SkillsProfileForm';
+import { AIProficiencyForm } from '@/components/profile/AIProficiencyForm';
 import { CertificationsForm } from '@/components/profile/CertificationsForm';
 import { ReferencesForm } from '@/components/profile/ReferencesForm';
 import { ReferencesDisplay } from '@/components/dashboard/ReferencesDisplay';
@@ -37,10 +41,13 @@ const Profile: React.FC = () => {
   const [selectedUserType, setSelectedUserType] = useState<UserType>('jobseeker');
   const [isCreatingProfile, setIsCreatingProfile] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [activeTab, setActiveTab] = useState('basic');
   const [importedData, setImportedData] = useState<any>(null);
   const [isVideoOpen, setIsVideoOpen] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
+  const [aiProficiencyData, setAIProficiencyData] = useState<any>(null);
+  const [aiToolsData, setAIToolsData] = useState<any[]>([]);
   const dashboardRef = React.useRef<HTMLDivElement>(null);
 
   const getVideoEmbedUrl = (url: string) => {
@@ -147,6 +154,44 @@ const Profile: React.FC = () => {
     }
   }, [importedData]);
   
+  // Fetch AI proficiency data
+  React.useEffect(() => {
+    const fetchAIProficiency = async () => {
+      if (!user?.id) return;
+      
+      try {
+        // Fetch AI proficiency categories
+        const { data: proficiencyData, error: proficiencyError } = await supabase
+          .from('ai_proficiency')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (proficiencyError && proficiencyError.code !== 'PGRST116') {
+          console.error('Error fetching AI proficiency:', proficiencyError);
+        } else {
+          setAIProficiencyData(proficiencyData);
+        }
+        
+        // Fetch AI tools used
+        const { data: toolsData, error: toolsError } = await supabase
+          .from('ai_tools_used')
+          .select('*')
+          .eq('user_id', user.id);
+        
+        if (toolsError) {
+          console.error('Error fetching AI tools:', toolsError);
+        } else {
+          setAIToolsData(toolsData || []);
+        }
+      } catch (err) {
+        console.error('Error in AI proficiency fetch:', err);
+      }
+    };
+    
+    fetchAIProficiency();
+  }, [user, refreshTrigger]);
+  
   // Redirect to login if no user (only after loading is complete)
   React.useEffect(() => {
     if (!loading && !user) {
@@ -158,11 +203,6 @@ const Profile: React.FC = () => {
   React.useEffect(() => {
     if (user?.profile && !hasCompleteProfile) {
       setIsEditMode(true);
-    } else if (hasCompleteProfile) {
-      // Exit edit mode when profile is complete (e.g., when clicking Profile button from header)
-      setIsEditMode(false);
-      // Refresh data when exiting edit mode to show updated work experience/education
-      setRefreshTrigger(prev => prev + 1);
     }
   }, [user, hasCompleteProfile]);
 
@@ -395,6 +435,7 @@ const Profile: React.FC = () => {
                           </Collapsible>
                         </Card>
                       )}
+                      <AIProficiencyChart data={aiProficiencyData} tools={aiToolsData} />
                       {(user.profile as any).portfolioUrl && (
                         <Card>
                           <CardHeader>
@@ -541,7 +582,11 @@ const Profile: React.FC = () => {
                   </div>
                   {hasCompleteProfile && (
                     <Button 
-                      onClick={() => setIsEditMode(false)}
+                      onClick={() => {
+                        setIsEditMode(false);
+                        // Refresh all dashboard data when viewing profile
+                        setRefreshTrigger(prev => prev + 1);
+                      }}
                       size="sm"
                       variant="outline"
                       className="bg-white/70 text-talendeur-primary hover:bg-talendeur-primary hover:text-white transition-colors"
@@ -553,13 +598,15 @@ const Profile: React.FC = () => {
               </Card>
 
               {user.userType === 'jobseeker' ? (
-                <Tabs defaultValue="basic" className="w-full" key={isEditMode ? 'edit' : 'view'}>
-                  <TabsList className="grid w-full grid-cols-6">
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" key={isEditMode ? 'edit' : 'view'}>
+                  <TabsList className="grid w-full grid-cols-8">
                     <TabsTrigger value="basic">Basic Info</TabsTrigger>
                     <TabsTrigger value="work">Work</TabsTrigger>
                     <TabsTrigger value="education">Education</TabsTrigger>
                     <TabsTrigger value="certifications">Certifications</TabsTrigger>
                     <TabsTrigger value="references">References</TabsTrigger>
+                    <TabsTrigger value="skills-profile">Skills Profile</TabsTrigger>
+                    <TabsTrigger value="ai-skills">AI Skills</TabsTrigger>
                     <TabsTrigger value="personality">Personality</TabsTrigger>
                   </TabsList>
 
@@ -567,11 +614,24 @@ const Profile: React.FC = () => {
                     <Card>
                       <CardContent className="pt-6">
                         <JobSeekerProfileForm 
-                          onSaveComplete={() => {
-                            setIsEditMode(false);
-                          }}
                           importedData={importedData}
                           onDataImport={setImportedData}
+                          onParsingStart={() => {
+                            // Redirect to AI Proficiency form when CV parsing starts
+                            // Skills Profile is auto-filled from parsed data and reviewed later
+                            setActiveTab('ai-skills');
+                          }}
+                          onSaveComplete={() => {
+                            // After saving basic info, move to work experience tab
+                            if (importedData?.parsedData?.workExperience?.length > 0) {
+                              setActiveTab('work');
+                              toast({
+                                title: 'Moving to Work Experience',
+                                description: 'Please review and save your work experience.',
+                                duration: 3000,
+                              });
+                            }
+                          }}
                         />
                       </CardContent>
                     </Card>
@@ -579,27 +639,140 @@ const Profile: React.FC = () => {
 
                   <TabsContent value="work" className="mt-6">
                     <WorkExperienceForm 
+                      key={`work-${importedData?.parsedData?.workExperience?.length || 0}`}
                       importedData={importedData?.parsedData?.workExperience}
-                      onSaveComplete={() => setRefreshTrigger(prev => prev + 1)}
+                      onSaveComplete={() => {
+                        // Clear work experience imported data
+                        if (importedData?.parsedData) {
+                          setImportedData({
+                            ...importedData,
+                            parsedData: {
+                              ...importedData.parsedData,
+                              workExperience: null
+                            }
+                          });
+                        }
+                        
+                        // After saving work, move to education tab
+                        if (importedData?.parsedData?.education?.length > 0) {
+                          setActiveTab('education');
+                          toast({
+                            title: 'Moving to Education',
+                            description: 'Please review and save your education.',
+                            duration: 3000,
+                          });
+                        }
+                        setRefreshTrigger(prev => prev + 1);
+                      }}
                     />
                   </TabsContent>
 
                   <TabsContent value="education" className="mt-6">
                     <EducationForm 
+                      key={`education-${importedData?.parsedData?.education?.length || 0}`}
                       importedData={importedData?.parsedData?.education}
-                      onSaveComplete={() => setRefreshTrigger(prev => prev + 1)}
+                      onSaveComplete={() => {
+                        // Clear education imported data
+                        if (importedData?.parsedData) {
+                          setImportedData({
+                            ...importedData,
+                            parsedData: {
+                              ...importedData.parsedData,
+                              education: null
+                            }
+                          });
+                        }
+                        
+                        // After saving education, move to certifications tab
+                        if (importedData?.parsedData?.certifications?.length > 0) {
+                          setActiveTab('certifications');
+                          toast({
+                            title: 'Moving to Certifications',
+                            description: 'Please review and save your certifications.',
+                            duration: 3000,
+                          });
+                        }
+                        setRefreshTrigger(prev => prev + 1);
+                      }}
+                    />
+                  </TabsContent>
+
+                  <TabsContent value="ai-skills" className="mt-6">
+                    <AIProficiencyForm 
+                      onSaveComplete={() => {
+                        // After saving AI skills, move to personality test
+                        setActiveTab('personality');
+                        toast({
+                          title: 'Last step!',
+                          description: 'Complete the personality test to finish your profile.',
+                          duration: 3000,
+                        });
+                        setRefreshTrigger(prev => prev + 1);
+                      }}
                     />
                   </TabsContent>
 
                   <TabsContent value="certifications" className="mt-6">
                     <CertificationsForm 
+                      key={`certifications-${importedData?.parsedData?.certifications?.length || 0}`}
                       importedData={importedData?.parsedData?.certifications}
-                      onSaveComplete={() => setRefreshTrigger(prev => prev + 1)}
+                      onSaveComplete={() => {
+                        // Clear certifications imported data
+                        if (importedData?.parsedData) {
+                          setImportedData({
+                            ...importedData,
+                            parsedData: {
+                              ...importedData.parsedData,
+                              certifications: null
+                            }
+                          });
+                        }
+                        
+                        // After saving certifications, move to references
+                        setActiveTab('references');
+                        toast({
+                          title: 'Add references (optional)',
+                          description: 'Add professional references to strengthen your profile.',
+                          duration: 3000,
+                        });
+                        setRefreshTrigger(prev => prev + 1);
+                      }}
                     />
                   </TabsContent>
 
                   <TabsContent value="references" className="mt-6">
                     <ReferencesForm />
+                  </TabsContent>
+
+                  <TabsContent value="skills-profile" className="mt-6">
+                    <SkillsProfileForm 
+                      parsedData={importedData?.parsedData?.skills_dimensions}
+                      onSaveComplete={() => {
+                        // After saving skills profile, move to AI skills
+                        setActiveTab('ai-skills');
+                        toast({
+                          title: 'Skills profile saved!',
+                          description: 'Now add your AI proficiency details.',
+                          duration: 3000,
+                        });
+                        setRefreshTrigger(prev => prev + 1);
+                      }}
+                    />
+                  </TabsContent>
+
+                  <TabsContent value="ai-skills" className="mt-6">
+                    <AIProficiencyForm 
+                      onSaveComplete={() => {
+                        // After saving AI skills, move to personality test
+                        setActiveTab('personality');
+                        toast({
+                          title: 'Last step!',
+                          description: 'Complete the personality test to finish your profile.',
+                          duration: 3000,
+                        });
+                        setRefreshTrigger(prev => prev + 1);
+                      }}
+                    />
                   </TabsContent>
 
                   <TabsContent value="personality" className="mt-6">
@@ -609,7 +782,7 @@ const Profile: React.FC = () => {
               ) : (
                 <Card>
                   <CardContent className="pt-6">
-                    <OrganizationProfileForm onSaveComplete={() => setIsEditMode(false)} />
+                    <OrganizationProfileForm />
                   </CardContent>
                 </Card>
               )}

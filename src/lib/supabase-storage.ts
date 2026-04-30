@@ -91,24 +91,13 @@ export async function uploadProfilePicture(file: File, userId: string): Promise<
     console.log('Bucket name:', PROFILE_PICTURES_BUCKET);
     console.log('About to call storage.upload...');
 
-    // Create upload promise with explicit timeout
-    const uploadPromise = supabase.storage
+    // Upload without timeout (allow for Render cold starts which can take 20-30s)
+    const { data, error } = await supabase.storage
       .from(PROFILE_PICTURES_BUCKET)
       .upload(filePath, file, {
         cacheControl: '3600',
         upsert: true
       });
-    
-    // Create timeout promise
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => {
-        console.error('Upload timed out after 10 seconds');
-        reject(new Error('Upload timeout - check your Supabase storage bucket permissions and CORS settings'));
-      }, 10000);
-    });
-    
-    // Race between upload and timeout
-    const { data, error } = await Promise.race([uploadPromise, timeoutPromise]);
     
     console.log('Upload call completed');
 

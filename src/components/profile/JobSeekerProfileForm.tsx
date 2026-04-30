@@ -17,12 +17,14 @@ interface JobSeekerProfileFormProps {
   onSaveComplete?: () => void;
   importedData?: { parsedData: any; pdfFile: File } | null;
   onDataImport?: (data: any) => void;
+  onParsingStart?: () => void;
 }
 
 const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({ 
   onSaveComplete,
   importedData,
-  onDataImport 
+  onDataImport,
+  onParsingStart
 }) => {
   const { user, updateProfile } = useAuth();
   const profile = user?.profile as JobSeekerProfile | null;
@@ -153,7 +155,14 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({
       setCvFile(null);
       setImageFile(null);
       
-      // Call the onSaveComplete callback if provided
+      // Show success toast - stay on form to allow reviewing all tabs
+      toast({
+        title: 'Profile saved',
+        description: 'Your profile has been updated successfully.',
+        duration: 3000,
+      });
+      
+      // Call the onSaveComplete callback if provided (for tab navigation)
       if (onSaveComplete) {
         onSaveComplete();
       }
@@ -226,9 +235,9 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({
     if (data.skills.length > 0) extractedItems.push(`${data.skills.length} skills`);
 
     toast({
-      title: 'Data extracted successfully',
-      description: `Found: ${extractedItems.join(', ')}. Please review the pre-filled information and click Save to update your profile.`,
-      duration: 6000,
+      title: 'CV data extracted successfully! ✓',
+      description: `Found: ${extractedItems.join(', ')}. Please review each tab below (Work Experience, Education, Certifications) to verify the information. Don't forget to complete the Personality Test before viewing your profile!`,
+      duration: 10000,
     });
 
     // TODO: Store the parsed work experience, education, certifications in state
@@ -238,6 +247,9 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({
     console.log('Parsed work experience:', data.workExperience);
     console.log('Parsed certifications:', data.certifications);
     console.log('Parsed skills:', data.skills);
+    if (data.skills_dimensions) {
+      console.log('Parsed skills_dimensions:', data.skills_dimensions);
+    }
     console.log('Full parsed data object:', data);
   };
 
@@ -247,7 +259,10 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({
         onImport={handleLinkedInImport}
         currentCV={formData.cv}
         onCVRemove={() => setFormData(prev => ({ ...prev, cv: '' }))}
-        onParsingStart={() => setIsParsing(true)}
+        onParsingStart={() => {
+          setIsParsing(true);
+          if (onParsingStart) onParsingStart();
+        }}
         onParsingEnd={() => setIsParsing(false)}
       />
       

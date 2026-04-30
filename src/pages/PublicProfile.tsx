@@ -12,6 +12,7 @@ import { CertificationsChart } from '@/components/dashboard/CertificationsChart'
 import { ESGChart } from '@/components/dashboard/ESGChart';
 import { InternationalExperienceMap } from '@/components/dashboard/InternationalExperienceMap';
 import { BiographyWordCloud } from '@/components/dashboard/BiographyWordCloud';
+import { AIProficiencyChart } from '@/components/dashboard/AIProficiencyChart';
 import { PersonalityVisualization } from '@/components/dashboard/PersonalityVisualization';
 import { ReferencesDisplay } from '@/components/dashboard/ReferencesDisplay';
 import { updateMetaTags, resetMetaTags } from '@/lib/meta-tags';
@@ -60,6 +61,8 @@ const PublicProfile: React.FC = () => {
   const [userType, setUserType] = useState<UserType | null>(null);
   const [loading, setLoading] = useState(true);
   const [isVideoOpen, setIsVideoOpen] = useState(false);
+  const [aiProficiencyData, setAIProficiencyData] = useState<any>(null);
+  const [aiToolsData, setAIToolsData] = useState<any[]>([]);
 
   const supabaseUrl = useMemo(() => import.meta.env.VITE_SUPABASE_URL, []);
   const supabaseKey = useMemo(() => import.meta.env.VITE_SUPABASE_ANON_KEY, []);
@@ -122,6 +125,53 @@ const PublicProfile: React.FC = () => {
             },
             bio: profileData.bio || '',
           });
+          
+          // Fetch AI proficiency data for job seekers
+          try {
+            const aiProfResponse = await fetch(
+              `${supabaseUrl}/rest/v1/ai_proficiency?user_id=eq.${profileData.user_id}&select=*`,
+              {
+                headers: {
+                  apikey: supabaseKey,
+                  Authorization: `Bearer ${supabaseKey}`,
+                  Accept: 'application/json',
+                },
+              }
+            );
+            if (aiProfResponse.ok) {
+              const aiProfDataArray = await aiProfResponse.json();
+              const aiProfData = aiProfDataArray?.[0];
+              setAIProficiencyData(aiProfData || null);
+            } else {
+              setAIProficiencyData(null);
+            }
+          } catch (error) {
+            console.error('AI proficiency table not available:', error);
+            setAIProficiencyData(null);
+          }
+          
+          // Fetch AI tools used
+          try {
+            const aiToolsResponse = await fetch(
+              `${supabaseUrl}/rest/v1/ai_tools_used?user_id=eq.${profileData.user_id}&select=*`,
+              {
+                headers: {
+                  apikey: supabaseKey,
+                  Authorization: `Bearer ${supabaseKey}`,
+                  Accept: 'application/json',
+                },
+              }
+            );
+            if (aiToolsResponse.ok) {
+              const aiToolsDataArray = await aiToolsResponse.json();
+              setAIToolsData(aiToolsDataArray || []);
+            } else {
+              setAIToolsData([]);
+            }
+          } catch (error) {
+            console.error('AI tools table not available:', error);
+            setAIToolsData([]);
+          }
         } else {
           const orgResponse = await fetch(
             `${supabaseUrl}/rest/v1/organization_details?organization_id=eq.${profileData.user_id}&select=*`,
@@ -359,6 +409,7 @@ const PublicProfile: React.FC = () => {
                 {/* Right column: Visualizations and info boxes */}
                 <div className="w-full md:w-2/3 flex flex-col gap-8">
                   <KeyMetricsCards userId={profile.id} accessTokenOverride={null} />
+                  <AIProficiencyChart data={aiProficiencyData} tools={aiToolsData} />
                   {profile.videoUrl && (
                     <Card>
                       <Collapsible open={isVideoOpen} onOpenChange={setIsVideoOpen}>

@@ -80,25 +80,27 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [accessToken, setAccessToken] = useState<string | null>(null);
+  const loadingProfile = React.useRef(false); // Track if profile load is in progress
   const { toast } = useToast();
 
   // Load user profile from Supabase
   const loadUserProfile = async (supabaseUser: User, accessToken?: string) => {
-    console.log('loadUserProfile called for user:', supabaseUser.id);
-    console.log('User email:', supabaseUser.email);
-    console.log('Has access token:', !!accessToken);
+    // Prevent concurrent loads
+    if (loadingProfile.current) {
+      return null;
+    }
+    
+    loadingProfile.current = true;
+    
     try {
       // Get profile from database using direct API
-      console.log('Fetching profile from database via REST API...');
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
       
       // Use the user's access token if available (for RLS policies)
       const authHeader = accessToken ? `Bearer ${accessToken}` : `Bearer ${supabaseKey}`;
-      console.log('Using auth header with', accessToken ? 'user access token' : 'anon key');
       
       // Try fetching by email first (more reliable)
-      console.log('Trying to fetch profile by email:', supabaseUser.email);
       let profileResponse = await fetch(
         `${supabaseUrl}/rest/v1/profile?email=eq.${supabaseUser.email}&select=*`,
         {
@@ -110,11 +112,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       );
       
       let profileDataArray = await profileResponse.json();
-      console.log('Profile fetch by email result:', { status: profileResponse.status, count: profileDataArray?.length, data: profileDataArray });
       
       // If not found by email, try by user_id
       if (!profileDataArray || profileDataArray.length === 0) {
-        console.log('Not found by email, trying by user_id:', supabaseUser.id);
         profileResponse = await fetch(
           `${supabaseUrl}/rest/v1/profile?user_id=eq.${supabaseUser.id}&select=*`,
           {
@@ -126,7 +126,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         );
         
         profileDataArray = await profileResponse.json();
-        console.log('Profile fetch by user_id result:', { status: profileResponse.status, count: profileDataArray?.length });
       }
       
       if (!profileResponse.ok) {
@@ -136,16 +135,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       const profileData = profileDataArray[0];
       if (!profileData) {
-        console.log('No profile found for user:', supabaseUser.id, 'or email:', supabaseUser.email);
         return null;
       }
-
-      console.log('Profile found! user_id in profile:', profileData.user_id);
       const userType = profileData.user_type as UserType;
       let fullProfile: JobSeekerProfile | OrganizationProfile | null = null;
 
       if (userType === 'jobseeker') {
-        console.log('Loading jobseeker skill ratings...');
         // Load jobseeker skill ratings via REST API - use the user_id from the profile
         const skillResponse = await fetch(
           `${supabaseUrl}/rest/v1/jobseeker_skill_rating?user_id=eq.${profileData.user_id}&select=*`,
@@ -159,7 +154,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         
         const skillDataArray = await skillResponse.json();
         const skillData = skillDataArray[0];
-        console.log('Skill data loaded:', !!skillData);
 
         fullProfile = {
           id: profileData.user_id,
@@ -229,7 +223,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         };
       }
 
-      console.log('Returning full user data');
       return {
         id: supabaseUser.id,
         email: supabaseUser.email!,
@@ -239,6 +232,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch (error) {
       console.error('Error loading user profile:', error);
       return null;
+    } finally {
+      loadingProfile.current = false; // Reset loading flag
     }
   };
 

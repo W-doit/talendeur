@@ -36,12 +36,31 @@ export interface ParsedCertification {
   details: string;
 }
 
+export interface SkillsDimensions {
+  creativity: number;
+  communication: number;
+  critical_thinking: number;
+  technology_development: number;
+  operations: number;
+  social_impact: number;
+  business_acumen: number;
+  innovation: number;
+  collaboration: number;
+  leadership: number;
+  precision: number;
+  depth: number;
+  commitment: number;
+  empathy: number;
+  flexibility: number;
+}
+
 export interface ParsedData {
   profile: ParsedProfile;
   education: ParsedEducation[];
   workExperience: ParsedWorkExperience[];
   certifications: ParsedCertification[];
   skills: string[];
+  skills_dimensions?: SkillsDimensions;
 }
 
 // Common synonyms for different sections
