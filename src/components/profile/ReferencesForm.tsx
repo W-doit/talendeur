@@ -14,7 +14,11 @@ interface Reference {
   linkedin_profile: string;
 }
 
-export const ReferencesForm = () => {
+interface ReferencesFormProps {
+  onSaveComplete?: () => void;
+}
+
+export const ReferencesForm = ({ onSaveComplete }: ReferencesFormProps = {}) => {
   const { user } = useAuth();
   const [references, setReferences] = useState<Reference[]>([]);
   const [loading, setLoading] = useState(true);
@@ -146,6 +150,10 @@ export const ReferencesForm = () => {
       }
 
       setReferences(updatedReferences);
+      
+      if (onSaveComplete) {
+        onSaveComplete();
+      }
     } catch (error) {
       console.error('Error saving references:', error);
     } finally {

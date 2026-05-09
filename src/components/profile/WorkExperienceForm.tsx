@@ -8,10 +8,32 @@ import { Plus, Trash2, Briefcase } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
+// Helper function to normalize date formats
+// Converts "2022-04" (year-month) to "2022-04-01" (full date)
+// Returns null for empty/invalid dates
+const normalizeDateFormat = (dateStr: string | null | undefined): string | null => {
+  if (!dateStr || dateStr.trim() === '') return null;
+  
+  // If it's already a full date (YYYY-MM-DD), return as-is
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    return dateStr;
+  }
+  
+  // If it's year-month only (YYYY-MM), append "-01"
+  if (/^\d{4}-\d{2}$/.test(dateStr)) {
+    return `${dateStr}-01`;
+  }
+  
+  // If invalid format, return null
+  console.warn(`Invalid date format: ${dateStr}`);
+  return null;
+};
+
 interface WorkExperience {
   id?: string;
   job_title: string;
   company: string;
+  location: string;
   start_date: string;
   end_date: string;
   still_work_here: boolean;
@@ -20,15 +42,24 @@ interface WorkExperience {
 interface WorkExperienceFormProps {
   importedData?: any[];
   onSaveComplete?: () => void;
+  refreshKey?: number;
 }
 
-export const WorkExperienceForm = ({ importedData, onSaveComplete }: WorkExperienceFormProps = {}) => {
+export const WorkExperienceForm = ({ importedData, onSaveComplete, refreshKey }: WorkExperienceFormProps = {}) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [experiences, setExperiences] = useState<WorkExperience[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [dataSource, setDataSource] = useState<'none' | 'imported' | 'database'>('none');
+
+  // Reset dataSource when refreshKey changes to force re-fetch
+  useEffect(() => {
+    if (refreshKey !== undefined) {
+      console.log('WorkExperienceForm - refreshKey changed, resetting data source');
+      setDataSource('none');
+    }
+  }, [refreshKey]);
 
   // PRIORITY 1: Handle imported data first
   useEffect(() => {
@@ -39,6 +70,7 @@ export const WorkExperienceForm = ({ importedData, onSaveComplete }: WorkExperie
       const mappedData = importedData.map(exp => ({
         job_title: exp.job_title || '',
         company: exp.company || '',
+        location: exp.location || '',
         start_date: exp.start_date || '',
         end_date: exp.end_date || '',
         still_work_here: exp.still_work_here || false,
@@ -118,6 +150,7 @@ export const WorkExperienceForm = ({ importedData, onSaveComplete }: WorkExperie
       {
         job_title: '',
         company: '',
+        location: '',
         start_date: '',
         end_date: '',
         still_work_here: false,
@@ -197,8 +230,9 @@ export const WorkExperienceForm = ({ importedData, onSaveComplete }: WorkExperie
             .update({
               job_title: exp.job_title,
               company: exp.company,
-              start_date: exp.start_date || null,
-              end_date: exp.still_work_here ? null : (exp.end_date || null),
+              location: exp.location || null,
+              start_date: normalizeDateFormat(exp.start_date),
+              end_date: exp.still_work_here ? null : normalizeDateFormat(exp.end_date),
               still_work_here: exp.still_work_here,
             })
             .eq('id', exp.id);
@@ -212,8 +246,9 @@ export const WorkExperienceForm = ({ importedData, onSaveComplete }: WorkExperie
               user_id: user.id,
               job_title: exp.job_title,
               company: exp.company,
-              start_date: exp.start_date || null,
-              end_date: exp.still_work_here ? null : (exp.end_date || null),
+              location: exp.location || null,
+              start_date: normalizeDateFormat(exp.start_date),
+              end_date: exp.still_work_here ? null : normalizeDateFormat(exp.end_date),
               still_work_here: exp.still_work_here,
             })
             .select('id')
@@ -285,6 +320,15 @@ export const WorkExperienceForm = ({ importedData, onSaveComplete }: WorkExperie
                     value={exp.company}
                     onChange={(e) => updateExperience(index, 'company', e.target.value)}
                     placeholder="e.g., Talendeur"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">Location</label>
+                  <Input
+                    value={exp.location}
+                    onChange={(e) => updateExperience(index, 'location', e.target.value)}
+                    placeholder="e.g., Barcelona, Spain"
                   />
                 </div>
 

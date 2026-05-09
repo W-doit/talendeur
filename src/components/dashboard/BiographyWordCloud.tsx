@@ -26,29 +26,15 @@ const STOP_WORDS = new Set([
   'so', 'than', 'too', 'very', 'just', 'now', 'also', 'well'
 ]);
 
-// Common nouns and verbs (expanded list for better filtering)
-const MEANINGFUL_WORDS = new Set([
-  // Professional nouns
-  'team', 'project', 'experience', 'work', 'role', 'position', 'skills', 'knowledge',
-  'development', 'management', 'leadership', 'strategy', 'innovation', 'results',
-  'business', 'client', 'customer', 'product', 'service', 'solution', 'technology',
-  'design', 'research', 'analysis', 'data', 'system', 'process', 'quality', 'growth',
-  'success', 'achievement', 'goal', 'objective', 'performance', 'delivery', 'value',
-  'collaboration', 'communication', 'organization', 'company', 'industry', 'market',
-  'sales', 'marketing', 'finance', 'operations', 'engineering', 'software', 'platform',
-  'infrastructure', 'architecture', 'implementation', 'optimization', 'efficiency',
-  'improvement', 'transformation', 'initiative', 'program', 'budget', 'timeline',
-  'stakeholder', 'partner', 'vendor', 'resource', 'talent', 'people', 'culture',
-  
-  // Action verbs
-  'lead', 'manage', 'develop', 'create', 'build', 'design', 'implement', 'execute',
-  'deliver', 'achieve', 'improve', 'optimize', 'drive', 'grow', 'increase', 'enhance',
-  'establish', 'launch', 'coordinate', 'collaborate', 'communicate', 'present', 'report',
-  'analyze', 'evaluate', 'assess', 'monitor', 'track', 'measure', 'identify', 'solve',
-  'resolve', 'support', 'provide', 'ensure', 'maintain', 'oversee', 'supervise', 'mentor',
-  'train', 'coach', 'guide', 'facilitate', 'negotiate', 'plan', 'organize', 'prioritize',
-  'streamline', 'automate', 'innovate', 'transform', 'modernize', 'scale', 'expand',
-  'integrate', 'deploy', 'migrate', 'upgrade', 'troubleshoot', 'debug', 'test', 'review'
+// Extended stop words to filter out more generic terms
+const EXTENDED_STOP_WORDS = new Set([
+  ...STOP_WORDS,
+  // Time-related
+  'year', 'years', 'month', 'months', 'day', 'days', 'time', 'date',
+  // Common generic words
+  'work', 'working', 'worked', 'experience', 'including', 'various', 'several',
+  'many', 'multiple', 'different', 'various', 'general', 'specific', 'related',
+  'based', 'using', 'used', 'made', 'within', 'across', 'throughout'
 ]);
 
 interface BiographyWordCloudProps {
@@ -75,18 +61,20 @@ export const BiographyWordCloud = ({ userId, accessTokenOverride }: BiographyWor
         };
 
         // Fetch all profile-related data in parallel
-        const [workResponse, educationResponse, certificationsResponse, profileResponse] = await Promise.all([
+        const [workResponse, educationResponse, certificationsResponse, profileResponse, skillsResponse] = await Promise.all([
           fetch(`${supabaseUrl}/rest/v1/work_experience?user_id=eq.${effectiveUserId}&select=*`, { headers }),
           fetch(`${supabaseUrl}/rest/v1/education_history?user_id=eq.${effectiveUserId}&select=*`, { headers }),
           fetch(`${supabaseUrl}/rest/v1/certifications?user_id=eq.${effectiveUserId}&select=*`, { headers }),
           fetch(`${supabaseUrl}/rest/v1/profile?user_id=eq.${effectiveUserId}&select=bio`, { headers }),
+          fetch(`${supabaseUrl}/rest/v1/jobseeker_skill_rating?user_id=eq.${effectiveUserId}&select=interests`, { headers }),
         ]);
 
-        const [workData, educationData, certificationsData, profileData] = await Promise.all([
+        const [workData, educationData, certificationsData, profileData, skillsData] = await Promise.all([
           workResponse.ok ? workResponse.json() : Promise.resolve([]),
           educationResponse.ok ? educationResponse.json() : Promise.resolve([]),
           certificationsResponse.ok ? certificationsResponse.json() : Promise.resolve([]),
           profileResponse.ok ? profileResponse.json() : Promise.resolve([]),
+          skillsResponse.ok ? skillsResponse.json() : Promise.resolve([]),
         ]);
 
         // Combine all text sources
@@ -95,6 +83,14 @@ export const BiographyWordCloud = ({ userId, accessTokenOverride }: BiographyWor
         // Add bio
         const bio = profileData?.[0]?.bio || '';
         if (bio) textSources.push(bio);
+
+        // Add interests (these are important!)
+        const interests = skillsData?.[0]?.interests || [];
+        if (Array.isArray(interests)) {
+          interests.forEach((interest: string) => {
+            if (interest) textSources.push(interest);
+          });
+        }
 
         // Add work experience
         workData.forEach((work: any) => {
@@ -113,6 +109,7 @@ export const BiographyWordCloud = ({ userId, accessTokenOverride }: BiographyWor
         certificationsData.forEach((cert: any) => {
           if (cert.course_name) textSources.push(cert.course_name);
           if (cert.certification_type) textSources.push(cert.certification_type);
+          if (cert.details) textSources.push(cert.details);
         });
 
         if (textSources.length === 0) {
@@ -123,7 +120,7 @@ export const BiographyWordCloud = ({ userId, accessTokenOverride }: BiographyWor
         // Combine all text
         const combinedText = textSources.join(' ');
 
-        // Extract words and count frequency, filtering for meaningful nouns and verbs
+        // Extract words and count frequency, filtering out stop words only
         const wordCounts: { [key: string]: number } = {};
         const cleanedText = combinedText
           .toLowerCase()
@@ -131,8 +128,8 @@ export const BiographyWordCloud = ({ userId, accessTokenOverride }: BiographyWor
           .split(/\s+/)
           .filter(word => 
             word.length > 3 && 
-            !STOP_WORDS.has(word) &&
-            MEANINGFUL_WORDS.has(word) // Only include nouns and verbs
+            !EXTENDED_STOP_WORDS.has(word) &&
+            !/^\d+$/.test(word) // Exclude pure numbers
           );
 
         cleanedText.forEach(word => {
@@ -172,10 +169,10 @@ export const BiographyWordCloud = ({ userId, accessTokenOverride }: BiographyWor
       <Card>
         <CardHeader>
           <CardTitle>You in a Wordcloud</CardTitle>
-          <CardDescription>Most significant nouns and verbs from your profile</CardDescription>
+          <CardDescription>Most frequent words from your entire profile</CardDescription>
         </CardHeader>
         <CardContent className="py-8 text-center text-gray-500">
-          No meaningful keywords found. Add more details about your experience and skills.
+          No keywords found. Add more details to your bio, interests, experience, education, and certifications.
         </CardContent>
       </Card>
     );
@@ -186,16 +183,16 @@ export const BiographyWordCloud = ({ userId, accessTokenOverride }: BiographyWor
       <CardHeader>
         <CardTitle>You in a Wordcloud</CardTitle>
         <CardDescription>
-          Top {words.length} nouns and verbs highlighting your expertise
+          Top {words.length} words from your bio, interests, experience, education, and certifications
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <div className="relative bg-gradient-to-br from-blue-50/30 via-purple-50/20 to-pink-50/30 rounded-lg border border-gray-200 p-6">
-          <svg width="100%" height="320" viewBox="0 0 700 320">
+      <CardContent className="py-4">
+        <div className="relative bg-gradient-to-br from-blue-50/30 via-purple-50/20 to-pink-50/30 rounded-lg border border-gray-200 p-3">
+          <svg width="100%" height="240" viewBox="0 0 700 240">
             <Wordcloud
               words={words}
               width={700}
-              height={320}
+              height={240}
               fontSize={fontScale}
               font="Raleway, sans-serif"
               padding={2}
@@ -227,7 +224,7 @@ export const BiographyWordCloud = ({ userId, accessTokenOverride }: BiographyWor
         </div>
 
         {/* Top Words Summary */}
-        <div className="mt-6 grid grid-cols-2 md:grid-cols-5 gap-3">
+        <div className="mt-4 grid grid-cols-2 md:grid-cols-5 gap-2">
           {words.slice(0, 5).map((word, index) => (
             <div 
               key={index}

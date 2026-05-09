@@ -8,6 +8,27 @@ import { Plus, Trash2, Award } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
+// Helper function to normalize date formats
+// Converts "2022-04" (year-month) to "2022-04-01" (full date)
+// Returns null for empty/invalid dates
+const normalizeDateFormat = (dateStr: string | null | undefined): string | null => {
+  if (!dateStr || dateStr.trim() === '') return null;
+  
+  // If it's already a full date (YYYY-MM-DD), return as-is
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    return dateStr;
+  }
+  
+  // If it's year-month only (YYYY-MM), append "-01"
+  if (/^\d{4}-\d{2}$/.test(dateStr)) {
+    return `${dateStr}-01`;
+  }
+  
+  // If invalid format, return null
+  console.warn(`Invalid date format: ${dateStr}`);
+  return null;
+};
+
 interface Certification {
   id?: string;
   course_name: string;
@@ -32,15 +53,24 @@ const CERTIFICATION_TYPES = [
 interface CertificationsFormProps {
   importedData?: any[];
   onSaveComplete?: () => void;
+  refreshKey?: number;
 }
 
-export const CertificationsForm = ({ importedData, onSaveComplete }: CertificationsFormProps = {}) => {
+export const CertificationsForm = ({ importedData, onSaveComplete, refreshKey }: CertificationsFormProps = {}) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [certifications, setCertifications] = useState<Certification[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [dataSource, setDataSource] = useState<'none' | 'imported' | 'database'>('none');
+
+  // Reset dataSource when refreshKey changes to force re-fetch
+  useEffect(() => {
+    if (refreshKey !== undefined) {
+      console.log('CertificationsForm - refreshKey changed, resetting data source');
+      setDataSource('none');
+    }
+  }, [refreshKey]);
 
   // PRIORITY 1: Handle imported data first
   useEffect(() => {
@@ -157,7 +187,7 @@ export const CertificationsForm = ({ importedData, onSaveComplete }: Certificati
             .update({
               course_name: cert.course_name,
               certification_type: cert.certification_type,
-              date_attained: cert.date_attained || null,
+              date_attained: normalizeDateFormat(cert.date_attained),
               details: cert.details,
             })
             .eq('id', cert.id);
@@ -171,7 +201,7 @@ export const CertificationsForm = ({ importedData, onSaveComplete }: Certificati
               user_id: user.id,
               course_name: cert.course_name,
               certification_type: cert.certification_type,
-              date_attained: cert.date_attained || null,
+              date_attained: normalizeDateFormat(cert.date_attained),
               details: cert.details,
             })
             .select('id')

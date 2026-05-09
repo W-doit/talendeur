@@ -282,8 +282,8 @@ export const AIProficiencyForm = ({ onSaveComplete }: AIProficiencyFormProps = {
       }
 
       toast({
-        title: 'AI proficiency saved',
-        description: 'Your AI skills profile has been updated successfully.',
+        title: 'AI fluency saved',
+        description: 'Your AI fluency profile has been updated successfully.',
         duration: 3000,
       });
 
@@ -294,7 +294,7 @@ export const AIProficiencyForm = ({ onSaveComplete }: AIProficiencyFormProps = {
       console.error('Error saving AI proficiency:', error);
       toast({
         title: 'Error',
-        description: 'Failed to save AI proficiency. Please try again.',
+        description: 'Failed to save AI fluency. Please try again.',
         variant: 'destructive',
         duration: 3000,
       });
@@ -304,7 +304,7 @@ export const AIProficiencyForm = ({ onSaveComplete }: AIProficiencyFormProps = {
   };
 
   if (loading) {
-    return <div className="text-center py-4">Loading AI proficiency...</div>;
+    return <div className="text-center py-4">Loading AI fluency...</div>;
   }
 
   return (
@@ -313,7 +313,7 @@ export const AIProficiencyForm = ({ onSaveComplete }: AIProficiencyFormProps = {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Brain className="h-5 w-5 text-talendeur-primary" />
-            AI Skills Profile
+            AI Fluency Profile
           </CardTitle>
           <CardDescription>
             Share your AI knowledge and experience - from everyday AI tool usage to advanced ML development
@@ -350,7 +350,7 @@ export const AIProficiencyForm = ({ onSaveComplete }: AIProficiencyFormProps = {
 
           {/* Category Proficiencies */}
           <div className="space-y-6">
-            <h3 className="font-semibold text-lg">Rate Your AI Skills</h3>
+            <h3 className="font-semibold text-lg">Rate Your AI Fluency</h3>
             {AI_CATEGORIES.map((category) => {
               const Icon = category.icon;
               const value = proficiency[category.key as keyof AIProficiency] as number;
