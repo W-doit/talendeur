@@ -606,7 +606,7 @@ const Profile: React.FC = () => {
                     <TabsTrigger value="certifications">Certifications</TabsTrigger>
                     <TabsTrigger value="references">References</TabsTrigger>
                     <TabsTrigger value="skills-profile">Skills Profile</TabsTrigger>
-                    <TabsTrigger value="ai-skills">AI Skills</TabsTrigger>
+                    <TabsTrigger value="ai-skills">AI Fluency</TabsTrigger>
                     <TabsTrigger value="personality">Personality</TabsTrigger>
                   </TabsList>
 
@@ -616,11 +616,6 @@ const Profile: React.FC = () => {
                         <JobSeekerProfileForm 
                           importedData={importedData}
                           onDataImport={setImportedData}
-                          onParsingStart={() => {
-                            // Redirect to AI Proficiency form when CV parsing starts
-                            // Skills Profile is auto-filled from parsed data and reviewed later
-                            setActiveTab('ai-skills');
-                          }}
                           onSaveComplete={() => {
                             // After saving basic info, move to work experience tab
                             if (importedData?.parsedData?.workExperience?.length > 0) {
@@ -640,6 +635,7 @@ const Profile: React.FC = () => {
                   <TabsContent value="work" className="mt-6">
                     <WorkExperienceForm 
                       key={`work-${importedData?.parsedData?.workExperience?.length || 0}`}
+                      refreshKey={refreshTrigger}
                       importedData={importedData?.parsedData?.workExperience}
                       onSaveComplete={() => {
                         // Clear work experience imported data
@@ -670,6 +666,7 @@ const Profile: React.FC = () => {
                   <TabsContent value="education" className="mt-6">
                     <EducationForm 
                       key={`education-${importedData?.parsedData?.education?.length || 0}`}
+                      refreshKey={refreshTrigger}
                       importedData={importedData?.parsedData?.education}
                       onSaveComplete={() => {
                         // Clear education imported data
@@ -683,15 +680,13 @@ const Profile: React.FC = () => {
                           });
                         }
                         
-                        // After saving education, move to certifications tab
-                        if (importedData?.parsedData?.certifications?.length > 0) {
-                          setActiveTab('certifications');
-                          toast({
-                            title: 'Moving to Certifications',
-                            description: 'Please review and save your certifications.',
-                            duration: 3000,
-                          });
-                        }
+                        // After saving education, always move to certifications tab
+                        setActiveTab('certifications');
+                        toast({
+                          title: 'Education saved!',
+                          description: 'Now add your certifications.',
+                          duration: 3000,
+                        });
                         setRefreshTrigger(prev => prev + 1);
                       }}
                     />
@@ -715,6 +710,7 @@ const Profile: React.FC = () => {
                   <TabsContent value="certifications" className="mt-6">
                     <CertificationsForm 
                       key={`certifications-${importedData?.parsedData?.certifications?.length || 0}`}
+                      refreshKey={refreshTrigger}
                       importedData={importedData?.parsedData?.certifications}
                       onSaveComplete={() => {
                         // Clear certifications imported data
@@ -728,10 +724,10 @@ const Profile: React.FC = () => {
                           });
                         }
                         
-                        // After saving certifications, move to references
+                        // After saving certifications, always move to references
                         setActiveTab('references');
                         toast({
-                          title: 'Add references (optional)',
+                          title: 'Certifications saved!',
                           description: 'Add professional references to strengthen your profile.',
                           duration: 3000,
                         });
@@ -741,7 +737,18 @@ const Profile: React.FC = () => {
                   </TabsContent>
 
                   <TabsContent value="references" className="mt-6">
-                    <ReferencesForm />
+                    <ReferencesForm 
+                      onSaveComplete={() => {
+                        // After saving references, move to skills profile
+                        setActiveTab('skills-profile');
+                        toast({
+                          title: 'References saved!',
+                          description: 'Now complete your skills profile.',
+                          duration: 3000,
+                        });
+                        setRefreshTrigger(prev => prev + 1);
+                      }}
+                    />
                   </TabsContent>
 
                   <TabsContent value="skills-profile" className="mt-6">
@@ -752,7 +759,7 @@ const Profile: React.FC = () => {
                         setActiveTab('ai-skills');
                         toast({
                           title: 'Skills profile saved!',
-                          description: 'Now add your AI proficiency details.',
+                          description: 'Now add your AI fluency details.',
                           duration: 3000,
                         });
                         setRefreshTrigger(prev => prev + 1);

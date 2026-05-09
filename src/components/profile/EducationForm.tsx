@@ -8,11 +8,33 @@ import { Plus, Trash2, GraduationCap } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
+// Helper function to normalize date formats
+// Converts "2022-04" (year-month) to "2022-04-01" (full date)
+// Returns null for empty/invalid dates
+const normalizeDateFormat = (dateStr: string | null | undefined): string | null => {
+  if (!dateStr || dateStr.trim() === '') return null;
+  
+  // If it's already a full date (YYYY-MM-DD), return as-is
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    return dateStr;
+  }
+  
+  // If it's year-month only (YYYY-MM), append "-01"
+  if (/^\d{4}-\d{2}$/.test(dateStr)) {
+    return `${dateStr}-01`;
+  }
+  
+  // If invalid format, return null
+  console.warn(`Invalid date format: ${dateStr}`);
+  return null;
+};
+
 interface Education {
   id?: string;
   institution: string;
   qualification_type: string;
   subject: string;
+  location: string;
   start_date: string;
   end_date: string;
   still_studying: boolean;
@@ -31,15 +53,24 @@ const QUALIFICATION_TYPES = [
 interface EducationFormProps {
   importedData?: any[];
   onSaveComplete?: () => void;
+  refreshKey?: number;
 }
 
-export const EducationForm = ({ importedData, onSaveComplete }: EducationFormProps = {}) => {
+export const EducationForm = ({ importedData, onSaveComplete, refreshKey }: EducationFormProps = {}) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [educations, setEducations] = useState<Education[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [dataSource, setDataSource] = useState<'none' | 'imported' | 'database'>('none');
+
+  // Reset dataSource when refreshKey changes to force re-fetch
+  useEffect(() => {
+    if (refreshKey !== undefined) {
+      console.log('EducationForm - refreshKey changed, resetting data source');
+      setDataSource('none');
+    }
+  }, [refreshKey]);
 
   // PRIORITY 1: Handle imported data first
   useEffect(() => {
@@ -51,6 +82,7 @@ export const EducationForm = ({ importedData, onSaveComplete }: EducationFormPro
         institution: edu.institution || '',
         qualification_type: edu.qualification_type || '',
         subject: edu.subject || '',
+        location: edu.location || '',
         start_date: edu.start_date || '',
         end_date: edu.end_date || '',
         still_studying: edu.still_studying || false,
@@ -131,6 +163,7 @@ export const EducationForm = ({ importedData, onSaveComplete }: EducationFormPro
         institution: '',
         qualification_type: '',
         subject: '',
+        location: '',
         start_date: '',
         end_date: '',
         still_studying: false,
@@ -208,8 +241,9 @@ export const EducationForm = ({ importedData, onSaveComplete }: EducationFormPro
               institution: edu.institution,
               qualification_type: edu.qualification_type,
               subject: edu.subject,
-              start_date: edu.start_date || null,
-              end_date: edu.still_studying ? null : (edu.end_date || null),
+              location: edu.location || null,
+              start_date: normalizeDateFormat(edu.start_date),
+              end_date: edu.still_studying ? null : normalizeDateFormat(edu.end_date),
               still_studying: edu.still_studying,
             })
             .eq('id', edu.id);
@@ -224,8 +258,9 @@ export const EducationForm = ({ importedData, onSaveComplete }: EducationFormPro
               institution: edu.institution,
               qualification_type: edu.qualification_type,
               subject: edu.subject,
-              start_date: edu.start_date || null,
-              end_date: edu.still_studying ? null : (edu.end_date || null),
+              location: edu.location || null,
+              start_date: normalizeDateFormat(edu.start_date),
+              end_date: edu.still_studying ? null : normalizeDateFormat(edu.end_date),
               still_studying: edu.still_studying,
             })
             .select('id')
@@ -313,6 +348,15 @@ export const EducationForm = ({ importedData, onSaveComplete }: EducationFormPro
                     value={edu.subject}
                     onChange={(e) => updateEducation(index, 'subject', e.target.value)}
                     placeholder="e.g., Data Science, Computer Science"
+                  />
+                </div>
+
+                <div className="col-span-full">
+                  <label className="block text-sm font-medium mb-1">Location</label>
+                  <Input
+                    value={edu.location}
+                    onChange={(e) => updateEducation(index, 'location', e.target.value)}
+                    placeholder="e.g., Cambridge, UK"
                   />
                 </div>
 

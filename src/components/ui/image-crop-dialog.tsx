@@ -131,7 +131,7 @@ const ImageCropDialog: React.FC<ImageCropDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={(open) => !open && onCancel()}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Adjust Your Image</DialogTitle>
           <DialogDescription>
@@ -139,72 +139,74 @@ const ImageCropDialog: React.FC<ImageCropDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="relative h-[400px] bg-muted rounded-lg overflow-hidden">
-          <Cropper
-            image={imageUrl}
-            crop={crop}
-            zoom={zoom}
-            rotation={rotation}
-            aspect={aspectRatio}
-            cropShape={circularCrop ? 'round' : 'rect'}
-            showGrid={true}
-            onCropChange={onCropChange}
-            onCropComplete={onCropCompleteCallback}
-            onZoomChange={setZoom}
-          />
-        </div>
-
-        <div className="space-y-4 py-4">
-          {/* Zoom Control */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium flex items-center gap-2">
-                <ZoomOut className="h-4 w-4" />
-                Zoom
-              </label>
-              <span className="text-sm text-muted-foreground">
-                {Math.round(zoom * 100)}%
-              </span>
-            </div>
-            <div className="flex items-center gap-3">
-              <ZoomOut className="h-4 w-4 text-muted-foreground" />
-              <Slider
-                value={[zoom]}
-                min={1}
-                max={3}
-                step={0.1}
-                onValueChange={handleZoomChange}
-                className="flex-1"
-              />
-              <ZoomIn className="h-4 w-4 text-muted-foreground" />
-            </div>
+        <div className="flex-1 overflow-y-auto px-1">
+          <div className="relative h-[300px] sm:h-[350px] md:h-[400px] bg-muted rounded-lg overflow-hidden">
+            <Cropper
+              image={imageUrl}
+              crop={crop}
+              zoom={zoom}
+              rotation={rotation}
+              aspect={aspectRatio}
+              cropShape={circularCrop ? 'round' : 'rect'}
+              showGrid={true}
+              onCropChange={onCropChange}
+              onCropComplete={onCropCompleteCallback}
+              onZoomChange={setZoom}
+            />
           </div>
 
-          {/* Rotation Control */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium flex items-center gap-2">
-                <RotateCw className="h-4 w-4" />
-                Rotation
-              </label>
-              <span className="text-sm text-muted-foreground">{rotation}°</span>
+          <div className="space-y-4 py-4">
+            {/* Zoom Control */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium flex items-center gap-2">
+                  <ZoomOut className="h-4 w-4" />
+                  Zoom
+                </label>
+                <span className="text-sm text-muted-foreground">
+                  {Math.round(zoom * 100)}%
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <ZoomOut className="h-4 w-4 text-muted-foreground" />
+                <Slider
+                  value={[zoom]}
+                  min={1}
+                  max={3}
+                  step={0.1}
+                  onValueChange={handleZoomChange}
+                  className="flex-1"
+                />
+                <ZoomIn className="h-4 w-4 text-muted-foreground" />
+              </div>
             </div>
-            <div className="flex items-center gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleRotate}
-                className="w-full"
-              >
-                <RotateCw className="h-4 w-4 mr-2" />
-                Rotate 90°
-              </Button>
+
+            {/* Rotation Control */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium flex items-center gap-2">
+                  <RotateCw className="h-4 w-4" />
+                  Rotation
+                </label>
+                <span className="text-sm text-muted-foreground">{rotation}°</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRotate}
+                  className="w-full"
+                >
+                  <RotateCw className="h-4 w-4 mr-2" />
+                  Rotate 90°
+                </Button>
+              </div>
             </div>
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="mt-2">
           <Button
             type="button"
             variant="outline"

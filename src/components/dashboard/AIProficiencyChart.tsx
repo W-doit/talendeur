@@ -172,7 +172,7 @@ export const AIProficiencyChart = ({ data, tools = [] }: AIProficiencyChartProps
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-talendeur-primary" />
-          AI Proficiency Profile
+          AI Fluency Profile
           {yearsExp > 0 && (
             <span className="text-sm font-normal text-muted-foreground ml-auto">
               {yearsExp} {yearsExp === 1 ? 'year' : 'years'} experience
@@ -180,7 +180,7 @@ export const AIProficiencyChart = ({ data, tools = [] }: AIProficiencyChartProps
           )}
         </CardTitle>
         <CardDescription>
-          Your AI skills and tool proficiency levels
+          Your AI skills and tool fluency levels
         </CardDescription>
       </CardHeader>
       <CardContent>

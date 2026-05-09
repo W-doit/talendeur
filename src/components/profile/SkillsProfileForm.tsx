@@ -196,6 +196,8 @@ export const SkillsProfileForm: React.FC<SkillsProfileFormProps> = ({ parsedData
           user_id: user.id,
           ...skills,
           updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'user_id'
         });
 
       if (error) throw error;

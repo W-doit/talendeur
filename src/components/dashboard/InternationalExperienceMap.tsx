@@ -7,16 +7,17 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-interface InternationalExperience {
+interface LocationExperience {
   id: string;
-  country: string;
+  location: string;
   city: string;
-  experience_type: string;
-  description: string;
+  country: string;
+  type: 'work' | 'education';
+  title: string; // job_title or qualification_type + subject
+  organization: string; // company or institution
   start_date: string;
   end_date: string | null;
-  duration_months: number;
-  purpose: string;
+  still_active: boolean;
 }
 
 // Country coordinates mapping
@@ -76,29 +77,101 @@ interface InternationalExperienceMapProps {
 
 export const InternationalExperienceMap = ({ userId, accessTokenOverride }: InternationalExperienceMapProps = {}) => {
   const { user, accessToken } = useAuth();
-  const [experiences, setExperiences] = useState<InternationalExperience[]>([]);
+  const [experiences, setExperiences] = useState<LocationExperience[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Parse location string to extract city and country
+  const parseLocation = (location: string): { city: string; country: string } => {
+    if (!location) return { city: '', country: '' };
+    
+    // Handle common formats: "City, Country" or "City, State, Country"
+    const parts = location.split(',').map(p => p.trim());
+    
+    if (parts.length >= 2) {
+      const country = parts[parts.length - 1]; // Last part is usually country
+      const city = parts[0]; // First part is usually city
+      return { city, country };
+    }
+    
+    // If only one part, assume it's country
+    return { city: '', country: parts[0] || location };
+  };
 
   useEffect(() => {
     const fetchExperiences = async () => {
-      if (!user || !accessToken) return;
+      const effectiveUserId = userId ?? user?.id;
+      const effectiveToken = accessTokenOverride !== undefined ? (accessTokenOverride || import.meta.env.VITE_SUPABASE_ANON_KEY) : (accessToken || import.meta.env.VITE_SUPABASE_ANON_KEY);
+      
+      if (!effectiveUserId) {
+        setLoading(false);
+        return;
+      }
 
       try {
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
         const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-        const response = await fetch(
-          `${supabaseUrl}/rest/v1/international_experience?user_id=eq.${user.id}&select=*&order=start_date.desc`,
-          {
-            headers: {
-              'apikey': supabaseKey,
-              'Authorization': `Bearer ${accessToken}`,
-            }
-          }
-        );
-        const data = await response.json();
-        setExperiences(data || []);
+        
+        const headers = {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${effectiveToken}`,
+        };
+
+        // Fetch work experience and education in parallel
+        const [workResponse, educationResponse] = await Promise.all([
+          fetch(`${supabaseUrl}/rest/v1/work_experience?user_id=eq.${effectiveUserId}&select=*`, { headers }),
+          fetch(`${supabaseUrl}/rest/v1/education_history?user_id=eq.${effectiveUserId}&select=*`, { headers }),
+        ]);
+
+        const [workData, educationData] = await Promise.all([
+          workResponse.ok ? workResponse.json() : [],
+          educationResponse.ok ? educationResponse.json() : [],
+        ]);
+
+        // Process work experience with locations
+        const workExperiences: LocationExperience[] = (workData || [])
+          .filter((work: any) => work.location && work.location.trim())
+          .map((work: any) => {
+            const { city, country } = parseLocation(work.location);
+            return {
+              id: work.id,
+              location: work.location,
+              city,
+              country,
+              type: 'work' as const,
+              title: work.job_title || 'Position',
+              organization: work.company || 'Company',
+              start_date: work.start_date,
+              end_date: work.end_date,
+              still_active: work.still_work_here || false,
+            };
+          });
+
+        // Process education with locations
+        const educationExperiences: LocationExperience[] = (educationData || [])
+          .filter((edu: any) => edu.location && edu.location.trim())
+          .map((edu: any) => {
+            const { city, country } = parseLocation(edu.location);
+            return {
+              id: edu.id,
+              location: edu.location,
+              city,
+              country,
+              type: 'education' as const,
+              title: `${edu.qualification_type || ''} ${edu.subject || ''}`.trim() || 'Degree',
+              organization: edu.institution || 'Institution',
+              start_date: edu.start_date,
+              end_date: edu.end_date,
+              still_active: edu.still_studying || false,
+            };
+          });
+
+        // Combine and sort by start date (most recent first)
+        const allExperiences = [...workExperiences, ...educationExperiences]
+          .sort((a, b) => new Date(b.start_date).getTime() - new Date(a.start_date).getTime());
+
+        setExperiences(allExperiences);
       } catch (error) {
-        console.error('Error fetching international experience:', error);
+        console.error('Error fetching location data:', error);
       } finally {
         setLoading(false);
       }
@@ -111,7 +184,7 @@ export const InternationalExperienceMap = ({ userId, accessTokenOverride }: Inte
     switch (type.toLowerCase()) {
       case 'work':
         return Briefcase;
-      case 'study':
+      case 'education':
         return GraduationCap;
       case 'volunteer':
         return Heart;
@@ -124,7 +197,7 @@ export const InternationalExperienceMap = ({ userId, accessTokenOverride }: Inte
     switch (type.toLowerCase()) {
       case 'work':
         return '#AA778A';
-      case 'study':
+      case 'education':
         return '#9EBC9E';
       case 'volunteer':
         return '#FFAFC5';
@@ -155,11 +228,10 @@ export const InternationalExperienceMap = ({ userId, accessTokenOverride }: Inte
     }
     acc[exp.country].push(exp);
     return acc;
-  }, {} as { [key: string]: InternationalExperience[] });
-
+  }, {} as { [key: string]: LocationExperience[] });
 
   const totalCountries = new Set(experiences.map(exp => exp.country)).size;
-  const totalMonths = experiences.reduce((sum, exp) => sum + (exp.duration_months || 0), 0);
+  const totalExperiences = experiences.length;
 
   if (loading) {
     return (
@@ -180,10 +252,10 @@ export const InternationalExperienceMap = ({ userId, accessTokenOverride }: Inte
       <Card>
         <CardHeader>
           <CardTitle>International Experience</CardTitle>
-          <CardDescription>Global footprint and cross-cultural experiences</CardDescription>
+          <CardDescription>Your work and education locations around the world</CardDescription>
         </CardHeader>
         <CardContent className="py-8 text-center text-gray-500">
-          No international experience added yet
+          Add locations to your work experience and education to see them on the map
         </CardContent>
       </Card>
     );
@@ -194,7 +266,7 @@ export const InternationalExperienceMap = ({ userId, accessTokenOverride }: Inte
       <CardHeader>
         <CardTitle>International Experience</CardTitle>
         <CardDescription>
-          {totalCountries} {totalCountries === 1 ? 'country' : 'countries'} • {totalMonths} months abroad
+          {totalCountries} {totalCountries === 1 ? 'country' : 'countries'} • {totalExperiences} {totalExperiences === 1 ? 'location' : 'locations'}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -213,7 +285,7 @@ export const InternationalExperienceMap = ({ userId, accessTokenOverride }: Inte
             {Object.entries(experiencesByCountry).map(([country, exps]) => {
               const coords = countryCoordinates[country] || [0, 0];
               // Use the color of the first experience for the marker
-              const primaryColor = getTypeColor(exps[0].experience_type);
+              const primaryColor = getTypeColor(exps[0].type);
               
               return (
                 <Marker 
@@ -228,8 +300,8 @@ export const InternationalExperienceMap = ({ userId, accessTokenOverride }: Inte
                       </h3>
                       <div className="space-y-3 max-h-[300px] overflow-y-auto">
                         {exps.map((exp) => {
-                          const Icon = getTypeIcon(exp.experience_type);
-                          const color = getTypeColor(exp.experience_type);
+                          const Icon = getTypeIcon(exp.type);
+                          const color = getTypeColor(exp.type);
                           
                           return (
                             <div key={exp.id} className="border-l-4 pl-3 py-2" style={{ borderColor: color }}>
@@ -239,19 +311,14 @@ export const InternationalExperienceMap = ({ userId, accessTokenOverride }: Inte
                                   style={{ backgroundColor: color }}
                                 >
                                   <Icon className="h-3 w-3" />
-                                  {exp.experience_type}
+                                  {exp.type === 'work' ? 'Work' : 'Education'}
                                 </div>
                               </div>
-                              <p className="font-semibold text-sm text-gray-900">{exp.city}</p>
-                              <p className="text-xs text-gray-600 mb-1">
-                                {formatDate(exp.start_date)} - {exp.end_date ? formatDate(exp.end_date) : 'Present'} 
-                                <span className="ml-2 font-semibold" style={{ color }}>
-                                  ({exp.duration_months} {exp.duration_months === 1 ? 'month' : 'months'})
-                                </span>
-                              </p>
-                              <p className="text-xs text-gray-700 mb-1">{exp.description}</p>
-                              <p className="text-xs text-gray-600 italic">
-                                <span className="font-semibold">Purpose:</span> {exp.purpose}
+                              <p className="font-semibold text-sm text-gray-900">{exp.title}</p>
+                              <p className="text-xs text-gray-700 mb-1">{exp.organization}</p>
+                              {exp.city && <p className="text-xs text-gray-600 mb-1">{exp.city}</p>}
+                              <p className="text-xs text-gray-600">
+                                {formatDate(exp.start_date)} - {exp.still_active ? 'Present' : (exp.end_date ? formatDate(exp.end_date) : 'N/A')}
                               </p>
                             </div>
                           );
@@ -272,15 +339,15 @@ export const InternationalExperienceMap = ({ userId, accessTokenOverride }: Inte
             <div className="text-3xl font-bold text-gray-900">{totalCountries}</div>
             <div className="text-xs text-gray-600 font-medium">Countries</div>
           </div>
-          <div className="text-center p-4 rounded-lg bg-gradient-to-br from-[#CFC6B8]/10 to-[#CFC6B8]/5 border border-[#CFC6B8]/20">
-            <Calendar className="h-8 w-8 text-[#CFC6B8] mx-auto mb-2" />
-            <div className="text-3xl font-bold text-gray-900">{totalMonths}</div>
-            <div className="text-xs text-gray-600 font-medium">Months Abroad</div>
+          <div className="text-center p-4 rounded-lg bg-gradient-to-br from-[#AA778A]/10 to-[#AA778A]/5 border border-[#AA778A]/20">
+            <Briefcase className="h-8 w-8 text-[#AA778A] mx-auto mb-2" />
+            <div className="text-3xl font-bold text-gray-900">{experiences.filter(e => e.type === 'work').length}</div>
+            <div className="text-xs text-gray-600 font-medium">Work Locations</div>
           </div>
-          <div className="text-center p-4 rounded-lg bg-gradient-to-br from-[#FFCFD2]/10 to-[#FFCFD2]/5 border border-[#FFCFD2]/20">
-            <MapPin className="h-8 w-8 text-[#FFCFD2] mx-auto mb-2" />
-            <div className="text-3xl font-bold text-gray-900">{experiences.length}</div>
-            <div className="text-xs text-gray-600 font-medium">Experiences</div>
+          <div className="text-center p-4 rounded-lg bg-gradient-to-br from-[#9EBC9E]/10 to-[#9EBC9E]/5 border border-[#9EBC9E]/20">
+            <GraduationCap className="h-8 w-8 text-[#9EBC9E] mx-auto mb-2" />
+            <div className="text-3xl font-bold text-gray-900">{experiences.filter(e => e.type === 'education').length}</div>
+            <div className="text-xs text-gray-600 font-medium">Education Locations</div>
           </div>
         </div>
       </CardContent>

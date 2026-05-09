@@ -39,13 +39,11 @@ export const LinkedInImport: React.FC<LinkedInImportProps> = ({ onImport, curren
     setUploading(true);
     setFileName(file.name);
     
-    if (onParsingStart) onParsingStart();
-    
-    // Show helpful message while parsing
+    // Show helpful message
     toast({
-      title: 'Processing your CV...',
-      description: 'While we extract your data, please fill in your AI Proficiency and Personality Test. We\'ll notify you when ready for review.',
-      duration: 8000,
+      title: 'CV Uploaded Successfully!',
+      description: 'Please review each section and save at the bottom to continue.',
+      duration: 5000,
     });
 
     try {
