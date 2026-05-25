@@ -47,7 +47,7 @@ const Profile: React.FC = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
   const [aiProficiencyData, setAIProficiencyData] = useState<any>(null);
-  const [aiToolsData, setAIToolsData] = useState<any[]>([]);
+  const [aiToolsData, setAIToolsData] = useState<any>(null);
   const dashboardRef = React.useRef<HTMLDivElement>(null);
 
   const getVideoEmbedUrl = (url: string) => {
@@ -160,32 +160,33 @@ const Profile: React.FC = () => {
       if (!user?.id) return;
       
       try {
-        // Fetch AI proficiency categories
-        const { data: proficiencyData, error: proficiencyError } = await supabase
-          .from('ai_proficiency')
+        // Fetch AI fluency usage data (new structure)
+        const { data: usageData, error: usageError } = await supabase
+          .from('ai_fluency_usage')
           .select('*')
           .eq('user_id', user.id)
           .single();
         
-        if (proficiencyError && proficiencyError.code !== 'PGRST116') {
-          console.error('Error fetching AI proficiency:', proficiencyError);
+        if (usageError && usageError.code !== 'PGRST116') {
+          console.error('Error fetching AI fluency usage:', usageError);
         } else {
-          setAIProficiencyData(proficiencyData);
+          setAIProficiencyData(usageData);
         }
         
-        // Fetch AI tools used
+        // Fetch AI fluency tools data (new structure)
         const { data: toolsData, error: toolsError } = await supabase
-          .from('ai_tools_used')
+          .from('ai_fluency_tools')
           .select('*')
-          .eq('user_id', user.id);
+          .eq('user_id', user.id)
+          .single();
         
-        if (toolsError) {
+        if (toolsError && toolsError.code !== 'PGRST116') {
           console.error('Error fetching AI tools:', toolsError);
         } else {
-          setAIToolsData(toolsData || []);
+          setAIToolsData(toolsData || {});
         }
       } catch (err) {
-        console.error('Error in AI proficiency fetch:', err);
+        console.error('Error in AI fluency fetch:', err);
       }
     };
     
@@ -685,21 +686,6 @@ const Profile: React.FC = () => {
                         toast({
                           title: 'Education saved!',
                           description: 'Now add your certifications.',
-                          duration: 3000,
-                        });
-                        setRefreshTrigger(prev => prev + 1);
-                      }}
-                    />
-                  </TabsContent>
-
-                  <TabsContent value="ai-skills" className="mt-6">
-                    <AIProficiencyForm 
-                      onSaveComplete={() => {
-                        // After saving AI skills, move to personality test
-                        setActiveTab('personality');
-                        toast({
-                          title: 'Last step!',
-                          description: 'Complete the personality test to finish your profile.',
                           duration: 3000,
                         });
                         setRefreshTrigger(prev => prev + 1);

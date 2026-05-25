@@ -126,10 +126,10 @@ const PublicProfile: React.FC = () => {
             bio: profileData.bio || '',
           });
           
-          // Fetch AI proficiency data for job seekers
+          // Fetch AI fluency data for job seekers (new structure)
           try {
-            const aiProfResponse = await fetch(
-              `${supabaseUrl}/rest/v1/ai_proficiency?user_id=eq.${profileData.user_id}&select=*`,
+            const aiFluencyResponse = await fetch(
+              `${supabaseUrl}/rest/v1/ai_fluency_usage?user_id=eq.${profileData.user_id}&select=*`,
               {
                 headers: {
                   apikey: supabaseKey,
@@ -138,15 +138,15 @@ const PublicProfile: React.FC = () => {
                 },
               }
             );
-            if (aiProfResponse.ok) {
-              const aiProfDataArray = await aiProfResponse.json();
-              const aiProfData = aiProfDataArray?.[0];
-              setAIProficiencyData(aiProfData || null);
+            if (aiFluencyResponse.ok) {
+              const aiFluencyDataArray = await aiFluencyResponse.json();
+              const aiFluencyData = aiFluencyDataArray?.[0];
+              setAIProficiencyData(aiFluencyData || null);
             } else {
               setAIProficiencyData(null);
             }
           } catch (error) {
-            console.error('AI proficiency table not available:', error);
+            console.error('AI fluency table not available:', error);
             setAIProficiencyData(null);
           }
           
