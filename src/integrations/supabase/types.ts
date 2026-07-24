@@ -93,6 +93,68 @@ export type Database = {
           learning_score?: number | null
         }
       }
+      skills_dimensions: {
+        Row: {
+          user_id: string
+          creativity: number | null
+          communication: number | null
+          critical_thinking: number | null
+          technology_development: number | null
+          operations: number | null
+          social_impact: number | null
+          business_acumen: number | null
+          innovation: number | null
+          collaboration: number | null
+          leadership: number | null
+          precision: number | null
+          depth: number | null
+          commitment: number | null
+          empathy: number | null
+          flexibility: number | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          user_id: string
+          creativity?: number | null
+          communication?: number | null
+          critical_thinking?: number | null
+          technology_development?: number | null
+          operations?: number | null
+          social_impact?: number | null
+          business_acumen?: number | null
+          innovation?: number | null
+          collaboration?: number | null
+          leadership?: number | null
+          precision?: number | null
+          depth?: number | null
+          commitment?: number | null
+          empathy?: number | null
+          flexibility?: number | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          user_id?: string
+          creativity?: number | null
+          communication?: number | null
+          critical_thinking?: number | null
+          technology_development?: number | null
+          operations?: number | null
+          social_impact?: number | null
+          business_acumen?: number | null
+          innovation?: number | null
+          collaboration?: number | null
+          leadership?: number | null
+          precision?: number | null
+          depth?: number | null
+          commitment?: number | null
+          empathy?: number | null
+          flexibility?: number | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+      }
       matches: {
         Row: {
           id: string
@@ -154,6 +216,8 @@ export type Database = {
           profile_pic: string | null
           cv_url: string | null
           bio: string | null
+          video_url: string | null
+          portfolio_url: string | null
           user_type: string
         }
         Insert: {
@@ -164,6 +228,8 @@ export type Database = {
           profile_pic?: string | null
           cv_url?: string | null
           bio?: string | null
+          video_url?: string | null
+          portfolio_url?: string | null
           user_type: string
         }
         Update: {
@@ -174,6 +240,8 @@ export type Database = {
           profile_pic?: string | null
           cv_url?: string | null
           bio?: string | null
+          video_url?: string | null
+          portfolio_url?: string | null
           user_type?: string
         }
       }

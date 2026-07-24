@@ -7,6 +7,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import MainLayout from '@/components/layout/MainLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { CheckCircle2, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { PasswordStrengthIndicator } from '@/components/auth/PasswordStrengthIndicator';
+import { getPasswordValidation } from '@/lib/password-validation';
 
 const ResetPassword: React.FC = () => {
   const [password, setPassword] = useState('');
@@ -120,8 +122,9 @@ const ResetPassword: React.FC = () => {
     setError(null);
 
     // Validation
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters long');
+    const { isValid } = getPasswordValidation(password);
+    if (!isValid) {
+      setError('Password does not meet all security requirements');
       return;
     }
 
@@ -211,7 +214,7 @@ const ResetPassword: React.FC = () => {
             <CardFooter>
               <Button 
                 onClick={() => navigate('/login')}
-                className="w-full bg-gradient-to-r from-white via-talendeur-orange to-talendeur-primary hover:opacity-90"
+                className="w-full bg-talendeur-primary hover:bg-talendeur-primary-dark text-white"
               >
                 Go to Login
               </Button>
@@ -260,13 +263,14 @@ const ResetPassword: React.FC = () => {
                 <div className="relative">
                   <Input
                     id="password"
-                    placeholder="Enter new password (min 6 characters)"
+                    placeholder="Enter a strong password"
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     autoFocus
-                    minLength={6}
+                    minLength={8}
+                    autoComplete="new-password"
                   />
                   <button
                     type="button"
@@ -276,6 +280,7 @@ const ResetPassword: React.FC = () => {
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
+                <PasswordStrengthIndicator password={password} />
               </div>
 
               <div className="space-y-2">
@@ -288,7 +293,8 @@ const ResetPassword: React.FC = () => {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
-                    minLength={6}
+                    minLength={8}
+                    autoComplete="new-password"
                   />
                   <button
                     type="button"
@@ -299,20 +305,12 @@ const ResetPassword: React.FC = () => {
                   </button>
                 </div>
               </div>
-
-              <div className="text-sm text-muted-foreground">
-                <p>Password requirements:</p>
-                <ul className="list-disc list-inside mt-1 space-y-1">
-                  <li>At least 6 characters long</li>
-                  <li>Should contain letters and numbers</li>
-                </ul>
-              </div>
             </CardContent>
             <CardFooter>
               <Button 
                 type="submit" 
-                className="w-full bg-gradient-to-r from-white via-talendeur-orange to-talendeur-primary hover:opacity-90"
-                disabled={isSubmitting}
+                className="w-full bg-talendeur-primary hover:bg-talendeur-primary-dark text-white"
+                disabled={isSubmitting || !getPasswordValidation(password).isValid}
               >
                 {isSubmitting ? 'Updating Password...' : 'Reset Password'}
               </Button>

@@ -4,9 +4,11 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth, UserType } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MainLayout from '@/components/layout/MainLayout';
+import { PasswordStrengthIndicator } from '@/components/auth/PasswordStrengthIndicator';
+import { getPasswordValidation } from '@/lib/password-validation';
 
 const Register: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -19,6 +21,11 @@ const Register: React.FC = () => {
   const { register } = useAuth();
 
   const validatePassword = () => {
+    const { isValid } = getPasswordValidation(password);
+    if (!isValid) {
+      setPasswordError('Password does not meet all security requirements');
+      return false;
+    }
     if (password !== confirmPassword) {
       setPasswordError("Passwords don't match");
       return false;
@@ -97,12 +104,18 @@ const Register: React.FC = () => {
                 <label htmlFor="password" className="text-sm font-medium">Password</label>
                 <Input
                   id="password"
-                  placeholder="Create a password"
+                  placeholder="Create a strong password"
                   type="password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (passwordError) setPasswordError('');
+                  }}
                   required
+                  minLength={8}
+                  autoComplete="new-password"
                 />
+                <PasswordStrengthIndicator password={password} />
               </div>
               <div className="space-y-2">
                 <label htmlFor="confirmPassword" className="text-sm font-medium">Confirm Password</label>
@@ -111,8 +124,13 @@ const Register: React.FC = () => {
                   placeholder="Confirm your password"
                   type="password"
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onChange={(e) => {
+                    setConfirmPassword(e.target.value);
+                    if (passwordError) setPasswordError('');
+                  }}
                   required
+                  minLength={8}
+                  autoComplete="new-password"
                 />
                 {passwordError && (
                   <p className="text-sm text-red-500">{passwordError}</p>
@@ -122,8 +140,8 @@ const Register: React.FC = () => {
             <CardFooter className="flex flex-col space-y-4">
               <Button 
                 type="submit" 
-                className="w-full bg-gradient-to-r from-white via-talendeur-orange to-talendeur-primary hover:opacity-90"
-                disabled={isSubmitting}
+                className="w-full bg-talendeur-primary hover:bg-talendeur-primary-dark text-white"
+                disabled={isSubmitting || !getPasswordValidation(password).isValid}
               >
                 {isSubmitting ? 'Creating account...' : 'Create account'}
               </Button>

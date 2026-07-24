@@ -617,6 +617,7 @@ const Profile: React.FC = () => {
                         <JobSeekerProfileForm 
                           importedData={importedData}
                           onDataImport={setImportedData}
+                          onImportPersisted={() => setRefreshTrigger((n) => n + 1)}
                           onSaveComplete={() => {
                             // After saving basic info, move to work experience tab
                             if (importedData?.parsedData?.workExperience?.length > 0) {
@@ -769,7 +770,7 @@ const Profile: React.FC = () => {
                   </TabsContent>
 
                   <TabsContent value="personality" className="mt-6">
-                    <PersonalityTest />
+                    <PersonalityTest onSaveAndExit={() => setIsEditMode(false)} />
                   </TabsContent>
                 </Tabs>
               ) : (

@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,7 +12,9 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
-  const { login, user } = useAuth();
+  const location = useLocation();
+  const { login } = useAuth();
+  const timedOut = (location.state as { reason?: string } | null)?.reason === 'session_timeout';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,7 +45,9 @@ const Login: React.FC = () => {
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl text-center">Login to Talendeur</CardTitle>
             <CardDescription className="text-center">
-              Enter your email and password to sign in
+              {timedOut
+                ? 'Your session expired due to inactivity. Please sign in again.'
+                : 'Enter your email and password to sign in'}
             </CardDescription>
           </CardHeader>
           <form onSubmit={handleSubmit}>
@@ -82,7 +86,7 @@ const Login: React.FC = () => {
             <CardFooter className="flex flex-col space-y-4">
               <Button 
                 type="submit" 
-                className="w-full bg-gradient-to-r from-white via-talendeur-orange to-talendeur-primary hover:opacity-90"
+                className="w-full bg-talendeur-primary hover:bg-talendeur-primary-dark text-white"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? 'Signing in...' : 'Sign In'}

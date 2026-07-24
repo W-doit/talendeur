@@ -57,7 +57,7 @@ const Matches: React.FC = () => {
             </div>
             <Button
               onClick={() => navigate('/profile')}
-              className="bg-gradient-to-r from-talendeur-pink to-talendeur-primary hover:opacity-90 text-white"
+              className="bg-talendeur-primary hover:bg-talendeur-primary-dark text-white"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Profile

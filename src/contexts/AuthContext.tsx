@@ -13,6 +13,8 @@ export interface JobSeekerProfile {
   headline?: string;
   profilePic: string;
   cv: string;
+  videoUrl?: string;
+  portfolioUrl?: string;
   interests: string[];
   skills: {
     soft: number;
@@ -40,6 +42,8 @@ export interface OrganizationProfile {
   website: string;
   about: string;
   needs: string[];
+  videoUrl?: string;
+  portfolioUrl?: string;
   contacts?: OrganizationContact[];
 }
 
@@ -155,6 +159,24 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const skillDataArray = await skillResponse.json();
         const skillData = skillDataArray[0];
 
+        // Fallback: portfolio from socials if portfolio_url column empty/missing
+        let portfolioUrl = profileData.portfolio_url || '';
+        if (!portfolioUrl) {
+          const socialsResponse = await fetch(
+            `${supabaseUrl}/rest/v1/socials?user_id=eq.${profileData.user_id}&platform=eq.portfolio&select=url&limit=1`,
+            {
+              headers: {
+                'apikey': supabaseKey,
+                'Authorization': authHeader,
+              }
+            }
+          );
+          if (socialsResponse.ok) {
+            const socials = await socialsResponse.json();
+            portfolioUrl = socials?.[0]?.url || '';
+          }
+        }
+
         fullProfile = {
           id: profileData.user_id,
           name: `${profileData.first_name} ${profileData.surname}`.trim(),
@@ -163,6 +185,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           profilePic: profileData.profile_pic || '',
           cv: profileData.cv_url || '',
           videoUrl: profileData.video_url || '',
+          portfolioUrl,
           interests: skillData?.interests || [],
           skills: {
             soft: skillData?.soft_skills || 70,
@@ -216,6 +239,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           headline: profileData.headline || undefined,
           logo: orgData?.logo || '',
           videoUrl: profileData.video_url || '',
+          portfolioUrl: profileData.portfolio_url || '',
           website: orgData?.website || '',
           about: orgData?.about || '',
           needs: orgData?.needs || [],
@@ -581,9 +605,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       
       // Update profile table
       const profileUpdate: any = {
-        bio: (profileData as any).bio,
         profile_pic: (profileData as any).profilePic || (profileData as any).logo,
       };
+
+      // Only include bio when explicitly provided (including empty string clears it)
+      if ('bio' in profileData) {
+        profileUpdate.bio = (profileData as JobSeekerProfile).bio ?? '';
+      }
 
       if ('headline' in profileData) {
         profileUpdate.headline = profileData.headline;
@@ -600,15 +628,57 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
 
       if ('videoUrl' in profileData) {
-        profileUpdate.video_url = profileData.videoUrl;
+        profileUpdate.video_url = (profileData as any).videoUrl || null;
+      }
+
+      if ('portfolioUrl' in profileData) {
+        profileUpdate.portfolio_url = (profileData as any).portfolioUrl || null;
       }
 
       console.log('Updating profile table with:', profileUpdate);
 
-      const { error: profileError } = await supabase
+      let { error: profileError } = await supabase
         .from('profile')
         .update(profileUpdate)
         .eq('user_id', user.id);
+
+      // If portfolio_url column is missing, retry without it and store in socials
+      if (
+        profileError &&
+        profileUpdate.portfolio_url !== undefined &&
+        /portfolio_url/i.test(profileError.message || '')
+      ) {
+        console.warn('portfolio_url column missing; falling back to socials table');
+        const { portfolio_url: portfolioUrlValue, ...withoutPortfolio } = profileUpdate;
+        const retry = await supabase
+          .from('profile')
+          .update(withoutPortfolio)
+          .eq('user_id', user.id);
+        profileError = retry.error;
+
+        if (!profileError && 'portfolioUrl' in profileData) {
+          const url = ((profileData as any).portfolioUrl || '').trim();
+          await supabase.from('socials').delete().eq('user_id', user.id).eq('platform', 'portfolio');
+          if (url) {
+            await supabase.from('socials').insert({
+              user_id: user.id,
+              platform: 'portfolio',
+              url,
+            });
+          }
+        }
+      } else if (!profileError && 'portfolioUrl' in profileData) {
+        // Keep socials in sync as a secondary source
+        const url = ((profileData as any).portfolioUrl || '').trim();
+        await supabase.from('socials').delete().eq('user_id', user.id).eq('platform', 'portfolio');
+        if (url) {
+          await supabase.from('socials').insert({
+            user_id: user.id,
+            platform: 'portfolio',
+            url,
+          });
+        }
+      }
 
       if (profileError) {
         console.error('Profile table update error:', profileError);

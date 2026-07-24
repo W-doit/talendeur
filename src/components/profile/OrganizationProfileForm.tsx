@@ -20,12 +20,13 @@ const OrganizationProfileForm: React.FC<OrganizationProfileFormProps> = ({ onSav
   
   const [formData, setFormData] = useState<Partial<OrganizationProfile>>({
     name: profile?.name || '',
-    headline: (profile as any)?.headline || '',
+    headline: profile?.headline || '',
     about: profile?.about || '',
     website: profile?.website || '',
     logo: profile?.logo || '',
     needs: profile?.needs || [],
-    videoUrl: (profile as any)?.videoUrl || '',
+    videoUrl: profile?.videoUrl || '',
+    portfolioUrl: profile?.portfolioUrl || '',
     contacts: profile?.contacts || []
   });
   
@@ -39,6 +40,33 @@ const OrganizationProfileForm: React.FC<OrganizationProfileFormProps> = ({ onSav
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+
+  // Keep form in sync after profile reloads from save
+  React.useEffect(() => {
+    if (!profile || isSubmitting) return;
+    setFormData(prev => ({
+      ...prev,
+      name: profile.name || '',
+      headline: profile.headline || '',
+      about: profile.about || '',
+      website: profile.website || '',
+      logo: profile.logo || '',
+      needs: profile.needs || [],
+      videoUrl: profile.videoUrl || '',
+      portfolioUrl: profile.portfolioUrl || '',
+      contacts: profile.contacts || [],
+    }));
+  }, [
+    profile?.name,
+    profile?.headline,
+    profile?.about,
+    profile?.website,
+    profile?.logo,
+    profile?.videoUrl,
+    profile?.portfolioUrl,
+    profile?.needs,
+    profile?.contacts,
+  ]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -402,7 +430,7 @@ const OrganizationProfileForm: React.FC<OrganizationProfileFormProps> = ({ onSav
       <div className="flex justify-end">
         <Button 
           type="submit" 
-          className="bg-gradient-to-r from-white via-talendeur-orange to-talendeur-primary hover:opacity-90"
+          className="bg-talendeur-primary hover:bg-talendeur-primary-dark text-white"
           disabled={isSubmitting || uploadingLogo}
         >
           {uploadingLogo ? 'Uploading logo...' : isSubmitting ? 'Saving...' : 'Save Profile'}

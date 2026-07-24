@@ -42,7 +42,7 @@ export const LinkedInImport: React.FC<LinkedInImportProps> = ({ onImport, curren
     // Show helpful message
     toast({
       title: 'CV Uploaded Successfully!',
-      description: 'Please review each section and save at the bottom to continue.',
+      description: 'Data was saved to your live profile. Review each section below to edit if needed.',
       duration: 5000,
     });
 
@@ -181,7 +181,7 @@ export const LinkedInImport: React.FC<LinkedInImportProps> = ({ onImport, curren
             <Button
               type="button"
               disabled={uploading}
-              className="w-full bg-gradient-to-r from-white via-talendeur-orange to-talendeur-primary hover:opacity-90 cursor-pointer"
+              className="w-full bg-talendeur-primary hover:bg-talendeur-primary-dark text-white cursor-pointer"
               onClick={() => document.getElementById('linkedin-pdf-upload')?.click()}
             >
               {uploading ? (

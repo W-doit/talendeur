@@ -9,13 +9,13 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-gradient-to-r from-talendeur-primary to-talendeur-orange text-white shadow-md hover:shadow-lg hover:from-talendeur-primary-dark hover:to-talendeur-primary",
+        default: "bg-talendeur-primary text-white shadow-md hover:bg-talendeur-primary-dark hover:shadow-lg",
         destructive:
           "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-md",
         outline:
           "border-2 border-talendeur-primary bg-transparent text-talendeur-primary hover:bg-talendeur-primary hover:text-white",
         secondary:
-          "bg-talendeur-orange text-white hover:bg-talendeur-orange/90 shadow-md",
+          "bg-talendeur-navy text-white hover:bg-talendeur-navy/90 shadow-md",
         ghost: "hover:bg-talendeur-primary/10 hover:text-talendeur-primary",
         link: "text-talendeur-primary underline-offset-4 hover:underline font-semibold",
       },

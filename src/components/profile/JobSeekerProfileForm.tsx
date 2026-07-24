@@ -12,19 +12,22 @@ import { uploadProfilePicture, uploadCV } from '@/lib/supabase-storage';
 import { ParsedData } from '@/lib/pdf-parser';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { persistParsedCVData } from '@/lib/persist-cv-import';
 
 interface JobSeekerProfileFormProps {
   onSaveComplete?: () => void;
   importedData?: { parsedData: any; pdfFile: File } | null;
   onDataImport?: (data: any) => void;
   onParsingStart?: () => void;
+  onImportPersisted?: () => void;
 }
 
 const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({ 
   onSaveComplete,
   importedData,
   onDataImport,
-  onParsingStart
+  onParsingStart,
+  onImportPersisted,
 }) => {
   const { user, updateProfile } = useAuth();
   const profile = user?.profile as JobSeekerProfile | null;
@@ -32,12 +35,12 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({
   
   const [formData, setFormData] = useState<Partial<JobSeekerProfile>>({
     name: profile?.name || '',
-    headline: (profile as any)?.headline || '',
+    headline: profile?.headline || '',
     bio: profile?.bio || '',
     profilePic: profile?.profilePic || '',
     cv: profile?.cv || '',
-    videoUrl: (profile as any)?.videoUrl || '',
-    portfolioUrl: (profile as any)?.portfolioUrl || ''
+    videoUrl: profile?.videoUrl || '',
+    portfolioUrl: profile?.portfolioUrl || ''
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -46,6 +49,29 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({
   const [cvFile, setCvFile] = useState<File | null>(null);
   const [uploadingCV, setUploadingCV] = useState(false);
   const [isParsing, setIsParsing] = useState(false);
+
+  // Keep form in sync after profile reloads from save
+  React.useEffect(() => {
+    if (!profile || isSubmitting) return;
+    setFormData(prev => ({
+      ...prev,
+      name: profile.name || '',
+      headline: profile.headline || '',
+      bio: profile.bio || '',
+      profilePic: profile.profilePic || '',
+      cv: profile.cv || '',
+      videoUrl: profile.videoUrl || '',
+      portfolioUrl: profile.portfolioUrl || '',
+    }));
+  }, [
+    profile?.name,
+    profile?.headline,
+    profile?.bio,
+    profile?.profilePic,
+    profile?.cv,
+    profile?.videoUrl,
+    profile?.portfolioUrl,
+  ]);
 
   // Restore imported data when coming back to this tab
   React.useEffect(() => {
@@ -215,15 +241,52 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({
     
     // Pre-fill profile information - combine all updates in one setState call
     const fullName = `${data.profile.firstName || ''} ${data.profile.surname || ''}`.trim();
+    const nextName = fullName || formData.name;
+    const nextHeadline = data.profile.headline || formData.headline;
+    const nextBio = data.profile.bio || formData.bio;
     
     setFormData(prev => ({
       ...prev,
-      name: fullName || prev.name,
-      headline: data.profile.headline || prev.headline,
-      bio: data.profile.bio || prev.bio,
+      name: nextName,
+      headline: nextHeadline,
+      bio: nextBio,
       email: data.profile.email || prev.email,
-      cv: cvUrl, // Use the uploaded CV URL
+      cv: cvUrl,
     }));
+
+    // Auto-sync to DB so live/public profile updates without saving each tab
+    let persistSummary = '';
+    if (user?.id) {
+      try {
+        await updateProfile({
+          name: nextName,
+          headline: nextHeadline,
+          bio: nextBio,
+          cv: cvUrl,
+        });
+
+        const result = await persistParsedCVData(user.id, data);
+        const parts = [];
+        if (result.workCount) parts.push(`${result.workCount} work`);
+        if (result.educationCount) parts.push(`${result.educationCount} education`);
+        if (result.certificationCount) parts.push(`${result.certificationCount} certifications`);
+        if (result.skillsSaved) parts.push('skills');
+        persistSummary = parts.length
+          ? ` Saved to your live profile (${parts.join(', ')}).`
+          : ' Basic profile saved to your live profile.';
+
+        onImportPersisted?.();
+      } catch (persistError) {
+        console.error('Auto-persist CV import failed:', persistError);
+        toast({
+          title: 'Saved locally only',
+          description:
+            'We extracted your CV into the edit forms, but could not sync everything to your live profile. Please open each tab and click Save.',
+          variant: 'destructive',
+          duration: 10000,
+        });
+      }
+    }
 
     // Show success message with details
     const extractedItems = [];
@@ -235,14 +298,11 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({
     if (data.skills.length > 0) extractedItems.push(`${data.skills.length} skills`);
 
     toast({
-      title: 'CV data extracted successfully! ✓',
-      description: `Found: ${extractedItems.join(', ')}. Please review each tab below (Work Experience, Education, Certifications) to verify the information. Don't forget to complete the Personality Test before viewing your profile!`,
+      title: 'CV imported successfully! ✓',
+      description: `Found: ${extractedItems.join(', ')}.${persistSummary} Review the tabs below to edit anything, and complete the Personality Test when ready.`,
       duration: 10000,
     });
 
-    // TODO: Store the parsed work experience, education, certifications in state
-    // These should be added through the dedicated form sections (WorkExperienceForm, EducationForm, etc.)
-    // For now, we're just pre-filling the basic profile info and logging the rest
     console.log('Parsed education:', data.education);
     console.log('Parsed work experience:', data.workExperience);
     console.log('Parsed certifications:', data.certifications);
@@ -350,7 +410,7 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({
       <div className="flex justify-end">
         <Button 
           type="submit" 
-          className="bg-gradient-to-r from-white via-talendeur-orange to-talendeur-primary hover:opacity-90"
+          className="bg-talendeur-primary hover:bg-talendeur-primary-dark text-white"
           disabled={isSubmitting || uploadingImage || uploadingCV || isParsing}
         >
           {isParsing ? 'Parsing CV...' : uploadingImage ? 'Uploading image...' : uploadingCV ? 'Uploading CV...' : isSubmitting ? 'Saving...' : 'Save Profile'}

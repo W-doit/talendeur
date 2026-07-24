@@ -118,7 +118,7 @@ const ForgotPassword: React.FC = () => {
             <CardFooter className="flex flex-col space-y-4">
               <Button 
                 type="submit" 
-                className="w-full bg-gradient-to-r from-white via-talendeur-orange to-talendeur-primary hover:opacity-90"
+                className="w-full bg-talendeur-primary hover:bg-talendeur-primary-dark text-white"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? 'Sending...' : 'Send Reset Link'}

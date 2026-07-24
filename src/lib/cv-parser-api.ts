@@ -1,4 +1,74 @@
-import { ParsedData } from './pdf-parser';
+import { ParsedData, ParsedEducation, ParsedCertification } from './pdf-parser';
+
+const CERT_SIGNALS = [
+  'certification', 'certified', 'certificate', 'professional certificate',
+  'aws', 'azure', 'google cloud', 'gcp', 'coursera', 'udemy', 'udacity',
+  'linkedin learning', 'datacamp', 'pluralsight', 'pmp', 'prince2',
+  'scrum', 'csm', 'psm', 'cisco', 'comptia', 'ccna', 'salesforce',
+  'hubspot', 'six sigma', 'itil', 'bootcamp', 'nanodegree',
+];
+
+function looksLikeProfessionalCertification(edu: ParsedEducation): boolean {
+  const qual = (edu.qualification_type || '').trim();
+  const text = `${qual} ${edu.institution || ''} ${edu.subject || ''}`.toLowerCase();
+
+  if (['PhD', 'Master', 'Bachelor', 'Associate', 'High School'].includes(qual)) {
+    return false;
+  }
+
+  const academicDegree = /\b(ph\.?d|doctorate|masters?|bachelor|associate|b\.?sc|m\.?sc|mba|undergraduate|licen[cs]iatura|grado|high\s*school)\b/i.test(text);
+  const academicInstitution = /\b(university|universidad|college|polytechnic|institute of technology)\b/i.test(text);
+  const hasCertSignal = CERT_SIGNALS.some((signal) => text.includes(signal));
+
+  if (academicDegree && academicInstitution && !hasCertSignal) return false;
+  if ((qual === 'Certificate' || qual === 'Diploma') && hasCertSignal) return true;
+  if (qual === 'Certificate' && !academicInstitution) return true;
+  if (hasCertSignal && !academicDegree) return true;
+  return false;
+}
+
+function educationToCertification(edu: ParsedEducation): ParsedCertification {
+  const courseName =
+    edu.subject && edu.qualification_type
+      ? `${edu.qualification_type} - ${edu.subject}`
+      : edu.subject || edu.qualification_type || 'Professional Certification';
+
+  return {
+    course_name: courseName,
+    certification_type: 'Other',
+    date_attained: edu.end_date || edu.start_date || '',
+    details: (edu.institution || '').slice(0, 100),
+  };
+}
+
+/** Move professional certs that landed in education into certifications[] */
+export function separateCertificationsFromEducation(parsedData: ParsedData): ParsedData {
+  const education = Array.isArray(parsedData.education) ? parsedData.education : [];
+  const certifications = Array.isArray(parsedData.certifications) ? [...parsedData.certifications] : [];
+  const existing = new Set(
+    certifications.map((c) => (c.course_name || '').trim().toLowerCase()).filter(Boolean)
+  );
+
+  const keptEducation: ParsedEducation[] = [];
+  for (const edu of education) {
+    if (looksLikeProfessionalCertification(edu)) {
+      const cert = educationToCertification(edu);
+      const key = (cert.course_name || '').trim().toLowerCase();
+      if (key && !existing.has(key)) {
+        certifications.push(cert);
+        existing.add(key);
+      }
+    } else {
+      keptEducation.push(edu);
+    }
+  }
+
+  return {
+    ...parsedData,
+    education: keptEducation,
+    certifications,
+  };
+}
 
 /**
  * Parse CV using external FastAPI microservice
@@ -59,8 +129,9 @@ export async function parseCV(file: File): Promise<ParsedData> {
       throw new Error('Invalid response format from CV parser API');
     }
 
-    console.log('CV parsed successfully by FastAPI service:', parsedData);
-    return parsedData;
+    const separated = separateCertificationsFromEducation(parsedData);
+    console.log('CV parsed successfully by FastAPI service:', separated);
+    return separated;
 
   } catch (error) {
     if (error instanceof Error) {
