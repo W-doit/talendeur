@@ -86,7 +86,7 @@ export const KeyMetricsCards = ({ userId, accessTokenOverride }: KeyMetricsCards
           'High School': 'High School',
         };
 
-        let highestDegree = 'No Degree';
+        let highestDegree = 'Not specified';
         if (Array.isArray(education) && education.length > 0) {
           let bestType = '';
           let bestRank = 0;

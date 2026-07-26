@@ -1,4 +1,5 @@
 import { ParsedData, ParsedEducation, ParsedCertification } from './pdf-parser';
+import { normalizeParsedCvData } from './normalize-parsed-cv';
 
 const CERT_SIGNALS = [
   'certification', 'certified', 'certificate', 'professional certificate',
@@ -130,8 +131,9 @@ export async function parseCV(file: File): Promise<ParsedData> {
     }
 
     const separated = separateCertificationsFromEducation(parsedData);
-    console.log('CV parsed successfully by FastAPI service:', separated);
-    return separated;
+    const normalized = normalizeParsedCvData(separated);
+    console.log('CV parsed successfully by FastAPI service:', normalized);
+    return normalized;
 
   } catch (error) {
     if (error instanceof Error) {

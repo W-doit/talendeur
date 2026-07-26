@@ -1,18 +1,31 @@
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useAuth, JobSeekerProfile } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import ImageUpload from '@/components/ui/image-upload';
 import { LinkedInImport } from '@/components/profile/LinkedInImport';
 import { uploadProfilePicture, uploadCV } from '@/lib/supabase-storage';
 import { ParsedData } from '@/lib/pdf-parser';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { persistParsedCVData } from '@/lib/persist-cv-import';
+import { getExistingCvSectionCounts, persistParsedCVData } from '@/lib/persist-cv-import';
+import { normalizeParsedCvData } from '@/lib/normalize-parsed-cv';
+import { CvImportReviewDialog } from '@/components/profile/CvImportReviewDialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface JobSeekerProfileFormProps {
   onSaveComplete?: () => void;
@@ -40,14 +53,43 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({
     profilePic: profile?.profilePic || '',
     cv: profile?.cv || '',
     videoUrl: profile?.videoUrl || '',
-    portfolioUrl: profile?.portfolioUrl || ''
+    portfolioUrl: profile?.portfolioUrl || '',
+    openToRelocation: profile?.openToRelocation || false,
+    targetOrganizations: profile?.targetOrganizations || [],
   });
+  const [targetOrgsInput, setTargetOrgsInput] = useState(
+    (profile?.targetOrganizations || []).join(', ')
+  );
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [cvFile, setCvFile] = useState<File | null>(null);
   const [uploadingCV, setUploadingCV] = useState(false);
+  const [replaceDialogOpen, setReplaceDialogOpen] = useState(false);
+  const [replaceDialogSummary, setReplaceDialogSummary] = useState('');
+  const replaceResolverRef = useRef<((confirmed: boolean) => void) | null>(null);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [reviewData, setReviewData] = useState<ParsedData | null>(null);
+  const [pendingPdfFile, setPendingPdfFile] = useState<File | null>(null);
+  const [pendingCvUrl, setPendingCvUrl] = useState('');
+  const [applyingImport, setApplyingImport] = useState(false);
+
+  const askReplaceConfirmation = (summary: string): Promise<boolean> => {
+    return new Promise((resolve) => {
+      replaceResolverRef.current = resolve;
+      setReplaceDialogSummary(summary);
+      setReplaceDialogOpen(true);
+    });
+  };
+
+  const settleReplaceDialog = (confirmed: boolean) => {
+    if (!replaceResolverRef.current) return;
+    const resolve = replaceResolverRef.current;
+    replaceResolverRef.current = null;
+    setReplaceDialogOpen(false);
+    resolve(confirmed);
+  };
   const [isParsing, setIsParsing] = useState(false);
 
   // Keep form in sync after profile reloads from save
@@ -62,7 +104,10 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({
       cv: profile.cv || '',
       videoUrl: profile.videoUrl || '',
       portfolioUrl: profile.portfolioUrl || '',
+      openToRelocation: profile.openToRelocation || false,
+      targetOrganizations: profile.targetOrganizations || [],
     }));
+    setTargetOrgsInput((profile.targetOrganizations || []).join(', '));
   }, [
     profile?.name,
     profile?.headline,
@@ -71,6 +116,8 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({
     profile?.cv,
     profile?.videoUrl,
     profile?.portfolioUrl,
+    profile?.openToRelocation,
+    profile?.targetOrganizations,
   ]);
 
   // Restore imported data when coming back to this tab
@@ -174,6 +221,11 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({
         ...formData,
         profilePic: profilePicUrl,
         cv: cvUrl,
+        openToRelocation: !!formData.openToRelocation,
+        targetOrganizations: targetOrgsInput
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean),
       });
 
       console.log('Profile updated successfully');
@@ -201,22 +253,17 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({
 
   const handleLinkedInImport = async (data: ParsedData, pdfFile: File) => {
     console.log('handleLinkedInImport called with data:', data);
-    setIsParsing(false); // Parsing complete
-    
-    // Immediately upload the CV file to storage
+    setIsParsing(false);
+
+    const normalized = normalizeParsedCvData(data);
+
+    // Upload CV file first; profile sections wait for review confirmation
     let cvUrl = formData.cv;
     if (pdfFile && user?.id) {
-      console.log('Uploading imported CV immediately...', pdfFile);
       setUploadingCV(true);
       try {
         cvUrl = await uploadCV(pdfFile, user.id);
-        console.log('Imported CV uploaded successfully:', cvUrl);
-        
-        // Update formData with the new CV URL
-        setFormData(prev => ({
-          ...prev,
-          cv: cvUrl,
-        }));
+        setFormData((prev) => ({ ...prev, cv: cvUrl }));
       } catch (uploadError) {
         console.error('CV upload error:', uploadError);
         toast({
@@ -228,43 +275,80 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({
         setUploadingCV(false);
       }
     }
-    
-    // Store data in parent component to persist across tab changes
-    if (onDataImport) {
-      const importedDataToPass = { parsedData: data, pdfFile };
-      console.log('Calling onDataImport with:', importedDataToPass);
-      onDataImport(importedDataToPass);
-    }
-    
-    // Store the PDF file to be uploaded later (backup)
+
+    setPendingPdfFile(pdfFile);
+    setPendingCvUrl(cvUrl || '');
+    setReviewData(normalized);
+    setReviewOpen(true);
     setCvFile(pdfFile);
-    
-    // Pre-fill profile information - combine all updates in one setState call
-    const fullName = `${data.profile.firstName || ''} ${data.profile.surname || ''}`.trim();
-    const nextName = fullName || formData.name;
-    const nextHeadline = data.profile.headline || formData.headline;
-    const nextBio = data.profile.bio || formData.bio;
-    
-    setFormData(prev => ({
-      ...prev,
-      name: nextName,
-      headline: nextHeadline,
-      bio: nextBio,
-      email: data.profile.email || prev.email,
-      cv: cvUrl,
-    }));
 
-    // Auto-sync to DB so live/public profile updates without saving each tab
-    let persistSummary = '';
-    if (user?.id) {
-      try {
-        await updateProfile({
-          name: nextName,
-          headline: nextHeadline,
-          bio: nextBio,
-          cv: cvUrl,
-        });
+    toast({
+      title: 'CV extracted — review before applying',
+      description: 'Check titles, companies, and dates in the review window, then Apply to profile.',
+      duration: 6000,
+    });
+  };
 
+  const applyReviewedImport = async (data: ParsedData) => {
+    if (!user?.id) return;
+
+    setApplyingImport(true);
+    const pdfFile = pendingPdfFile;
+    const cvUrl = pendingCvUrl || formData.cv || '';
+
+    try {
+      const fullName = `${data.profile.firstName || ''} ${data.profile.surname || ''}`.trim();
+      const nextName = fullName || formData.name;
+      const nextHeadline = data.profile.headline || formData.headline;
+      const nextBio = data.profile.bio || formData.bio;
+
+      if (onDataImport && pdfFile) {
+        onDataImport({ parsedData: data, pdfFile });
+      }
+
+      setFormData((prev) => ({
+        ...prev,
+        name: nextName,
+        headline: nextHeadline,
+        bio: nextBio,
+        email: data.profile.email || prev.email,
+        cv: cvUrl,
+      }));
+
+      await updateProfile({
+        name: nextName,
+        headline: nextHeadline,
+        bio: nextBio,
+        cv: cvUrl,
+      });
+
+      let persistSummary = '';
+      const existing = await getExistingCvSectionCounts(user.id);
+      const existingTotal =
+        existing.workCount + existing.educationCount + existing.certificationCount;
+
+      let shouldPersist = true;
+      if (existingTotal > 0) {
+        const existingParts: string[] = [];
+        if (existing.workCount) existingParts.push(`${existing.workCount} work`);
+        if (existing.educationCount) existingParts.push(`${existing.educationCount} education`);
+        if (existing.certificationCount) {
+          existingParts.push(`${existing.certificationCount} certification`);
+        }
+        shouldPersist = await askReplaceConfirmation(
+          `You already have ${existingParts.join(', ')} on your live profile. Applying this import will replace those sections.`
+        );
+        if (!shouldPersist) {
+          toast({
+            title: 'Applied to edit forms only',
+            description:
+              'Your live work/education/certs were not overwritten. Open each tab and Save if you want to keep the reviewed data.',
+            duration: 8000,
+          });
+        }
+      }
+
+      if (shouldPersist) {
         const result = await persistParsedCVData(user.id, data);
         const parts = [];
         if (result.workCount) parts.push(`${result.workCount} work`);
@@ -275,45 +359,84 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({
           ? ` Saved to your live profile (${parts.join(', ')}).`
           : ' Basic profile saved to your live profile.';
 
+        const lossWarnings: string[] = [];
+        if (result.previous.workCount > result.workCount && result.workCount > 0) {
+          lossWarnings.push(`work (${result.previous.workCount} → ${result.workCount})`);
+        }
+        if (result.previous.educationCount > result.educationCount && result.educationCount > 0) {
+          lossWarnings.push(
+            `education (${result.previous.educationCount} → ${result.educationCount})`
+          );
+        }
+        if (
+          result.previous.certificationCount > result.certificationCount &&
+          result.certificationCount > 0
+        ) {
+          lossWarnings.push(
+            `certifications (${result.previous.certificationCount} → ${result.certificationCount})`
+          );
+        }
+        if (lossWarnings.length > 0) {
+          toast({
+            title: 'Import saved fewer items',
+            description: `Some sections have fewer entries than before: ${lossWarnings.join('; ')}. Review the tabs and restore anything missing.`,
+            variant: 'destructive',
+            duration: 12000,
+          });
+        }
+
         onImportPersisted?.();
-      } catch (persistError) {
-        console.error('Auto-persist CV import failed:', persistError);
-        toast({
-          title: 'Saved locally only',
-          description:
-            'We extracted your CV into the edit forms, but could not sync everything to your live profile. Please open each tab and click Save.',
-          variant: 'destructive',
-          duration: 10000,
-        });
       }
+
+      const extractedItems = [];
+      if (data.profile.firstName) extractedItems.push('name');
+      if (data.profile.bio) extractedItems.push('bio');
+      if (data.education.length > 0) extractedItems.push(`${data.education.length} education`);
+      if (data.workExperience.length > 0) {
+        extractedItems.push(`${data.workExperience.length} work`);
+      }
+      if (data.certifications.length > 0) {
+        extractedItems.push(`${data.certifications.length} certifications`);
+      }
+      if (data.skills.length > 0) extractedItems.push(`${data.skills.length} skills`);
+
+      toast({
+        title: 'CV import applied ✓',
+        description: `Found: ${extractedItems.join(', ') || 'profile fields'}.${persistSummary}`,
+        duration: 10000,
+      });
+
+      setReviewOpen(false);
+      setReviewData(null);
+      setPendingPdfFile(null);
+    } catch (persistError) {
+      console.error('Apply CV import failed:', persistError);
+      toast({
+        title: 'Could not apply import',
+        description:
+          'Reviewed data is in the edit forms where possible, but live profile sync failed. Open each tab and click Save.',
+        variant: 'destructive',
+        duration: 10000,
+      });
+    } finally {
+      setApplyingImport(false);
     }
+  };
 
-    // Show success message with details
-    const extractedItems = [];
-    if (data.profile.firstName) extractedItems.push('name');
-    if (data.profile.bio) extractedItems.push('bio');
-    if (data.education.length > 0) extractedItems.push(`${data.education.length} education entries`);
-    if (data.workExperience.length > 0) extractedItems.push(`${data.workExperience.length} work experiences`);
-    if (data.certifications.length > 0) extractedItems.push(`${data.certifications.length} certifications`);
-    if (data.skills.length > 0) extractedItems.push(`${data.skills.length} skills`);
-
+  const discardReviewedImport = () => {
+    if (!reviewData && !reviewOpen) return;
+    setReviewOpen(false);
+    setReviewData(null);
+    setPendingPdfFile(null);
     toast({
-      title: 'CV imported successfully! ✓',
-      description: `Found: ${extractedItems.join(', ')}.${persistSummary} Review the tabs below to edit anything, and complete the Personality Test when ready.`,
-      duration: 10000,
+      title: 'Import discarded',
+      description: 'Extracted CV data was not applied. Your live profile is unchanged.',
+      duration: 5000,
     });
-
-    console.log('Parsed education:', data.education);
-    console.log('Parsed work experience:', data.workExperience);
-    console.log('Parsed certifications:', data.certifications);
-    console.log('Parsed skills:', data.skills);
-    if (data.skills_dimensions) {
-      console.log('Parsed skills_dimensions:', data.skills_dimensions);
-    }
-    console.log('Full parsed data object:', data);
   };
 
   return (
+    <>
     <form onSubmit={handleSubmit} className="space-y-6">
       <LinkedInImport 
         onImport={handleLinkedInImport}
@@ -391,6 +514,30 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({
               />
               <p className="text-xs text-gray-500 mt-1">Add a link to your portfolio, GitHub, Behance, or personal website</p>
             </div>
+
+            <div className="flex items-center gap-2 pt-2">
+              <Checkbox
+                id="openToRelocation"
+                checked={!!formData.openToRelocation}
+                onCheckedChange={(checked) =>
+                  setFormData((prev) => ({ ...prev, openToRelocation: checked === true }))
+                }
+              />
+              <Label htmlFor="openToRelocation">Open to relocation</Label>
+            </div>
+
+            <div>
+              <label htmlFor="targetOrganizations" className="block text-sm font-medium mb-1">
+                Looking to connect with (organizations / sectors)
+              </label>
+              <Input
+                id="targetOrganizations"
+                value={targetOrgsInput}
+                onChange={(e) => setTargetOrgsInput(e.target.value)}
+                placeholder="e.g., UNESCO, renewable energy startups, NGOs"
+              />
+              <p className="text-xs text-gray-500 mt-1">Comma-separated list of organizations or sectors</p>
+            </div>
             
             <div>
               <label className="block text-sm font-medium mb-3">Profile Picture</label>
@@ -417,6 +564,50 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({
         </Button>
       </div>
     </form>
+
+    <AlertDialog
+      open={replaceDialogOpen}
+      onOpenChange={(open) => {
+        if (!open) settleReplaceDialog(false);
+      }}
+    >
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Replace existing profile data?</AlertDialogTitle>
+          <AlertDialogDescription>{replaceDialogSummary}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={() => settleReplaceDialog(false)}>
+            Keep existing live data
+          </AlertDialogCancel>
+          <AlertDialogAction onClick={() => settleReplaceDialog(true)}>
+            Replace with import
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
+    <CvImportReviewDialog
+      open={reviewOpen}
+      initialData={reviewData}
+      applying={applyingImport}
+      onOpenChange={(open) => {
+        if (open) {
+          setReviewOpen(true);
+          return;
+        }
+        // Avoid discard toast when Apply closes the dialog
+        if (applyingImport) {
+          setReviewOpen(false);
+          return;
+        }
+        if (reviewData) discardReviewedImport();
+        else setReviewOpen(false);
+      }}
+      onApply={applyReviewedImport}
+      onDiscard={discardReviewedImport}
+    />
+    </>
   );
 };
 

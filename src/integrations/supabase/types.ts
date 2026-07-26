@@ -218,6 +218,9 @@ export type Database = {
           bio: string | null
           video_url: string | null
           portfolio_url: string | null
+          dashboard_layout: Json | null
+          open_to_relocation: boolean | null
+          target_organizations: string[] | null
           user_type: string
         }
         Insert: {
@@ -230,6 +233,9 @@ export type Database = {
           bio?: string | null
           video_url?: string | null
           portfolio_url?: string | null
+          dashboard_layout?: Json | null
+          open_to_relocation?: boolean | null
+          target_organizations?: string[] | null
           user_type: string
         }
         Update: {
@@ -242,6 +248,9 @@ export type Database = {
           bio?: string | null
           video_url?: string | null
           portfolio_url?: string | null
+          dashboard_layout?: Json | null
+          open_to_relocation?: boolean | null
+          target_organizations?: string[] | null
           user_type?: string
         }
       }

@@ -37,11 +37,72 @@ const normalizeQualificationType = (raw: string | undefined | null): string => {
   return trimmed;
 };
 
+export interface ExistingCvSectionCounts {
+  workCount: number;
+  educationCount: number;
+  certificationCount: number;
+}
+
 export interface PersistCvImportResult {
   workCount: number;
   educationCount: number;
   certificationCount: number;
+  languageCount: number;
   skillsSaved: boolean;
+  previous: ExistingCvSectionCounts;
+  /** True when at least one section had prior rows that were replaced */
+  replacedExisting: boolean;
+}
+
+/** Count existing CV-backed rows for re-import confirmation / loss warnings */
+export async function getExistingCvSectionCounts(
+  userId: string
+): Promise<ExistingCvSectionCounts> {
+  const [work, education, certifications] = await Promise.all([
+    supabase.from('work_experience').select('id', { count: 'exact', head: true }).eq('user_id', userId),
+    supabase.from('education_history').select('id', { count: 'exact', head: true }).eq('user_id', userId),
+    supabase.from('certifications').select('id', { count: 'exact', head: true }).eq('user_id', userId),
+  ]);
+
+  return {
+    workCount: work.count ?? 0,
+    educationCount: education.count ?? 0,
+    certificationCount: certifications.count ?? 0,
+  };
+}
+
+/**
+ * Replace table rows safely: insert new rows first, then delete previous IDs.
+ * If insert fails, existing data is left intact.
+ */
+async function replaceRows<T extends Record<string, unknown>>(
+  table: 'work_experience' | 'education_history' | 'certifications' | 'languages',
+  userId: string,
+  newRows: T[]
+): Promise<number> {
+  if (newRows.length === 0) return 0;
+
+  const { data: existing, error: existingError } = await supabase
+    .from(table)
+    .select('id')
+    .eq('user_id', userId);
+  if (existingError) throw existingError;
+
+  const existingIds = (existing || []).map((row) => row.id as string);
+
+  const { error: insertError } = await supabase.from(table).insert(newRows);
+  if (insertError) throw insertError;
+
+  if (existingIds.length > 0) {
+    const { error: deleteError } = await supabase.from(table).delete().in('id', existingIds);
+    if (deleteError) {
+      // New rows were inserted; surface error so caller can warn, but data is not wiped
+      console.error(`Failed to remove previous ${table} rows after insert:`, deleteError);
+      throw deleteError;
+    }
+  }
+
+  return newRows.length;
 }
 
 /**
@@ -55,19 +116,24 @@ export async function persistParsedCVData(
   let workCount = 0;
   let educationCount = 0;
   let certificationCount = 0;
+  let languageCount = 0;
   let skillsSaved = false;
 
-  const workRows = (parsedData.workExperience || []).filter(
-    (exp) => exp.job_title && exp.company
-  );
-  if (workRows.length > 0) {
-    const { error: deleteError } = await supabase
-      .from('work_experience')
-      .delete()
-      .eq('user_id', userId);
-    if (deleteError) throw deleteError;
+  const previous = await getExistingCvSectionCounts(userId);
 
-    const { error: insertError } = await supabase.from('work_experience').insert(
+  // Keep roles that have a job title; never drop because company is missing
+  const workRows = (parsedData.workExperience || [])
+    .map((exp) => ({
+      ...exp,
+      job_title: (exp.job_title || '').trim(),
+      company: (exp.company || '').trim() || 'Unknown',
+    }))
+    .filter((exp) => exp.job_title);
+
+  if (workRows.length > 0) {
+    workCount = await replaceRows(
+      'work_experience',
+      userId,
       workRows.map((exp) => ({
         user_id: userId,
         job_title: exp.job_title,
@@ -78,8 +144,6 @@ export async function persistParsedCVData(
         still_work_here: !!exp.still_work_here,
       }))
     );
-    if (insertError) throw insertError;
-    workCount = workRows.length;
   }
 
   const educationRows = (parsedData.education || [])
@@ -88,17 +152,14 @@ export async function persistParsedCVData(
       qualification_type: normalizeQualificationType(
         edu.qualification_type || (edu as { degree?: string }).degree || ''
       ),
+      institution: (edu.institution || '').trim(),
     }))
     .filter((edu) => edu.institution && edu.qualification_type);
 
   if (educationRows.length > 0) {
-    const { error: deleteError } = await supabase
-      .from('education_history')
-      .delete()
-      .eq('user_id', userId);
-    if (deleteError) throw deleteError;
-
-    const { error: insertError } = await supabase.from('education_history').insert(
+    educationCount = await replaceRows(
+      'education_history',
+      userId,
       educationRows.map((edu) => ({
         user_id: userId,
         institution: edu.institution,
@@ -110,21 +171,20 @@ export async function persistParsedCVData(
         still_studying: !!edu.still_studying,
       }))
     );
-    if (insertError) throw insertError;
-    educationCount = educationRows.length;
   }
 
-  const certificationRows = (parsedData.certifications || []).filter(
-    (cert) => cert.course_name && cert.certification_type
-  );
-  if (certificationRows.length > 0) {
-    const { error: deleteError } = await supabase
-      .from('certifications')
-      .delete()
-      .eq('user_id', userId);
-    if (deleteError) throw deleteError;
+  const certificationRows = (parsedData.certifications || [])
+    .map((cert) => ({
+      ...cert,
+      course_name: (cert.course_name || '').trim(),
+      certification_type: (cert.certification_type || '').trim(),
+    }))
+    .filter((cert) => cert.course_name && cert.certification_type);
 
-    const { error: insertError } = await supabase.from('certifications').insert(
+  if (certificationRows.length > 0) {
+    certificationCount = await replaceRows(
+      'certifications',
+      userId,
       certificationRows.map((cert) => ({
         user_id: userId,
         course_name: cert.course_name,
@@ -133,8 +193,28 @@ export async function persistParsedCVData(
         details: cert.details || '',
       }))
     );
-    if (insertError) throw insertError;
-    certificationCount = certificationRows.length;
+  }
+
+  const languageRows = (parsedData.languages || [])
+    .map((lang) => ({
+      language: (lang.language || '').trim(),
+      proficiency: (lang.proficiency || 'Intermediate').trim() || 'Intermediate',
+      language_type:
+        lang.language_type === 'programming' ? 'programming' : 'spoken',
+    }))
+    .filter((lang) => lang.language);
+
+  if (languageRows.length > 0) {
+    languageCount = await replaceRows(
+      'languages',
+      userId,
+      languageRows.map((lang) => ({
+        user_id: userId,
+        language: lang.language,
+        proficiency: lang.proficiency,
+        language_type: lang.language_type,
+      }))
+    );
   }
 
   if (parsedData.skills_dimensions && Object.keys(parsedData.skills_dimensions).length > 0) {
@@ -203,5 +283,18 @@ export async function persistParsedCVData(
     }
   }
 
-  return { workCount, educationCount, certificationCount, skillsSaved };
+  const replacedExisting =
+    (workCount > 0 && previous.workCount > 0) ||
+    (educationCount > 0 && previous.educationCount > 0) ||
+    (certificationCount > 0 && previous.certificationCount > 0);
+
+  return {
+    workCount,
+    educationCount,
+    certificationCount,
+    languageCount,
+    skillsSaved,
+    previous,
+    replacedExisting,
+  };
 }
