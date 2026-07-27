@@ -342,8 +342,8 @@ const Profile: React.FC = () => {
                     
                   </div>
                   <div className="flex-1 w-full">
-                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 text-center md:text-left">
-                      <div>
+                    <div className="flex flex-col md:flex-row md:items-stretch md:justify-between gap-3 text-center md:text-left">
+                      <div className="flex flex-col flex-1">
                         <h2 className="text-2xl font-bold text-black">{user.profile.name}</h2>
                         {(user.profile as JobSeekerProfile | OrganizationProfile).headline && (
                           <p className="text-lg text-gray-700 mt-2 italic font-light">
@@ -356,6 +356,18 @@ const Profile: React.FC = () => {
                               {(user.profile as OrganizationProfile).website}
                             </a>
                           </p>
+                        )}
+                        {user.userType === 'jobseeker' && (
+                          <div className="mt-auto pt-3 flex justify-center md:justify-start">
+                            <Button
+                              onClick={() => navigate('/profilerecommendations')}
+                              size="sm"
+                              variant="outline"
+                              className="bg-white/70 text-talendeur-navy hover:bg-talendeur-navy hover:text-white border-talendeur-navy transition-colors"
+                            >
+                              Profile recommendations
+                            </Button>
+                          </div>
                         )}
                       </div>
                       <div className="flex flex-col gap-2">

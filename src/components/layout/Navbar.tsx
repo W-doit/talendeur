@@ -15,7 +15,7 @@ const Navbar: React.FC = () => {
   };
 
   return (
-    <nav className="bg-gradient-to-r from-talendeur-primary-dark via-talendeur-primary to-talendeur-pink px-6 py-4 shadow-md">
+    <nav className="bg-gradient-to-r from-white via-talendeur-orange to-talendeur-primary px-6 py-4 shadow-md">
       <div className="max-w-7xl mx-auto flex justify-between items-center">
         <div className="flex items-center space-x-6">
           <Link to="/" className="flex items-center space-x-2">
