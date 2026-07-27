@@ -140,25 +140,30 @@ export const SkillsProfileForm: React.FC<SkillsProfileFormProps> = ({ parsedData
         .from('skills_dimensions')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
-      if (data && !error) {
+      if (error) {
+        console.error('Error loading skills dimensions:', error);
+        return;
+      }
+
+      if (data) {
         setSkills({
-          creativity: data.creativity || 0,
-          communication: data.communication || 0,
-          critical_thinking: data.critical_thinking || 0,
-          technology_development: data.technology_development || 0,
-          operations: data.operations || 0,
-          social_impact: data.social_impact || 0,
-          business_acumen: data.business_acumen || 0,
-          innovation: data.innovation || 0,
-          collaboration: data.collaboration || 0,
-          leadership: data.leadership || 0,
-          precision: data.precision || 0,
-          depth: data.depth || 0,
-          commitment: data.commitment || 0,
-          empathy: data.empathy || 0,
-          flexibility: data.flexibility || 0,
+          creativity: Number(data.creativity) || 0,
+          communication: Number(data.communication) || 0,
+          critical_thinking: Number(data.critical_thinking) || 0,
+          technology_development: Number(data.technology_development) || 0,
+          operations: Number(data.operations) || 0,
+          social_impact: Number(data.social_impact) || 0,
+          business_acumen: Number(data.business_acumen) || 0,
+          innovation: Number(data.innovation) || 0,
+          collaboration: Number(data.collaboration) || 0,
+          leadership: Number(data.leadership) || 0,
+          precision: Number(data.precision) || 0,
+          depth: Number(data.depth) || 0,
+          commitment: Number(data.commitment) || 0,
+          empathy: Number(data.empathy) || 0,
+          flexibility: Number(data.flexibility) || 0,
         });
       }
     };
@@ -190,17 +195,46 @@ export const SkillsProfileForm: React.FC<SkillsProfileFormProps> = ({ parsedData
     setIsSubmitting(true);
 
     try {
-      const { error } = await supabase
-        .from('skills_dimensions')
-        .upsert({
-          user_id: user.id,
-          ...skills,
-          updated_at: new Date().toISOString(),
-        }, {
-          onConflict: 'user_id'
-        });
+      const payload = {
+        user_id: user.id,
+        creativity: skills.creativity,
+        communication: skills.communication,
+        critical_thinking: skills.critical_thinking,
+        technology_development: skills.technology_development,
+        operations: skills.operations,
+        social_impact: skills.social_impact,
+        business_acumen: skills.business_acumen,
+        innovation: skills.innovation,
+        collaboration: skills.collaboration,
+        leadership: skills.leadership,
+        precision: skills.precision,
+        depth: skills.depth,
+        commitment: skills.commitment,
+        empathy: skills.empathy,
+        flexibility: skills.flexibility,
+        updated_at: new Date().toISOString(),
+      };
 
-      if (error) throw error;
+      const { data: existing, error: existingError } = await supabase
+        .from('skills_dimensions')
+        .select('user_id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (existingError) throw existingError;
+
+      if (existing) {
+        const { error } = await supabase
+          .from('skills_dimensions')
+          .update(payload)
+          .eq('user_id', user.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('skills_dimensions')
+          .insert(payload);
+        if (error) throw error;
+      }
 
       toast({
         title: 'Skills Profile Saved',
@@ -210,11 +244,15 @@ export const SkillsProfileForm: React.FC<SkillsProfileFormProps> = ({ parsedData
       if (onSaveComplete) {
         onSaveComplete();
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error saving skills:', error);
+      const message =
+        error && typeof error === 'object' && 'message' in error
+          ? String((error as { message: string }).message)
+          : 'Failed to save skills profile. Please try again.';
       toast({
-        title: 'Error',
-        description: 'Failed to save skills profile. Please try again.',
+        title: 'Error saving skills',
+        description: message,
         variant: 'destructive',
       });
     } finally {
@@ -271,7 +309,7 @@ export const SkillsProfileForm: React.FC<SkillsProfileFormProps> = ({ parsedData
         <Button
           type="submit"
           disabled={isSubmitting}
-          className="bg-gradient-to-r from-talendeur-primary to-talendeur-orange hover:opacity-90 text-white"
+          className="bg-talendeur-primary hover:bg-talendeur-primary-dark text-white"
         >
           {isSubmitting ? 'Saving...' : 'Save Skills Profile'}
         </Button>

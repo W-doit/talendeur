@@ -323,7 +323,7 @@ export const WorkExperienceForm = ({ importedData, onSaveComplete, refreshKey }:
                   />
                 </div>
 
-                <div>
+                <div className="md:col-span-2">
                   <label className="block text-sm font-medium mb-1">Location</label>
                   <Input
                     value={exp.location}
@@ -392,7 +392,7 @@ export const WorkExperienceForm = ({ importedData, onSaveComplete, refreshKey }:
           <Button
             onClick={saveExperiences}
             disabled={saving}
-            className="bg-gradient-to-r from-white via-talendeur-orange to-talendeur-primary hover:opacity-90 text-white"
+            className="bg-talendeur-primary hover:bg-talendeur-primary-dark text-white"
           >
             {saving ? 'Saving...' : 'Save Work Experience'}
           </Button>

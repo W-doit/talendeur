@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -76,16 +76,98 @@ const QUESTIONS: Question[] = [
   { id: 50, text: "I am relaxed most of the time", trait: "neuroticism", facet: "anxiety", reverse: true },
 ];
 
-export const PersonalityTest = () => {
+interface PersonalityTestProps {
+  onSaveAndExit?: () => void;
+}
+
+const getStorageKey = (userId: string) => `personality-test-progress:${userId}`;
+
+export const PersonalityTest = ({ onSaveAndExit }: PersonalityTestProps = {}) => {
   const { user } = useAuth();
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<{ [key: number]: number }>({});
   const [isComplete, setIsComplete] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [allQuestionsAnswered, setAllQuestionsAnswered] = useState(false);
+  const [hasRestored, setHasRestored] = useState(false);
 
   const progress = (Object.keys(answers).length / QUESTIONS.length) * 100;
   const answeredCount = Object.keys(answers).length;
+
+  const persistProgress = useCallback(
+    (nextAnswers: { [key: number]: number }, nextQuestion: number) => {
+      if (!user) return;
+      try {
+        localStorage.setItem(
+          getStorageKey(user.id),
+          JSON.stringify({
+            answers: nextAnswers,
+            currentQuestion: nextQuestion,
+            updatedAt: new Date().toISOString(),
+          })
+        );
+      } catch (error) {
+        console.warn('Failed to persist personality test progress:', error);
+      }
+    },
+    [user]
+  );
+
+  const clearProgress = useCallback(() => {
+    if (!user) return;
+    try {
+      localStorage.removeItem(getStorageKey(user.id));
+    } catch (error) {
+      console.warn('Failed to clear personality test progress:', error);
+    }
+  }, [user]);
+
+  // Restore progress when the user returns
+  useEffect(() => {
+    if (!user) {
+      setHasRestored(true);
+      return;
+    }
+
+    try {
+      const raw = localStorage.getItem(getStorageKey(user.id));
+      if (raw) {
+        const saved = JSON.parse(raw) as {
+          answers?: Record<string, number>;
+          currentQuestion?: number;
+        };
+        const restored: { [key: number]: number } = {};
+        if (saved.answers) {
+          Object.entries(saved.answers).forEach(([key, value]) => {
+            restored[Number(key)] = value;
+          });
+        }
+
+        setAnswers(restored);
+        setAllQuestionsAnswered(Object.keys(restored).length === QUESTIONS.length);
+
+        const firstUnanswered = QUESTIONS.findIndex((_, idx) => !(idx in restored));
+        const savedQuestion =
+          typeof saved.currentQuestion === 'number' ? saved.currentQuestion : 0;
+        const resumeAt =
+          firstUnanswered !== -1
+            ? firstUnanswered
+            : Math.min(Math.max(0, savedQuestion), QUESTIONS.length - 1);
+        setCurrentQuestion(resumeAt);
+      }
+    } catch (error) {
+      console.warn('Failed to restore personality test progress:', error);
+    } finally {
+      setHasRestored(true);
+    }
+  }, [user?.id]);
+
+  // Auto-save as the user progresses
+  useEffect(() => {
+    if (!user || !hasRestored || isComplete) return;
+    if (Object.keys(answers).length === 0 && currentQuestion === 0) return;
+    persistProgress(answers, currentQuestion);
+  }, [answers, currentQuestion, user, hasRestored, isComplete, persistProgress]);
 
   const handleAnswer = (score: number) => {
     const newAnswers = { ...answers, [currentQuestion]: score };
@@ -257,6 +339,7 @@ export const PersonalityTest = () => {
       }
 
       alert('Test results saved successfully!');
+      clearProgress();
       setIsComplete(true);
     } catch (error) {
       console.error('Error saving personality test results:', error);
@@ -270,6 +353,27 @@ export const PersonalityTest = () => {
     if (currentQuestion > 0) {
       setCurrentQuestion(currentQuestion - 1);
     }
+  };
+
+  const goNext = () => {
+    if (currentQuestion < QUESTIONS.length - 1 && currentQuestion in answers) {
+      setCurrentQuestion(currentQuestion + 1);
+    }
+  };
+
+  const goSkip = () => {
+    const nextUnanswered = QUESTIONS.findIndex((_, idx) => !(idx in answers));
+    if (nextUnanswered !== -1) {
+      setCurrentQuestion(nextUnanswered);
+    }
+  };
+
+  const canGoNext =
+    currentQuestion < QUESTIONS.length - 1 && currentQuestion in answers;
+
+  const handleSaveAndExit = () => {
+    persistProgress(answers, currentQuestion);
+    onSaveAndExit?.();
   };
 
   if (isComplete) {
@@ -347,7 +451,7 @@ export const PersonalityTest = () => {
           </div>
         </div>
 
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
           <Button
             variant="outline"
             onClick={goBack}
@@ -356,32 +460,45 @@ export const PersonalityTest = () => {
             Previous
           </Button>
 
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-gray-600 text-center shrink-0">
             {answeredCount} / {QUESTIONS.length} answered
           </div>
-          
-          {allQuestionsAnswered ? (
+
+          <div className="flex flex-wrap items-center justify-end gap-2">
             <Button
-              onClick={handleSubmit}
-              disabled={isSaving}
-              className="bg-green-600 hover:bg-green-700 text-white"
-            >
-              {isSaving ? 'Saving...' : 'Submit Test'}
-            </Button>
-          ) : (
-            <Button
-              onClick={() => {
-                // Find next unanswered question
-                const nextUnanswered = QUESTIONS.findIndex((_, idx) => !(idx in answers));
-                if (nextUnanswered !== -1) {
-                  setCurrentQuestion(nextUnanswered);
-                }
-              }}
               variant="outline"
+              onClick={goNext}
+              disabled={!canGoNext}
             >
-              Skip
+              Next
             </Button>
-          )}
+
+            {allQuestionsAnswered ? (
+              <Button
+                onClick={handleSubmit}
+                disabled={isSaving}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                {isSaving ? 'Saving...' : 'Submit Test'}
+              </Button>
+            ) : (
+              <Button
+                onClick={goSkip}
+                variant="outline"
+              >
+                Skip
+              </Button>
+            )}
+
+            {onSaveAndExit && (
+              <Button
+                variant="secondary"
+                onClick={handleSaveAndExit}
+              >
+                Save & Exit
+              </Button>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>

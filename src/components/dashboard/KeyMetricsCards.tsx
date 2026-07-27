@@ -8,6 +8,7 @@ interface ProfileMetrics {
   total_years_experience: number;
   avg_years_per_job: number;
   total_jobs: number;
+  total_companies: number;
 }
 
 interface KeyMetricsCardsProps {
@@ -29,67 +30,124 @@ export const KeyMetricsCards = ({ userId, accessTokenOverride }: KeyMetricsCards
       if (!effectiveUserId) return;
 
       try {
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-        const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-        const authHeader = `Bearer ${accessToken}`;
-        
-        // Fetch work experience via REST API
-        const workExpResponse = await fetch(
-          `${supabaseUrl}/rest/v1/work_experience?user_id=eq.${user.id}&select=*`,
-          {
-            headers: {
-              'apikey': supabaseKey,
-              'Authorization': authHeader,
+        const headers = {
+          apikey: supabaseKey,
+          Authorization: `Bearer ${effectiveToken}`,
+        };
+
+        // Fetch work experience and education in parallel
+        const [workExpResponse, educationResponse] = await Promise.all([
+          fetch(
+            `${supabaseUrl}/rest/v1/work_experience?user_id=eq.${effectiveUserId}&select=*`,
+            { headers }
+          ),
+          fetch(
+            `${supabaseUrl}/rest/v1/education_history?user_id=eq.${effectiveUserId}&select=qualification_type`,
+            { headers }
+          ),
+        ]);
+
+        const workExp = workExpResponse.ok ? await workExpResponse.json() : [];
+        const education = educationResponse.ok ? await educationResponse.json() : [];
+
+        // Rank qualification types (must match EducationForm options)
+        const degreeHierarchy: Record<string, number> = {
+          PhD: 7,
+          Master: 6,
+          Bachelor: 5,
+          Associate: 4,
+          Diploma: 3,
+          Certificate: 2,
+          'High School': 1,
+        };
+
+        const normalizeQualification = (raw: string): string | null => {
+          const q = raw.trim();
+          if (!q) return null;
+          const lower = q.toLowerCase();
+          if (lower.includes('phd') || lower.includes('doctorate') || lower.includes('doctoral')) return 'PhD';
+          if (lower.includes('master')) return 'Master';
+          if (lower.includes('bachelor')) return 'Bachelor';
+          if (lower.includes('associate')) return 'Associate';
+          if (lower.includes('diploma')) return 'Diploma';
+          if (lower.includes('certificate') || lower.includes('certification')) return 'Certificate';
+          if (lower.includes('high school') || lower.includes('secondary')) return 'High School';
+          if (degreeHierarchy[q] !== undefined) return q;
+          return null;
+        };
+
+        const displayLabels: Record<string, string> = {
+          PhD: 'PhD',
+          Master: "Master's Degree",
+          Bachelor: "Bachelor's Degree",
+          Associate: 'Associate Degree',
+          Diploma: 'Diploma',
+          Certificate: 'Certificate',
+          'High School': 'High School',
+        };
+
+        let highestDegree = 'Not specified';
+        if (Array.isArray(education) && education.length > 0) {
+          let bestType = '';
+          let bestRank = 0;
+          for (const curr of education) {
+            const normalized = normalizeQualification(curr.qualification_type || '');
+            if (!normalized) continue;
+            const rank = degreeHierarchy[normalized] || 0;
+            if (rank > bestRank) {
+              bestRank = rank;
+              bestType = normalized;
             }
           }
-        );
-        const workExp = await workExpResponse.json();
+          if (bestType) {
+            highestDegree = displayLabels[bestType] || bestType;
+          }
+        }
 
-        // Fetch education via REST API
-        const educationResponse = await fetch(
-          `${supabaseUrl}/rest/v1/education?user_id=eq.${effectiveUserId}&select=degree`,
-          {
-            headers: {
-              'apikey': supabaseKey,
-              'Authorization': authHeader,
+        // Calculate experience by company tenure (not per role)
+        type WorkRow = {
+          company: string | null;
+          start_date: string;
+          end_date: string | null;
+          still_work_here?: boolean;
+        };
+
+        const companyTenures = new Map<string, { start: number; end: number }>();
+        if (Array.isArray(workExp) && workExp.length > 0) {
+          for (const job of workExp as WorkRow[]) {
+            if (!job.start_date) continue;
+            const companyKey = (job.company || 'Unknown').trim().toLowerCase() || 'unknown';
+            const start = new Date(job.start_date).getTime();
+            const end =
+              job.end_date && !job.still_work_here
+                ? new Date(job.end_date).getTime()
+                : Date.now();
+
+            const existing = companyTenures.get(companyKey);
+            if (!existing) {
+              companyTenures.set(companyKey, { start, end });
+            } else {
+              companyTenures.set(companyKey, {
+                start: Math.min(existing.start, start),
+                end: Math.max(existing.end, end),
+              });
             }
           }
+        }
+
+        const msPerYear = 1000 * 60 * 60 * 24 * 365.25;
+        const tenureYears = Array.from(companyTenures.values()).map(
+          ({ start, end }) => Math.max(0, (end - start) / msPerYear)
         );
-        const education = await educationResponse.json();
-
-        // Calculate highest qualification
-        const degreeHierarchy = { 'PhD': 4, 'Master': 3, 'Bachelor': 2, 'Certificate': 1 };
-        let highestDegree = 'No Degree';
-        if (education && education.length > 0) {
-          const maxDegree = education.reduce((max, curr) => {
-            const currRank = degreeHierarchy[curr.degree as keyof typeof degreeHierarchy] || 0;
-            const maxRank = degreeHierarchy[max as keyof typeof degreeHierarchy] || 0;
-            return currRank > maxRank ? curr.degree : max;
-          }, '');
-          
-          if (maxDegree === 'Master') highestDegree = "Master's Degree";
-          else if (maxDegree === 'Bachelor') highestDegree = "Bachelor's Degree";
-          else highestDegree = maxDegree;
-        }
-
-        // Calculate years of experience
-        let totalYears = 0;
-        if (workExp && workExp.length > 0) {
-          workExp.forEach(job => {
-            const startDate = new Date(job.start_date);
-            const endDate = job.end_date ? new Date(job.end_date) : new Date();
-            const years = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
-            totalYears += years;
-          });
-        }
-
-        const avgYears = workExp && workExp.length > 0 ? totalYears / workExp.length : 0;
+        const totalYears = tenureYears.reduce((sum, y) => sum + y, 0);
+        const avgYears = tenureYears.length > 0 ? totalYears / tenureYears.length : 0;
 
         setMetrics({
           highest_qualification: highestDegree,
           total_years_experience: Math.round(totalYears * 10) / 10,
           avg_years_per_job: Math.round(avgYears * 10) / 10,
-          total_jobs: workExp?.length || 0
+          total_jobs: workExp?.length || 0,
+          total_companies: companyTenures.size,
         });
       } catch (error) {
         console.error('Error fetching metrics:', error);
@@ -156,7 +214,7 @@ export const KeyMetricsCards = ({ userId, accessTokenOverride }: KeyMetricsCards
       <Card className="border-l-4 border-l-[#FFCFD2] hover:shadow-lg transition-shadow">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium text-gray-600">
-            Avg. Years per Job
+            Avg. Tenure per Company
           </CardTitle>
           <TrendingUp className="h-5 w-5 text-[#FFCFD2]" />
         </CardHeader>
@@ -165,7 +223,7 @@ export const KeyMetricsCards = ({ userId, accessTokenOverride }: KeyMetricsCards
             {metrics.avg_years_per_job} years
           </div>
           <p className="text-xs text-gray-500 mt-1">
-            Job stability indicator
+            Across {metrics.total_companies} {metrics.total_companies === 1 ? 'company' : 'companies'}
           </p>
         </CardContent>
       </Card>
