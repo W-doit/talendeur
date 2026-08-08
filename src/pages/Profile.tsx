@@ -358,7 +358,7 @@ const Profile: React.FC = () => {
                           </p>
                         )}
                         {user.userType === 'jobseeker' && (
-                          <div className="mt-auto pt-3 flex justify-center md:justify-start">
+                          <div className="mt-auto pt-3 flex flex-wrap justify-center md:justify-start gap-2">
                             <Button
                               onClick={() => navigate('/profilerecommendations')}
                               size="sm"
@@ -366,6 +366,14 @@ const Profile: React.FC = () => {
                               className="bg-white/70 text-talendeur-navy hover:bg-talendeur-navy hover:text-white border-talendeur-navy transition-colors"
                             >
                               Profile recommendations
+                            </Button>
+                            <Button
+                              onClick={() => navigate('/ikigai')}
+                              size="sm"
+                              variant="outline"
+                              className="bg-white/70 text-talendeur-navy hover:bg-talendeur-navy hover:text-white border-talendeur-navy transition-colors"
+                            >
+                              Find your ikigai
                             </Button>
                           </div>
                         )}
