@@ -13,6 +13,7 @@ import SessionTimeoutGuard from "./components/SessionTimeoutGuard";
 // Context Providers
 import { AuthProvider } from "@/contexts/AuthContext";
 import { MatchProvider } from "@/contexts/MatchContext";
+import { PwaInstallProvider } from "@/hooks/usePwaInstall";
 
 // Pages
 import Home from "./pages/Home";
@@ -26,12 +27,14 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import PublicProfile from "./pages/PublicProfile";
 import ProfileRecommendations from "./pages/ProfileRecommendations";
+import FindIkigai from "./pages/FindIkigai";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
+      <PwaInstallProvider>
       <AuthProvider>
         <MatchProvider>
           <Toaster />
@@ -47,6 +50,7 @@ const App = () => (
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/profilerecommendations" element={<ProfileRecommendations />} />
+              <Route path="/ikigai" element={<FindIkigai />} />
               <Route path="/public/:userId" element={<PublicProfile />} />
               <Route path="/find" element={<FindMatches />} />
               <Route path="/matches" element={<Matches />} />
@@ -58,6 +62,7 @@ const App = () => (
           </BrowserRouter>
         </MatchProvider>
       </AuthProvider>
+      </PwaInstallProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
