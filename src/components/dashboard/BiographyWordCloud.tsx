@@ -37,6 +37,26 @@ const EXTENDED_STOP_WORDS = new Set([
   'based', 'using', 'used', 'made', 'within', 'across', 'throughout'
 ]);
 
+// Block fragments / legal suffixes that look unprofessional when shown alone
+const BLOCKLIST = new Set([
+  'party', 'parties', 'inc', 'ltd', 'llc', 'gmbh', 'plc', 'corp', 'corporation',
+  'limited', 'co', 'sa', 'bv', 'nv', 'pty', 'etc', 'eg', 'ie', 'vs', 'via',
+  'http', 'https', 'www', 'com', 'org', 'net',
+]);
+
+/** Tokenize while keeping hyphenated compounds (e.g. third-party) intact */
+const tokenizeText = (text: string): string[] => {
+  const lower = text.toLowerCase();
+  const tokens = lower.match(/\b[a-z0-9]+(?:-[a-z0-9]+)*\b/g) || [];
+  return tokens.filter(
+    (word) =>
+      word.length > 3 &&
+      !EXTENDED_STOP_WORDS.has(word) &&
+      !BLOCKLIST.has(word) &&
+      !/^\d+$/.test(word)
+  );
+};
+
 interface BiographyWordCloudProps {
   userId?: string;
   accessTokenOverride?: string | null;
@@ -120,17 +140,9 @@ export const BiographyWordCloud = ({ userId, accessTokenOverride }: BiographyWor
         // Combine all text
         const combinedText = textSources.join(' ');
 
-        // Extract words and count frequency, filtering out stop words only
+        // Extract words and count frequency, keeping compounds and applying blocklist
         const wordCounts: { [key: string]: number } = {};
-        const cleanedText = combinedText
-          .toLowerCase()
-          .replace(/[^\w\s]/g, ' ')
-          .split(/\s+/)
-          .filter(word => 
-            word.length > 3 && 
-            !EXTENDED_STOP_WORDS.has(word) &&
-            !/^\d+$/.test(word) // Exclude pure numbers
-          );
+        const cleanedText = tokenizeText(combinedText);
 
         cleanedText.forEach(word => {
           wordCounts[word] = (wordCounts[word] || 0) + 1;

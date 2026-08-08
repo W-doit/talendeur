@@ -368,7 +368,7 @@ export const CertificationsForm = ({ importedData, onSaveComplete, refreshKey }:
           <Button
             onClick={saveCertifications}
             disabled={saving}
-            className="bg-gradient-to-r from-white via-talendeur-orange to-talendeur-primary hover:opacity-90 text-white"
+            className="bg-talendeur-primary hover:bg-talendeur-primary-dark text-white"
           >
             {saving ? 'Saving...' : 'Save Certifications'}
           </Button>

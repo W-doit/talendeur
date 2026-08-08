@@ -5,10 +5,15 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import Imprint from "./pages/Imprint";
+import CookiePolicy from "./pages/CookiePolicy";
+import CookieConsentBanner from "./components/CookieConsentBanner";
+import SessionTimeoutGuard from "./components/SessionTimeoutGuard";
 
 // Context Providers
 import { AuthProvider } from "@/contexts/AuthContext";
 import { MatchProvider } from "@/contexts/MatchContext";
+import { PwaInstallProvider } from "@/hooks/usePwaInstall";
 
 // Pages
 import Home from "./pages/Home";
@@ -21,17 +26,22 @@ import NotFound from "./pages/NotFound";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import PublicProfile from "./pages/PublicProfile";
+import ProfileRecommendations from "./pages/ProfileRecommendations";
+import FindIkigai from "./pages/FindIkigai";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
+      <PwaInstallProvider>
       <AuthProvider>
         <MatchProvider>
           <Toaster />
           <Sonner />
           <BrowserRouter>
+            <CookieConsentBanner />
+            <SessionTimeoutGuard />
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login />} />
@@ -39,15 +49,20 @@ const App = () => (
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/profilerecommendations" element={<ProfileRecommendations />} />
+              <Route path="/ikigai" element={<FindIkigai />} />
               <Route path="/public/:userId" element={<PublicProfile />} />
               <Route path="/find" element={<FindMatches />} />
               <Route path="/matches" element={<Matches />} />
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+              <Route path="/imprint" element={<Imprint />} />
+              <Route path="/cookie-policy" element={<CookiePolicy />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
         </MatchProvider>
       </AuthProvider>
+      </PwaInstallProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

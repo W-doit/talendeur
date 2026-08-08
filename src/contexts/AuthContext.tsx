@@ -3,6 +3,8 @@ import { useToast } from "@/components/ui/use-toast";
 import { supabase } from '@/integrations/supabase/client';
 import type { User } from '@supabase/supabase-js';
 
+import type { DashboardSectionConfig } from '@/lib/dashboard-layout';
+
 // Types
 export type UserType = 'jobseeker' | 'organization';
 
@@ -13,6 +15,8 @@ export interface JobSeekerProfile {
   headline?: string;
   profilePic: string;
   cv: string;
+  videoUrl?: string;
+  portfolioUrl?: string;
   interests: string[];
   skills: {
     soft: number;
@@ -21,6 +25,9 @@ export interface JobSeekerProfile {
     learning: number;
   };
   bio: string;
+  openToRelocation?: boolean;
+  targetOrganizations?: string[];
+  dashboardLayout?: DashboardSectionConfig[];
 }
 
 export interface OrganizationContact {
@@ -40,6 +47,8 @@ export interface OrganizationProfile {
   website: string;
   about: string;
   needs: string[];
+  videoUrl?: string;
+  portfolioUrl?: string;
   contacts?: OrganizationContact[];
 }
 
@@ -54,7 +63,7 @@ interface AuthContextType {
   user: AuthUser | null;
   loading: boolean;
   accessToken: string | null;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<{ requiresMfa: boolean }>;
   register: (email: string, password: string, userType: UserType) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (profileData: Partial<JobSeekerProfile> | Partial<OrganizationProfile>) => Promise<void>;
@@ -67,7 +76,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
   accessToken: null,
-  login: async () => {},
+  login: async () => ({ requiresMfa: false }),
   register: async () => {},
   logout: async () => {},
   updateProfile: async () => {},
@@ -155,6 +164,24 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const skillDataArray = await skillResponse.json();
         const skillData = skillDataArray[0];
 
+        // Fallback: portfolio from socials if portfolio_url column empty/missing
+        let portfolioUrl = profileData.portfolio_url || '';
+        if (!portfolioUrl) {
+          const socialsResponse = await fetch(
+            `${supabaseUrl}/rest/v1/socials?user_id=eq.${profileData.user_id}&platform=eq.portfolio&select=url&limit=1`,
+            {
+              headers: {
+                'apikey': supabaseKey,
+                'Authorization': authHeader,
+              }
+            }
+          );
+          if (socialsResponse.ok) {
+            const socials = await socialsResponse.json();
+            portfolioUrl = socials?.[0]?.url || '';
+          }
+        }
+
         fullProfile = {
           id: profileData.user_id,
           name: `${profileData.first_name} ${profileData.surname}`.trim(),
@@ -163,6 +190,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           profilePic: profileData.profile_pic || '',
           cv: profileData.cv_url || '',
           videoUrl: profileData.video_url || '',
+          portfolioUrl,
           interests: skillData?.interests || [],
           skills: {
             soft: skillData?.soft_skills || 70,
@@ -171,6 +199,24 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             learning: skillData?.learning_score || 70,
           },
           bio: profileData.bio || '',
+          openToRelocation: !!profileData.open_to_relocation,
+          targetOrganizations: Array.isArray(profileData.target_organizations)
+            ? profileData.target_organizations
+            : [],
+          dashboardLayout: (() => {
+            if (Array.isArray(profileData.dashboard_layout)) {
+              return profileData.dashboard_layout;
+            }
+            try {
+              const cached = localStorage.getItem(
+                `talendeur:dashboard_layout:${profileData.user_id}`
+              );
+              if (cached) return JSON.parse(cached);
+            } catch {
+              // ignore
+            }
+            return undefined;
+          })(),
         };
       } else {
         console.log('Loading organization details...');
@@ -216,6 +262,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           headline: profileData.headline || undefined,
           logo: orgData?.logo || '',
           videoUrl: profileData.video_url || '',
+          portfolioUrl: profileData.portfolio_url || '',
           website: orgData?.website || '',
           about: orgData?.about || '',
           needs: orgData?.needs || [],
@@ -373,7 +420,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   // Login
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<{ requiresMfa: boolean }> => {
     console.log('Login function called for:', email);
     setLoading(true);
     
@@ -425,14 +472,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // Store access token in state
       setAccessToken(userAccessToken);
       
-      // Set the session in Supabase client for subsequent requests
+      // Set the session in Supabase client (needed for MFA AAL checks)
       if (userAccessToken && refreshToken) {
         console.log('Setting session with tokens...');
-        // Don't await this - just fire and forget to avoid hanging
-        supabase.auth.setSession({
+        const { error: sessionError } = await supabase.auth.setSession({
           access_token: userAccessToken,
           refresh_token: refreshToken,
-        }).catch(err => console.warn('setSession warning:', err));
+        });
+        if (sessionError) {
+          console.warn('setSession warning:', sessionError);
+        }
       }
 
       // Set basic user data immediately
@@ -445,26 +494,38 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       
       console.log('Setting user state with basic data');
       setUser(basicUser);
-      
-      // Try to load profile in background (non-blocking) - pass the access token
-      loadUserProfile(data.user, userAccessToken).then((userData) => {
-        if (userData && userData.profile) {
-          console.log('Profile loaded successfully');
-          setUser(userData);
-        } else {
-          console.log('No profile found - user needs to create one');
+
+      // Check whether MFA challenge is required before loading full app
+      let requiresMfa = false;
+      try {
+        const aal = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+        if (!aal.error && aal.data.nextLevel === 'aal2' && aal.data.currentLevel !== 'aal2') {
+          requiresMfa = true;
         }
-      }).catch(err => {
-        console.error('Error loading profile (non-blocking):', err);
-      });
-      
-      console.log('Showing success toast');
-      toast({
-        title: "Login successful",
-        description: "Welcome to Talendeur!",
-      });
+      } catch (mfaErr) {
+        console.warn('MFA AAL check failed:', mfaErr);
+      }
+
+      if (!requiresMfa) {
+        loadUserProfile(data.user, userAccessToken).then((userData) => {
+          if (userData && userData.profile) {
+            console.log('Profile loaded successfully');
+            setUser(userData);
+          } else {
+            console.log('No profile found - user needs to create one');
+          }
+        }).catch(err => {
+          console.error('Error loading profile (non-blocking):', err);
+        });
+
+        toast({
+          title: "Login successful",
+          description: "Welcome to Talendeur!",
+        });
+      }
       
       console.log('Login function completed successfully');
+      return { requiresMfa };
     } catch (error: any) {
       console.error('Login error caught:', error);
       throw error;
@@ -580,10 +641,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.log('Starting profile update for user:', user.id);
       
       // Update profile table
-      const profileUpdate: any = {
-        bio: (profileData as any).bio,
-        profile_pic: (profileData as any).profilePic || (profileData as any).logo,
-      };
+      const profileUpdate: any = {};
+
+      if ('profilePic' in profileData || 'logo' in profileData) {
+        profileUpdate.profile_pic = (profileData as any).profilePic || (profileData as any).logo;
+      }
+
+      // Only include bio when explicitly provided (including empty string clears it)
+      if ('bio' in profileData) {
+        profileUpdate.bio = (profileData as JobSeekerProfile).bio ?? '';
+      }
 
       if ('headline' in profileData) {
         profileUpdate.headline = profileData.headline;
@@ -600,15 +667,125 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
 
       if ('videoUrl' in profileData) {
-        profileUpdate.video_url = profileData.videoUrl;
+        profileUpdate.video_url = (profileData as any).videoUrl || null;
+      }
+
+      if ('portfolioUrl' in profileData) {
+        profileUpdate.portfolio_url = (profileData as any).portfolioUrl || null;
+      }
+
+      if ('dashboardLayout' in profileData) {
+        profileUpdate.dashboard_layout = (profileData as JobSeekerProfile).dashboardLayout ?? null;
+      }
+
+      if ('openToRelocation' in profileData) {
+        profileUpdate.open_to_relocation = !!(profileData as JobSeekerProfile).openToRelocation;
+      }
+
+      if ('targetOrganizations' in profileData) {
+        profileUpdate.target_organizations =
+          (profileData as JobSeekerProfile).targetOrganizations || [];
       }
 
       console.log('Updating profile table with:', profileUpdate);
 
-      const { error: profileError } = await supabase
+      let { error: profileError } = await supabase
         .from('profile')
         .update(profileUpdate)
         .eq('user_id', user.id);
+
+      // If portfolio_url column is missing, retry without it and store in socials
+      if (
+        profileError &&
+        profileUpdate.portfolio_url !== undefined &&
+        /portfolio_url/i.test(profileError.message || '')
+      ) {
+        console.warn('portfolio_url column missing; falling back to socials table');
+        const { portfolio_url: portfolioUrlValue, ...withoutPortfolio } = profileUpdate;
+        const retry = await supabase
+          .from('profile')
+          .update(withoutPortfolio)
+          .eq('user_id', user.id);
+        profileError = retry.error;
+
+        if (!profileError && 'portfolioUrl' in profileData) {
+          const url = ((profileData as any).portfolioUrl || '').trim();
+          await supabase.from('socials').delete().eq('user_id', user.id).eq('platform', 'portfolio');
+          if (url) {
+            await supabase.from('socials').insert({
+              user_id: user.id,
+              platform: 'portfolio',
+              url,
+            });
+          }
+        }
+      }
+
+      // If dashboard_layout column is missing, retry without it and cache locally
+      if (
+        profileError &&
+        profileUpdate.dashboard_layout !== undefined &&
+        /dashboard_layout/i.test(profileError.message || '')
+      ) {
+        console.warn('dashboard_layout column missing; caching layout in localStorage');
+        const layoutValue = profileUpdate.dashboard_layout;
+        const { dashboard_layout: _ignored, ...withoutLayout } = profileUpdate;
+        const retry = await supabase
+          .from('profile')
+          .update(withoutLayout)
+          .eq('user_id', user.id);
+        profileError = retry.error;
+        try {
+          localStorage.setItem(
+            `talendeur:dashboard_layout:${user.id}`,
+            JSON.stringify(layoutValue)
+          );
+        } catch {
+          // ignore quota
+        }
+      }
+
+      // Drop unknown preference columns if migration not applied yet
+      if (
+        profileError &&
+        (/open_to_relocation|target_organizations/i.test(profileError.message || ''))
+      ) {
+        console.warn('Preference columns missing; retrying without them');
+        const {
+          open_to_relocation: _a,
+          target_organizations: _b,
+          ...withoutPrefs
+        } = profileUpdate;
+        const retry = await supabase
+          .from('profile')
+          .update(withoutPrefs)
+          .eq('user_id', user.id);
+        profileError = retry.error;
+      }
+
+      if (!profileError && 'dashboardLayout' in profileData) {
+        try {
+          localStorage.setItem(
+            `talendeur:dashboard_layout:${user.id}`,
+            JSON.stringify((profileData as JobSeekerProfile).dashboardLayout ?? null)
+          );
+        } catch {
+          // ignore
+        }
+      }
+
+      if (!profileError && 'portfolioUrl' in profileData) {
+        // Keep socials in sync as a secondary source
+        const url = ((profileData as any).portfolioUrl || '').trim();
+        await supabase.from('socials').delete().eq('user_id', user.id).eq('platform', 'portfolio');
+        if (url) {
+          await supabase.from('socials').insert({
+            user_id: user.id,
+            platform: 'portfolio',
+            url,
+          });
+        }
+      }
 
       if (profileError) {
         console.error('Profile table update error:', profileError);

@@ -41,9 +41,9 @@ export const LinkedInImport: React.FC<LinkedInImportProps> = ({ onImport, curren
     
     // Show helpful message
     toast({
-      title: 'CV Uploaded Successfully!',
-      description: 'Please review each section and save at the bottom to continue.',
-      duration: 5000,
+      title: 'Parsing CV…',
+      description: 'Extracting profile fields. You will review them before anything is saved.',
+      duration: 4000,
     });
 
     try {
@@ -71,14 +71,8 @@ export const LinkedInImport: React.FC<LinkedInImportProps> = ({ onImport, curren
         return;
       }
 
-      // Pass parsed data and PDF file to parent
+      // Pass parsed data and PDF file to parent (review happens before persist)
       onImport(parsedData, file);
-      
-      toast({
-        title: 'CV data extracted successfully!',
-        description: 'Please review the pre-filled information (Skills Profile, Work, Education, etc.) in each section when you\'re ready.',
-        duration: 5000,
-      });
       
       if (onParsingEnd) onParsingEnd();
       
@@ -181,7 +175,7 @@ export const LinkedInImport: React.FC<LinkedInImportProps> = ({ onImport, curren
             <Button
               type="button"
               disabled={uploading}
-              className="w-full bg-gradient-to-r from-white via-talendeur-orange to-talendeur-primary hover:opacity-90 cursor-pointer"
+              className="w-full bg-talendeur-primary hover:bg-talendeur-primary-dark text-white cursor-pointer"
               onClick={() => document.getElementById('linkedin-pdf-upload')?.click()}
             >
               {uploading ? (

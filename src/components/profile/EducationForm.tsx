@@ -50,6 +50,45 @@ const QUALIFICATION_TYPES = [
   'High School'
 ];
 
+const QUALIFICATION_RANK: Record<string, number> = {
+  PhD: 7,
+  Master: 6,
+  Bachelor: 5,
+  Associate: 4,
+  Diploma: 3,
+  Certificate: 2,
+  'High School': 1,
+};
+
+const normalizeQualificationType = (raw: string | undefined | null): string => {
+  if (!raw) return '';
+  const trimmed = raw.trim();
+  if (QUALIFICATION_TYPES.includes(trimmed)) return trimmed;
+  const lower = trimmed.toLowerCase();
+  if (/ph\.?d|doctorate|doctoral|dphil/i.test(lower)) return 'PhD';
+  if (/master|m\.?sc|mba|m\.?eng|m\.?phil|postgraduate/i.test(lower)) return 'Master';
+  if (/bachelor|b\.?sc|b\.?eng|\bb\.?a\b|\bb\.?s\b|undergraduate|licen[cs]iatura|grado/i.test(lower)) return 'Bachelor';
+  if (/associate/i.test(lower)) return 'Associate';
+  if (/diploma/i.test(lower)) return 'Diploma';
+  if (/high\s*school|secondary|a-?levels?|gcse/i.test(lower)) return 'High School';
+  if (/certificate|certification/i.test(lower)) return 'Certificate';
+  return '';
+};
+
+const getHighestQualification = (items: Education[]): string => {
+  let best = '';
+  let bestRank = 0;
+  for (const edu of items) {
+    const normalized = normalizeQualificationType(edu.qualification_type);
+    const rank = QUALIFICATION_RANK[normalized] || 0;
+    if (rank > bestRank) {
+      bestRank = rank;
+      best = normalized;
+    }
+  }
+  return best;
+};
+
 interface EducationFormProps {
   importedData?: any[];
   onSaveComplete?: () => void;
@@ -80,11 +119,13 @@ export const EducationForm = ({ importedData, onSaveComplete, refreshKey }: Educ
       console.log('Pre-filling education with imported CV data:', importedData);
       const mappedData = importedData.map(edu => ({
         institution: edu.institution || '',
-        qualification_type: edu.qualification_type || '',
-        subject: edu.subject || '',
+        qualification_type: normalizeQualificationType(
+          edu.qualification_type || edu.degree || ''
+        ) || (edu.qualification_type || edu.degree || ''),
+        subject: edu.subject || edu.field || edu.major || '',
         location: edu.location || '',
-        start_date: edu.start_date || '',
-        end_date: edu.end_date || '',
+        start_date: edu.start_date || edu.startDate || '',
+        end_date: edu.end_date || edu.endDate || '',
         still_studying: edu.still_studying || false,
       }));
       console.log('Mapped education data:', mappedData);
@@ -184,6 +225,49 @@ export const EducationForm = ({ importedData, onSaveComplete, refreshKey }: Educ
     }
     setEducations(updated);
   };
+
+  const setHighestQualificationOverride = (qualification: string) => {
+    if (!qualification) return;
+
+    const updated = [...educations];
+    // Prefer updating an existing entry that already has this (or empty) type
+    let targetIndex = updated.findIndex(
+      (edu) => normalizeQualificationType(edu.qualification_type) === qualification
+    );
+    if (targetIndex === -1) {
+      targetIndex = updated.findIndex((edu) => !edu.qualification_type);
+    }
+    if (targetIndex === -1 && updated.length > 0) {
+      // Fall back to the most recent / first entry
+      targetIndex = 0;
+    }
+
+    if (targetIndex === -1) {
+      updated.push({
+        institution: '',
+        qualification_type: qualification,
+        subject: '',
+        location: '',
+        start_date: '',
+        end_date: '',
+        still_studying: false,
+      });
+    } else {
+      updated[targetIndex] = {
+        ...updated[targetIndex],
+        qualification_type: qualification,
+      };
+    }
+
+    setEducations(updated);
+    toast({
+      title: 'Highest qualification set',
+      description: `Set to ${qualification}. Review the education entry below, then save.`,
+      duration: 3000,
+    });
+  };
+
+  const derivedHighest = getHighestQualification(educations);
 
   const removeEducation = async (index: number) => {
     const education = educations[index];
@@ -313,6 +397,29 @@ export const EducationForm = ({ importedData, onSaveComplete, refreshKey }: Educ
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <div className="rounded-lg border border-talendeur-primary/30 bg-talendeur-primary/5 p-4 space-y-2">
+          <label className="block text-sm font-medium">
+            Highest Qualification (shown on your profile dashboard)
+          </label>
+          <select
+            value={derivedHighest}
+            onChange={(e) => setHighestQualificationOverride(e.target.value)}
+            className="w-full max-w-md px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-talendeur-primary bg-white"
+          >
+            <option value="" disabled>
+              {derivedHighest ? 'Select qualification' : 'Not set — choose a qualification'}
+            </option>
+            {QUALIFICATION_TYPES.map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-gray-600">
+            If CV import left this blank, set it here. This updates an education entry below — remember to click Save.
+          </p>
+        </div>
+
         {educations.map((edu, index) => (
           <Card key={index} className="border-2">
             <CardContent className="pt-6">
@@ -420,7 +527,7 @@ export const EducationForm = ({ importedData, onSaveComplete, refreshKey }: Educ
           <Button
             onClick={saveEducations}
             disabled={saving}
-            className="bg-gradient-to-r from-white via-talendeur-orange to-talendeur-primary hover:opacity-90 text-white"
+            className="bg-talendeur-primary hover:bg-talendeur-primary-dark text-white"
           >
             {saving ? 'Saving...' : 'Save Education'}
           </Button>

@@ -36,6 +36,12 @@ export interface ParsedCertification {
   details: string;
 }
 
+export interface ParsedLanguage {
+  language: string;
+  proficiency: string;
+  language_type?: 'spoken' | 'programming';
+}
+
 export interface SkillsDimensions {
   creativity: number;
   communication: number;
@@ -60,6 +66,7 @@ export interface ParsedData {
   workExperience: ParsedWorkExperience[];
   certifications: ParsedCertification[];
   skills: string[];
+  languages?: ParsedLanguage[];
   skills_dimensions?: SkillsDimensions;
 }
 

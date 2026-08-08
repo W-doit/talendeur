@@ -10,31 +10,27 @@ import FeedbackButton from '@/components/FeedbackButton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { KeyMetricsCards } from '@/components/dashboard/KeyMetricsCards';
-import { SkillsRadarChart } from '@/components/dashboard/SkillsRadarChart';
-import { Timeline } from '@/components/dashboard/Timeline';
-import { CertificationsChart } from '@/components/dashboard/CertificationsChart';
-import { ESGChart } from '@/components/dashboard/ESGChart';
-import { InternationalExperienceMap } from '@/components/dashboard/InternationalExperienceMap';
-import { BiographyWordCloud } from '@/components/dashboard/BiographyWordCloud';
-import { AIProficiencyChart } from '@/components/dashboard/AIProficiencyChart';
-import { PersonalityVisualization } from '@/components/dashboard/PersonalityVisualization';
+import { JobSeekerDashboard } from '@/components/dashboard/JobSeekerDashboard';
+import { CustomizeDashboardLayout } from '@/components/dashboard/CustomizeDashboardLayout';
 import { WorkExperienceForm } from '@/components/profile/WorkExperienceForm';
 import { EducationForm } from '@/components/profile/EducationForm';
 import { SkillsProfileForm } from '@/components/profile/SkillsProfileForm';
 import { AIProficiencyForm } from '@/components/profile/AIProficiencyForm';
 import { CertificationsForm } from '@/components/profile/CertificationsForm';
 import { ReferencesForm } from '@/components/profile/ReferencesForm';
-import { ReferencesDisplay } from '@/components/dashboard/ReferencesDisplay';
 import { PersonalityTest } from '@/components/profile/PersonalityTest';
-import { ChevronDown, ExternalLink } from 'lucide-react';
+import { VolunteeringForm } from '@/components/profile/VolunteeringForm';
+import { LanguagesForm } from '@/components/profile/LanguagesForm';
+import { MfaSettings } from '@/components/auth/MfaSettings';
+import { MfaChallenge } from '@/components/auth/MfaChallenge';
+import { requiresMfaChallenge } from '@/lib/mfa';
 import { useToast } from '@/components/ui/use-toast';
 import { generateDashboardPreview } from '@/lib/dashboard-screenshot';
+import { normalizeDashboardLayout, type DashboardSectionConfig } from '@/lib/dashboard-layout';
 
 const Profile: React.FC = () => {
-  const { user, createProfile, loading } = useAuth();
+  const { user, createProfile, loading, updateProfile, accessToken } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -43,44 +39,35 @@ const Profile: React.FC = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [activeTab, setActiveTab] = useState('basic');
   const [importedData, setImportedData] = useState<any>(null);
-  const [isVideoOpen, setIsVideoOpen] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
   const [aiProficiencyData, setAIProficiencyData] = useState<any>(null);
   const [aiToolsData, setAIToolsData] = useState<any>(null);
+  const [mfaRequired, setMfaRequired] = useState(false);
+  const [mfaChecked, setMfaChecked] = useState(false);
   const dashboardRef = React.useRef<HTMLDivElement>(null);
 
-  const getVideoEmbedUrl = (url: string) => {
-    try {
-      const parsedUrl = new URL(url);
-      const hostname = parsedUrl.hostname.replace('www.', '');
-
-      if (hostname === 'youtube.com' || hostname === 'm.youtube.com') {
-        const videoId = parsedUrl.searchParams.get('v');
-        if (videoId) {
-          return `https://www.youtube.com/embed/${videoId}`;
-        }
+  React.useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!user) {
+        setMfaChecked(true);
+        setMfaRequired(false);
+        return;
       }
-
-      if (hostname === 'youtu.be') {
-        const videoId = parsedUrl.pathname.replace('/', '').trim();
-        if (videoId) {
-          return `https://www.youtube.com/embed/${videoId}`;
-        }
+      try {
+        const needed = await requiresMfaChallenge();
+        if (!cancelled) setMfaRequired(needed);
+      } catch {
+        if (!cancelled) setMfaRequired(false);
+      } finally {
+        if (!cancelled) setMfaChecked(true);
       }
-
-      if (hostname === 'vimeo.com') {
-        const videoId = parsedUrl.pathname.replace('/', '').trim();
-        if (videoId) {
-          return `https://player.vimeo.com/video/${videoId}`;
-        }
-      }
-
-      return url;
-    } catch {
-      return url;
-    }
-  };
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, accessToken]);
 
   const publicProfileUrl = user?.profile?.id
     ? `${window.location.origin}/public/${user.profile.id}`
@@ -240,6 +227,21 @@ const Profile: React.FC = () => {
     return null;
   }
 
+  if (user && mfaChecked && mfaRequired) {
+    return (
+      <MainLayout>
+        <div className="container max-w-md mx-auto py-16 px-4">
+          <MfaChallenge
+            onVerified={() => {
+              setMfaRequired(false);
+              window.location.reload();
+            }}
+          />
+        </div>
+      </MainLayout>
+    );
+  }
+
   // User is authenticated but has no profile - show profile type selection
   if (!user.profile) {
     return (
@@ -340,8 +342,8 @@ const Profile: React.FC = () => {
                     
                   </div>
                   <div className="flex-1 w-full">
-                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 text-center md:text-left">
-                      <div>
+                    <div className="flex flex-col md:flex-row md:items-stretch md:justify-between gap-3 text-center md:text-left">
+                      <div className="flex flex-col flex-1">
                         <h2 className="text-2xl font-bold text-black">{user.profile.name}</h2>
                         {(user.profile as JobSeekerProfile | OrganizationProfile).headline && (
                           <p className="text-lg text-gray-700 mt-2 italic font-light">
@@ -355,6 +357,26 @@ const Profile: React.FC = () => {
                             </a>
                           </p>
                         )}
+                        {user.userType === 'jobseeker' && (
+                          <div className="mt-auto pt-3 flex flex-wrap justify-center md:justify-start gap-2">
+                            <Button
+                              onClick={() => navigate('/profilerecommendations')}
+                              size="sm"
+                              variant="outline"
+                              className="bg-white/70 text-talendeur-navy hover:bg-talendeur-navy hover:text-white border-talendeur-navy transition-colors"
+                            >
+                              Profile recommendations
+                            </Button>
+                            <Button
+                              onClick={() => navigate('/ikigai')}
+                              size="sm"
+                              variant="outline"
+                              className="bg-white/70 text-talendeur-navy hover:bg-talendeur-navy hover:text-white border-talendeur-navy transition-colors"
+                            >
+                              Find your ikigai
+                            </Button>
+                          </div>
+                        )}
                       </div>
                       <div className="flex flex-col gap-2">
                         <Button 
@@ -365,6 +387,20 @@ const Profile: React.FC = () => {
                         >
                           Edit Profile
                         </Button>
+                        {user.userType === 'jobseeker' && (
+                          <CustomizeDashboardLayout
+                            layout={normalizeDashboardLayout(
+                              (user.profile as JobSeekerProfile).dashboardLayout
+                            )}
+                            onSave={async (nextLayout: DashboardSectionConfig[]) => {
+                              await updateProfile({ dashboardLayout: nextLayout });
+                              toast({
+                                title: 'Layout saved',
+                                description: 'Your profile dashboard layout was updated.',
+                              });
+                            }}
+                          />
+                        )}
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button
@@ -390,114 +426,42 @@ const Profile: React.FC = () => {
                 </div>
               </div>
 
-              <div ref={dashboardRef} className="flex flex-col md:flex-row gap-8">
-                {/* Job Seeker Dashboard Elements */}
-                {user.userType === 'jobseeker' && (
-                  <>
-                    {/* Left column: Timeline (all date-based items) */}
-                    <div className="w-full md:w-1/3 flex flex-col gap-8">
-                      <Timeline refreshTrigger={refreshTrigger} />
-                      <CertificationsChart />
-                    </div>
-                    {/* Right column: Visualizations and info boxes */}
-                    <div className="w-full md:w-2/3 flex flex-col gap-8">
-                      <KeyMetricsCards />
-                      {(user.profile as any).videoUrl && (
-                        <Card>
-                          <Collapsible open={isVideoOpen} onOpenChange={setIsVideoOpen}>
-                            <CardHeader className="flex flex-row items-center justify-between">
-                              <CardTitle>Video Profile</CardTitle>
-                              <CollapsibleTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="bg-white/70 text-talendeur-primary hover:bg-talendeur-primary hover:text-white border-talendeur-primary transition-colors"
-                                  aria-label={isVideoOpen ? 'Collapse video profile' : 'Expand video profile'}
-                                >
-                                  <ChevronDown className={`h-4 w-4 transition-transform ${isVideoOpen ? 'rotate-180' : ''}`} />
-                                </Button>
-                              </CollapsibleTrigger>
-                            </CardHeader>
-                            <CollapsibleContent>
-                              <CardContent>
-                                <div className="relative w-full overflow-hidden rounded-lg border border-gray-200">
-                                  <div className="aspect-video">
-                                    <iframe
-                                      src={getVideoEmbedUrl((user.profile as any).videoUrl)}
-                                      title="Profile video"
-                                      className="h-full w-full"
-                                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                      allowFullScreen
-                                    />
-                                  </div>
-                                </div>
-                              </CardContent>
-                            </CollapsibleContent>
-                          </Collapsible>
-                        </Card>
-                      )}
-                      <AIProficiencyChart data={aiProficiencyData} tools={aiToolsData} />
-                      {(user.profile as any).portfolioUrl && (
-                        <Card>
-                          <CardHeader>
-                            <CardTitle>Portfolio</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <a 
-                              href={(user.profile as any).portfolioUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-2 text-talendeur-primary hover:text-talendeur-orange transition-colors font-medium"
-                            >
-                              <ExternalLink size={18} />
-                              <span>Visit Portfolio</span>
-                            </a>
-                          </CardContent>
-                        </Card>
-                      )}
-                      <BiographyWordCloud />
-                      <SkillsRadarChart />
-                      <PersonalityVisualization />
-                      <ESGChart />
-                    </div>
-                  </>
-                )}
+              {user.userType === 'jobseeker' && (
+                <JobSeekerDashboard
+                  layout={(user.profile as JobSeekerProfile).dashboardLayout}
+                  refreshTrigger={refreshTrigger}
+                  videoUrl={(user.profile as JobSeekerProfile).videoUrl}
+                  portfolioUrl={(user.profile as JobSeekerProfile).portfolioUrl}
+                  interests={(user.profile as JobSeekerProfile).interests}
+                  openToRelocation={(user.profile as JobSeekerProfile).openToRelocation}
+                  targetOrganizations={(user.profile as JobSeekerProfile).targetOrganizations}
+                  aiProficiencyData={aiProficiencyData}
+                  aiToolsData={aiToolsData}
+                  dashboardRef={dashboardRef}
+                />
+              )}
 
-                {/* Organization Dashboard Elements */}
-                {user.userType === 'organization' && (
-                  <div className="w-full flex flex-col gap-8">
+              {/* Organization Dashboard Elements */}
+              {user.userType === 'organization' && (
+                <div className="w-full flex flex-col gap-8">
                     {(user.profile as any).videoUrl && (
                       <Card>
-                        <Collapsible open={isVideoOpen} onOpenChange={setIsVideoOpen}>
-                          <CardHeader className="flex flex-row items-center justify-between">
-                            <CardTitle>Organization Video</CardTitle>
-                            <CollapsibleTrigger asChild>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="bg-white/70 text-talendeur-primary hover:bg-talendeur-primary hover:text-white border-talendeur-primary transition-colors"
-                                aria-label={isVideoOpen ? 'Collapse video' : 'Expand video'}
-                              >
-                                <ChevronDown className={`h-4 w-4 transition-transform ${isVideoOpen ? 'rotate-180' : ''}`} />
-                              </Button>
-                            </CollapsibleTrigger>
-                          </CardHeader>
-                          <CollapsibleContent>
-                            <CardContent>
-                              <div className="relative w-full overflow-hidden rounded-lg border border-gray-200">
-                                <div className="aspect-video">
-                                  <iframe
-                                    src={getVideoEmbedUrl((user.profile as any).videoUrl)}
-                                    title="Organization video"
-                                    className="h-full w-full"
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                    allowFullScreen
-                                  />
-                                </div>
-                              </div>
-                            </CardContent>
-                          </CollapsibleContent>
-                        </Collapsible>
+                        <CardHeader>
+                          <CardTitle>Organization Video</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="relative w-full overflow-hidden rounded-lg border border-gray-200">
+                            <div className="aspect-video">
+                              <iframe
+                                src={(user.profile as any).videoUrl}
+                                title="Organization video"
+                                className="h-full w-full"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                              />
+                            </div>
+                          </div>
+                        </CardContent>
                       </Card>
                     )}
                     
@@ -511,45 +475,8 @@ const Profile: React.FC = () => {
                         </CardContent>
                       </Card>
                     )}
-                  </div>
-                )}
-              </div>
 
-              {/* Full-width sections - only for job seekers */}
-              {user.userType === 'jobseeker' && (
-                <>
-                  <div className="w-full">
-                    <InternationalExperienceMap />
-                  </div>
-
-                  <div className="w-full">
-                    <ReferencesDisplay />
-                  </div>
-                </>
-              )}
-
-              {/* Interests and Needs sections */}
-              <div className="flex flex-col gap-8">
-                  {user.userType === 'jobseeker' && (user.profile as JobSeekerProfile).interests && (user.profile as JobSeekerProfile).interests.length > 0 && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Interests</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex flex-wrap gap-2">
-                          {(user.profile as JobSeekerProfile).interests.map((interest: string, index: number) => (
-                            <span 
-                              key={index} 
-                              className="px-3 py-1 bg-talendeur-primary/10 text-talendeur-primary rounded-full text-sm"
-                            >
-                              {interest}
-                            </span>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-                  {user.userType === 'organization' && (user.profile as OrganizationProfile).needs && (user.profile as OrganizationProfile).needs.length > 0 && (
+                  { (user.profile as OrganizationProfile).needs && (user.profile as OrganizationProfile).needs.length > 0 && (
                     <Card>
                       <CardHeader>
                         <CardTitle>We're Looking For</CardTitle>
@@ -569,6 +496,7 @@ const Profile: React.FC = () => {
                     </Card>
                   )}
                 </div>
+              )}
             </>
           ) : (
             // Edit Mode - Show form
@@ -602,8 +530,11 @@ const Profile: React.FC = () => {
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" key={isEditMode ? 'edit' : 'view'}>
                   <TabsList className="grid w-full grid-cols-8">
                     <TabsTrigger value="basic">Basic Info</TabsTrigger>
+                    <TabsTrigger value="security">Security</TabsTrigger>
                     <TabsTrigger value="work">Work</TabsTrigger>
                     <TabsTrigger value="education">Education</TabsTrigger>
+                    <TabsTrigger value="volunteering">Volunteering</TabsTrigger>
+                    <TabsTrigger value="languages">Languages</TabsTrigger>
                     <TabsTrigger value="certifications">Certifications</TabsTrigger>
                     <TabsTrigger value="references">References</TabsTrigger>
                     <TabsTrigger value="skills-profile">Skills Profile</TabsTrigger>
@@ -617,6 +548,7 @@ const Profile: React.FC = () => {
                         <JobSeekerProfileForm 
                           importedData={importedData}
                           onDataImport={setImportedData}
+                          onImportPersisted={() => setRefreshTrigger((n) => n + 1)}
                           onSaveComplete={() => {
                             // After saving basic info, move to work experience tab
                             if (importedData?.parsedData?.workExperience?.length > 0) {
@@ -631,6 +563,10 @@ const Profile: React.FC = () => {
                         />
                       </CardContent>
                     </Card>
+                  </TabsContent>
+
+                  <TabsContent value="security" className="mt-6">
+                    <MfaSettings />
                   </TabsContent>
 
                   <TabsContent value="work" className="mt-6">
@@ -681,14 +617,43 @@ const Profile: React.FC = () => {
                           });
                         }
                         
-                        // After saving education, always move to certifications tab
-                        setActiveTab('certifications');
+                        // After saving education, move to volunteering
+                        setActiveTab('volunteering');
                         toast({
                           title: 'Education saved!',
-                          description: 'Now add your certifications.',
+                          description: 'Add volunteering next (optional), then languages.',
                           duration: 3000,
                         });
                         setRefreshTrigger(prev => prev + 1);
+                      }}
+                    />
+                  </TabsContent>
+
+                  <TabsContent value="volunteering" className="mt-6">
+                    <VolunteeringForm
+                      onSaveComplete={() => {
+                        setActiveTab('languages');
+                        toast({
+                          title: 'Volunteering saved!',
+                          description: 'Now add your languages.',
+                          duration: 3000,
+                        });
+                        setRefreshTrigger((prev) => prev + 1);
+                      }}
+                    />
+                  </TabsContent>
+
+                  <TabsContent value="languages" className="mt-6">
+                    <LanguagesForm
+                      importedData={importedData?.parsedData?.languages}
+                      onSaveComplete={() => {
+                        setActiveTab('certifications');
+                        toast({
+                          title: 'Languages saved!',
+                          description: 'Continue with certifications.',
+                          duration: 3000,
+                        });
+                        setRefreshTrigger((prev) => prev + 1);
                       }}
                     />
                   </TabsContent>
@@ -769,15 +734,18 @@ const Profile: React.FC = () => {
                   </TabsContent>
 
                   <TabsContent value="personality" className="mt-6">
-                    <PersonalityTest />
+                    <PersonalityTest onSaveAndExit={() => setIsEditMode(false)} />
                   </TabsContent>
                 </Tabs>
               ) : (
-                <Card>
-                  <CardContent className="pt-6">
-                    <OrganizationProfileForm />
-                  </CardContent>
-                </Card>
+                <div className="space-y-6">
+                  <Card>
+                    <CardContent className="pt-6">
+                      <OrganizationProfileForm />
+                    </CardContent>
+                  </Card>
+                  <MfaSettings />
+                </div>
               )}
             </>
           )}

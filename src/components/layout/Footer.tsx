@@ -2,6 +2,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import FeedbackButton from '@/components/FeedbackButton';
+import { openCookiePreferences } from '@/lib/cookie-consent';
 
 const Footer: React.FC = () => {
   return (
@@ -59,8 +60,17 @@ const Footer: React.FC = () => {
         
         <div className="mt-8 pt-6 border-t border-gray-700 text-center">
           <p className="text-sm text-gray-400">© {new Date().getFullYear()} Talendeur. All rights reserved.</p>
-          <p className="text-sm mt-2">
+          <p className="text-sm mt-2 space-x-4">
             <a href="/privacy-policy" className="text-talendeur-primary underline hover:text-talendeur-orange transition-colors">Privacy Policy</a>
+            <a href="/cookie-policy" className="text-talendeur-primary underline hover:text-talendeur-orange transition-colors">Cookie Policy</a>
+            <a href="/imprint" className="text-talendeur-primary underline hover:text-talendeur-orange transition-colors">Imprint</a>
+            <button
+              type="button"
+              onClick={openCookiePreferences}
+              className="text-talendeur-primary underline hover:text-talendeur-orange transition-colors"
+            >
+              Cookie preferences
+            </button>
           </p>
         </div>
       </div>
