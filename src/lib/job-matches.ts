@@ -25,18 +25,92 @@ export interface JobMatchesResult {
 }
 
 export interface JobMatchesOptions {
-  location?: string;
   keywords?: string;
+  location?: string;
+  roleTitle?: string;
+  opportunityType?: string;
+  intent?: string;
+  timeCommitment?: string;
+  compensation?: string;
+  skillRelationship?: string;
+  industry?: string;
+  format?: string;
+  outcome?: string;
+  level?: string;
   limit?: number;
 }
 
 const STORAGE_KEY = 'talendeur_job_matches';
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
+const TECHNICAL_SUMMARY_PATTERNS = [
+  /local heuristic/i,
+  /ai ranking was unavailable/i,
+  /configure linkedin mcp/i,
+  /cvparser host/i,
+  /backend:/i,
+];
+
+function stripMarkdown(value: string): string {
+  return value
+    .replace(/!\[[^\]]*\]\([^)]+\)/g, ' ')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/^#+\s*/gm, '')
+    .replace(/\|/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+export function sanitizeDisplayText(value: string | undefined | null, fallback = ''): string {
+  const cleaned = stripMarkdown(String(value || ''));
+  return cleaned || fallback;
+}
+
+export function formatMatchesSummary(summary: string, matchCount: number): string {
+  const cleaned = sanitizeDisplayText(summary);
+  if (!cleaned || TECHNICAL_SUMMARY_PATTERNS.some((pattern) => pattern.test(cleaned))) {
+    if (matchCount === 0) {
+      return 'No openings matched your search yet. Try broadening your keywords or location.';
+    }
+    return matchCount === 1
+      ? 'We found 1 opening that may fit your search.'
+      : `We found ${matchCount} openings that may fit your search.`;
+  }
+  return cleaned;
+}
+
+export function formatJobMatchForDisplay(job: JobMatch): JobMatch {
+  const title = sanitizeDisplayText(job.title, 'Opening');
+  let company = sanitizeDisplayText(job.company);
+  if (!company || /^(unknown company|company not listed|not specified)$/i.test(company)) {
+    if (job.url.includes('-at-')) {
+      const slug = job.url.split('-at-').pop()?.split('?')[0] ?? '';
+      const cleaned = slug.replace(/-\d+$/, '').replace(/-/g, ' ').trim();
+      company = cleaned ? cleaned.replace(/\b\w/g, (char) => char.toUpperCase()) : 'Company not listed';
+    } else {
+      company = 'Company not listed';
+    }
+  }
+
+  const location = sanitizeDisplayText(job.location);
+  const why_fit = sanitizeDisplayText(job.why_fit);
+  const gaps = (job.gaps || [])
+    .map((gap) => sanitizeDisplayText(gap))
+    .filter(Boolean);
+
+  return {
+    ...job,
+    title,
+    company,
+    location: location && !/^not specified$/i.test(location) ? location : '',
+    why_fit,
+    gaps,
+  };
+}
+
 interface CachedPayload {
   savedAt: number;
-  location?: string;
-  keywords?: string;
+  optionsKey: string;
   result: JobMatchesResult;
 }
 
@@ -55,8 +129,18 @@ export async function fetchJobMatches(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       profile,
-      location: options.location || null,
       keywords: options.keywords || null,
+      location: options.location || null,
+      role_title: options.roleTitle || null,
+      opportunity_type: options.opportunityType || null,
+      intent: options.intent || null,
+      time_commitment: options.timeCommitment || null,
+      compensation: options.compensation || null,
+      skill_relationship: options.skillRelationship || null,
+      industry: options.industry || null,
+      format: options.format || null,
+      outcome: options.outcome || null,
+      level: options.level || null,
       limit: options.limit ?? 12,
     }),
   });
@@ -67,19 +151,35 @@ export async function fetchJobMatches(
   }
 
   const data = await response.json();
+  const rawMatches: JobMatch[] = Array.isArray(data.matches) ? data.matches : [];
+  const matches = rawMatches.map(formatJobMatchForDisplay);
   const result: JobMatchesResult = {
-    summary: data.summary || '',
+    summary: formatMatchesSummary(data.summary || '', matches.length),
     queries: Array.isArray(data.queries) ? data.queries : [],
     backend: data.backend || 'none',
     backends_tried: data.backends_tried,
     ranking_source: data.ranking_source,
-    jobs_fetched: data.jobs_fetched ?? (data.matches?.length || 0),
-    matches: Array.isArray(data.matches) ? data.matches : [],
+    jobs_fetched: data.jobs_fetched ?? matches.length,
+    matches,
     generated_at: data.generated_at || new Date().toISOString(),
   };
 
   saveJobMatchesCache(userId, result, options);
   return result;
+}
+
+function optionsKey(options: JobMatchesOptions): string {
+  const { limit: _limit, ...rest } = options;
+  return JSON.stringify(rest, Object.keys(rest).sort());
+}
+
+export function normalizeJobMatchesResult(result: JobMatchesResult): JobMatchesResult {
+  const matches = (result.matches || []).map(formatJobMatchForDisplay);
+  return {
+    ...result,
+    summary: formatMatchesSummary(result.summary, matches.length),
+    matches,
+  };
 }
 
 export function saveJobMatchesCache(
@@ -92,8 +192,7 @@ export function saveJobMatchesCache(
     const all = raw ? JSON.parse(raw) : {};
     const payload: CachedPayload = {
       savedAt: Date.now(),
-      location: options.location,
-      keywords: options.keywords,
+      optionsKey: optionsKey(options),
       result,
     };
     all[userId] = payload;
@@ -114,9 +213,8 @@ export function loadJobMatchesCache(
     const cached = all[userId] as CachedPayload | undefined;
     if (!cached?.result || !cached.savedAt) return null;
     if (Date.now() - cached.savedAt > CACHE_TTL_MS) return null;
-    if ((cached.location || '') !== (options.location || '')) return null;
-    if ((cached.keywords || '') !== (options.keywords || '')) return null;
-    return cached.result;
+    if (cached.optionsKey !== optionsKey(options)) return null;
+    return normalizeJobMatchesResult(cached.result);
   } catch {
     return null;
   }

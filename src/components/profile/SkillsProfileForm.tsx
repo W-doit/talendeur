@@ -90,7 +90,7 @@ const SKILLS_CONFIG = [
   {
     key: 'depth' as keyof SkillsDimensions,
     label: 'Depth',
-    description: 'Specialized expertise and deep knowledge in specific areas'
+    description: 'Specialised expertise and deep knowledge in specific areas'
   },
   {
     key: 'commitment' as keyof SkillsDimensions,

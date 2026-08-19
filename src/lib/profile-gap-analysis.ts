@@ -389,7 +389,7 @@ export function analyzeProfileGapsLocal(
       ? `Your profile already aligns well with ${targetRole}. Focus on polishing evidence and targeting remaining keyword gaps.`
       : matchScore >= 50
         ? `You have a solid base for ${targetRole}, with clear gaps to close in skills evidence and positioning.`
-        : `There is meaningful distance between your current profile and ${targetRole}. Prioritize the high-severity gaps below.`;
+        : `There is meaningful distance between your current profile and ${targetRole}. Prioritise the high-severity gaps below.`;
 
   return {
     targetRole,
