@@ -362,9 +362,14 @@ export const PersonalityTest = ({ onSaveAndExit }: PersonalityTestProps = {}) =>
   };
 
   const goSkip = () => {
-    const nextUnanswered = QUESTIONS.findIndex((_, idx) => !(idx in answers));
-    if (nextUnanswered !== -1) {
-      setCurrentQuestion(nextUnanswered);
+    // Look for the next unanswered question after the current one, wrapping around
+    const total = QUESTIONS.length;
+    for (let offset = 1; offset < total; offset++) {
+      const idx = (currentQuestion + offset) % total;
+      if (!(idx in answers)) {
+        setCurrentQuestion(idx);
+        return;
+      }
     }
   };
 

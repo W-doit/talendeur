@@ -94,7 +94,7 @@ const ProfileRecommendations: React.FC = () => {
       console.error(err);
       toast({
         title: 'Analysis failed',
-        description: err.message || 'Could not analyze your profile',
+        description: err.message || 'Could not analyse your profile',
         variant: 'destructive',
       });
     } finally {
@@ -249,7 +249,7 @@ const ProfileRecommendations: React.FC = () => {
                     disabled={analyzingGap || !targetRole.trim()}
                     className="bg-talendeur-navy hover:bg-talendeur-navy/90 text-white"
                   >
-                    {analyzingGap ? 'Analyzing profile…' : gapResult ? 'Re-run analysis' : 'Analyze gaps'}
+                    {analyzingGap ? 'Analysing profile…' : gapResult ? 'Re-run analysis' : 'Analyse gaps'}
                   </Button>
                 </form>
               </CardContent>
@@ -455,7 +455,7 @@ const ProfileRecommendations: React.FC = () => {
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg">Upskilling roadmap</CardTitle>
-                    <CardDescription>Prioritized learning tied to your profile evidence</CardDescription>
+                    <CardDescription>Prioritised learning tied to your profile evidence</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
                     {renderUpskillTier('Quick wins', foresightResult.upskillingRoadmap.quickWins)}

@@ -124,12 +124,12 @@ export const CustomizeDashboardLayout: React.FC<CustomizeDashboardLayoutProps> =
           className="gap-2 border-talendeur-primary text-talendeur-primary hover:bg-talendeur-primary hover:text-white"
         >
           <LayoutGrid className="h-4 w-4" />
-          Customize layout
+          Customise layout
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Customize profile layout</DialogTitle>
+          <DialogTitle>Customise profile layout</DialogTitle>
           <DialogDescription>
             Show, hide, and reorder dashboard sections. Hidden sections also stay off your public profile.
           </DialogDescription>
