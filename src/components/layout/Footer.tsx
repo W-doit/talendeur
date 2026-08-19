@@ -12,7 +12,7 @@ const Footer: React.FC = () => {
           <div>
             <h3 className="text-xl font-bold mb-4">Talendeur</h3>
             <p className="text-sm text-gray-300">
-              Connecting talent with opportunities. Revolutionizing the job market with our matchmaking platform.
+              Connecting talent with opportunities. Revolutionising the job market with our matchmaking platform.
             </p>
           </div>
           
@@ -20,7 +20,7 @@ const Footer: React.FC = () => {
             <h4 className="font-semibold mb-4">For Job Seekers</h4>
             <ul className="space-y-2">
               <li><Link to="/register" className="text-sm text-gray-300 hover:text-white">Create Profile</Link></li>
-              <li><Link to="/find" className="text-sm text-gray-300 hover:text-white">Find Organizations</Link></li>
+
               <li><Link to="/matches" className="text-sm text-gray-300 hover:text-white">View Matches</Link></li>
             </ul>
           </div>
@@ -29,7 +29,7 @@ const Footer: React.FC = () => {
             <h4 className="font-semibold mb-4">For Organizations</h4>
             <ul className="space-y-2">
               <li><Link to="/register" className="text-sm text-gray-300 hover:text-white">Create Profile</Link></li>
-              <li><Link to="/find" className="text-sm text-gray-300 hover:text-white">Find Talent</Link></li>
+
               <li><Link to="/matches" className="text-sm text-gray-300 hover:text-white">View Matches</Link></li>
             </ul>
           </div>

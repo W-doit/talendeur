@@ -43,11 +43,7 @@ const Navbar: React.FC = () => {
               Matches
             </Button>
           </Link>
-          <Link to="/find" onClick={() => setMenuOpen(false)} className="w-full sm:w-auto">
-            <Button variant="outline" className={navBtnClass}>
-              Find {user.userType === 'jobseeker' ? 'Organizations' : 'Talent'}
-            </Button>
-          </Link>
+
           <Button variant="outline" className={navBtnClass} onClick={handleLogout}>
             <LogOut className="h-5 w-5 sm:mr-0 mr-2" />
             <span className="sm:hidden">Log out</span>

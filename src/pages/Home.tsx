@@ -136,7 +136,7 @@ const Home: React.FC = () => {
         <div className="container mx-auto max-w-7xl text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to Find Your Perfect Match?</h2>
           <p className="text-xl mb-8 text-white/90 max-w-2xl mx-auto">
-            Join Talendeur today and revolutionize the way you connect in the professional world.
+            Join Talendeur today and revolutionise the way you connect in the professional world.
           </p>
           <Link to="/register">
             <Button size="lg" variant="outline" className="bg-transparent border-white text-white hover:bg-white/10">
