@@ -20,6 +20,7 @@ export interface IkigaiResult {
   intersections: IkigaiIntersections;
   summary: string;
   generatedAt: string;
+  responses?: Record<string, string>;
 }
 
 export interface IkigaiQuestion {
@@ -118,6 +119,8 @@ export const IKIGAI_QUESTIONS: IkigaiQuestion[] = [
     placeholder: 'e.g. Launching products, coaching leaders, automating workflows...',
   },
 ];
+
+import { supabase } from '@/integrations/supabase/client';
 
 const STORAGE_KEY = 'talendeur_ikigai';
 
@@ -232,10 +235,11 @@ export function buildIkigaiFromResponses(
     intersections,
     summary,
     generatedAt: new Date().toISOString(),
+    responses,
   };
 }
 
-export function saveIkigaiResult(userId: string, result: IkigaiResult): void {
+function cacheIkigaiLocal(userId: string, result: IkigaiResult): void {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     const all = raw ? JSON.parse(raw) : {};
@@ -246,7 +250,7 @@ export function saveIkigaiResult(userId: string, result: IkigaiResult): void {
   }
 }
 
-export function loadIkigaiResult(userId: string): IkigaiResult | null {
+function loadIkigaiLocal(userId: string): IkigaiResult | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
@@ -255,4 +259,36 @@ export function loadIkigaiResult(userId: string): IkigaiResult | null {
   } catch {
     return null;
   }
+}
+
+export async function saveIkigaiResult(userId: string, result: IkigaiResult): Promise<void> {
+  cacheIkigaiLocal(userId, result);
+  const { error } = await supabase
+    .from('profile')
+    .update({ ikigai_result: result as unknown as Record<string, unknown> })
+    .eq('user_id', userId);
+  if (error) {
+    console.error('Could not save ikigai to profile:', error);
+  }
+}
+
+export async function loadIkigaiResult(userId: string): Promise<IkigaiResult | null> {
+  const cached = loadIkigaiLocal(userId);
+  const { data, error } = await supabase
+    .from('profile')
+    .select('ikigai_result')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (error) {
+    console.error('Could not load ikigai from profile:', error);
+    return cached;
+  }
+
+  const remote = data?.ikigai_result as IkigaiResult | null;
+  if (remote && typeof remote === 'object' && remote.answers) {
+    cacheIkigaiLocal(userId, remote);
+    return remote;
+  }
+  return cached;
 }
