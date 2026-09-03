@@ -26,6 +26,7 @@ import { MfaSettings } from '@/components/auth/MfaSettings';
 import { MfaChallenge } from '@/components/auth/MfaChallenge';
 import { requiresMfaChallenge } from '@/lib/mfa';
 import { useToast } from '@/components/ui/use-toast';
+import { Pencil, Share2, Sparkles, Heart, Briefcase } from 'lucide-react';
 import { generateDashboardPreview } from '@/lib/dashboard-screenshot';
 import { normalizeDashboardLayout, type DashboardSectionConfig } from '@/lib/dashboard-layout';
 
@@ -360,11 +361,21 @@ const Profile: React.FC = () => {
                         {user.userType === 'jobseeker' && (
                           <div className="mt-auto pt-3 flex flex-wrap justify-center md:justify-start gap-2">
                             <Button
+                              onClick={() => navigate('/matches')}
+                              size="sm"
+                              variant="outline"
+                              className="bg-white/70 text-talendeur-navy hover:bg-talendeur-navy hover:text-white border-talendeur-navy transition-colors"
+                            >
+                              <Briefcase className="mr-1.5 h-4 w-4" />
+                              Matches
+                            </Button>
+                            <Button
                               onClick={() => navigate('/profilerecommendations')}
                               size="sm"
                               variant="outline"
                               className="bg-white/70 text-talendeur-navy hover:bg-talendeur-navy hover:text-white border-talendeur-navy transition-colors"
                             >
+                              <Sparkles className="mr-1.5 h-4 w-4" />
                               Profile recommendations
                             </Button>
                             <Button
@@ -373,6 +384,7 @@ const Profile: React.FC = () => {
                               variant="outline"
                               className="bg-white/70 text-talendeur-navy hover:bg-talendeur-navy hover:text-white border-talendeur-navy transition-colors"
                             >
+                              <Heart className="mr-1.5 h-4 w-4" />
                               Find your ikigai
                             </Button>
                           </div>
@@ -385,6 +397,7 @@ const Profile: React.FC = () => {
                           variant="outline"
                           className="bg-white/70 text-talendeur-primary hover:bg-talendeur-primary hover:text-white border-talendeur-primary transition-colors"
                         >
+                          <Pencil className="mr-1.5 h-4 w-4" />
                           Edit Profile
                         </Button>
                         {user.userType === 'jobseeker' && (
@@ -408,6 +421,7 @@ const Profile: React.FC = () => {
                               size="sm"
                               className="bg-white/70 text-talendeur-primary hover:bg-talendeur-primary hover:text-white border-talendeur-primary transition-colors"
                             >
+                              <Share2 className="mr-1.5 h-4 w-4" />
                               Share your profile
                             </Button>
                           </DropdownMenuTrigger>

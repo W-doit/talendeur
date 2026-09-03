@@ -311,10 +311,8 @@ const Matches: React.FC = () => {
                 disabled={loadingMatches}
                 className="bg-talendeur-navy hover:bg-talendeur-navy/90 text-white"
               >
-                {loadingMatches ? (
-                  <><RefreshCw className="mr-2 h-4 w-4 animate-spin" />Searching LinkedIn…</>
-                ) : result ? (
-                  <><RefreshCw className="mr-2 h-4 w-4" />Refresh matches</>
+                {result ? (
+                  <><RefreshCw className={`mr-2 h-4 w-4 ${loadingMatches ? 'animate-spin' : ''}`} />Refresh matches</>
                 ) : (
                   'Find matches'
                 )}
@@ -323,7 +321,15 @@ const Matches: React.FC = () => {
           </CardContent>
         </Card>
 
-        {result && (
+        {loadingMatches && (
+          <Card>
+            <CardContent className="py-10 text-center text-muted-foreground">
+              Finding matches…
+            </CardContent>
+          </Card>
+        )}
+
+        {result && !loadingMatches && (
           <div className="space-y-4">
             <div>
               <p className="text-sm text-gray-700">{result.summary}</p>

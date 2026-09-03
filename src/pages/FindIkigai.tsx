@@ -128,6 +128,7 @@ const FindIkigai: React.FC = () => {
   const [responses, setResponses] = useState<Record<string, string>>({});
   const [result, setResult] = useState<IkigaiResult | null>(null);
   const [phase, setPhase] = useState<'intro' | 'questions' | 'result'>('intro');
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) navigate('/login');
@@ -135,22 +136,31 @@ const FindIkigai: React.FC = () => {
 
   useEffect(() => {
     if (!user?.id) return;
-    const saved = loadIkigaiResult(user.id);
-    if (saved) {
-      setResult(saved);
-      setPhase('result');
-    }
+    let cancelled = false;
+    (async () => {
+      const saved = await loadIkigaiResult(user.id);
+      if (cancelled) return;
+      if (saved) {
+        setResult(saved);
+        if (saved.responses) setResponses(saved.responses);
+        setPhase('result');
+      }
+      setHydrated(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [user?.id]);
 
   const question = IKIGAI_QUESTIONS[step];
   const canContinue = (responses[question?.id] || '').trim().length >= 2;
 
-  const finish = () => {
+  const finish = async () => {
     if (!user?.id) return;
     const built = buildIkigaiFromResponses(responses);
-    saveIkigaiResult(user.id, built);
     setResult(built);
     setPhase('result');
+    await saveIkigaiResult(user.id, built);
   };
 
   const restart = () => {
@@ -160,7 +170,7 @@ const FindIkigai: React.FC = () => {
     setPhase('questions');
   };
 
-  if (loading || !user) {
+  if (loading || !user || !hydrated) {
     return (
       <MainLayout>
         <div className="container max-w-3xl mx-auto py-12 px-4 text-center text-muted-foreground">

@@ -219,6 +219,7 @@ export type Database = {
           video_url: string | null
           portfolio_url: string | null
           dashboard_layout: Json | null
+          ikigai_result: Json | null
           open_to_relocation: boolean | null
           target_organizations: string[] | null
           user_type: string
@@ -234,6 +235,7 @@ export type Database = {
           video_url?: string | null
           portfolio_url?: string | null
           dashboard_layout?: Json | null
+          ikigai_result?: Json | null
           open_to_relocation?: boolean | null
           target_organizations?: string[] | null
           user_type: string
@@ -249,6 +251,7 @@ export type Database = {
           video_url?: string | null
           portfolio_url?: string | null
           dashboard_layout?: Json | null
+          ikigai_result?: Json | null
           open_to_relocation?: boolean | null
           target_organizations?: string[] | null
           user_type?: string
