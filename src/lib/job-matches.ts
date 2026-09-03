@@ -1,4 +1,5 @@
 import { loadExtendedProfileSnapshot } from '@/lib/career-foresight';
+import { normalizeLocation } from '@/lib/location-normalization';
 
 export interface JobMatch {
   id: string;
@@ -114,6 +115,17 @@ interface CachedPayload {
   result: JobMatchesResult;
 }
 
+function expandJobSearchLocation(raw?: string): string | undefined {
+  const trimmed = raw?.trim();
+  if (!trimmed) return undefined;
+  const n = normalizeLocation(trimmed);
+  if (!n?.country) return trimmed;
+  if (n.city && n.city.toLowerCase() !== n.country.toLowerCase()) {
+    return `${n.city}, ${n.country}`;
+  }
+  return n.country;
+}
+
 export async function fetchJobMatches(
   userId: string,
   options: JobMatchesOptions = {}
@@ -130,7 +142,7 @@ export async function fetchJobMatches(
     body: JSON.stringify({
       profile,
       keywords: options.keywords || null,
-      location: options.location || null,
+      location: expandJobSearchLocation(options.location) || null,
       role_title: options.roleTitle || null,
       opportunity_type: options.opportunityType || null,
       intent: options.intent || null,
