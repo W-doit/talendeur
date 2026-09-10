@@ -11,18 +11,19 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 import {
   analyzeProfileGaps,
-  loadSavedGapAnalysis,
+  loadGapAnalysis,
   saveGapAnalysis,
   type GapAnalysisResult,
 } from '@/lib/profile-gap-analysis';
 import {
   analyzeCareerForesight,
+  loadCareerForesight,
   loadExtendedProfileSnapshot,
-  loadSavedCareerForesight,
   saveCareerForesight,
   type CareerForesightResult,
 } from '@/lib/career-foresight';
-import { ArrowLeft, Compass, Sparkles, Target, TrendingUp } from 'lucide-react';
+import { ArrowLeft, Briefcase, Compass, Sparkles, Target, TrendingUp } from 'lucide-react';
+import { markRecommendationsReviewed } from '@/lib/profile-completion';
 
 const severityClass: Record<string, string> = {
   high: 'bg-red-100 text-red-800',
@@ -57,16 +58,26 @@ const ProfileRecommendations: React.FC = () => {
 
   useEffect(() => {
     if (!user?.id) return;
-    const savedGap = loadSavedGapAnalysis(user.id);
-    if (savedGap) {
-      setGapResult(savedGap);
-      setTargetRole(savedGap.targetRole);
-      setTargetOrganization(savedGap.targetOrganization || '');
-    }
-    const savedForesight = loadSavedCareerForesight(user.id);
-    if (savedForesight) {
-      setForesightResult(savedForesight);
-    }
+    let cancelled = false;
+    (async () => {
+      const [savedGap, savedForesight] = await Promise.all([
+        loadGapAnalysis(user.id),
+        loadCareerForesight(user.id),
+      ]);
+      if (cancelled) return;
+      if (savedGap) {
+        setGapResult(savedGap);
+        setTargetRole(savedGap.targetRole);
+        setTargetOrganization(savedGap.targetOrganization || '');
+      }
+      if (savedForesight) {
+        setForesightResult(savedForesight);
+      }
+      markRecommendationsReviewed(user.id);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [user?.id]);
 
   const handleGapAnalyze = async (e: React.FormEvent) => {
@@ -81,7 +92,7 @@ const ProfileRecommendations: React.FC = () => {
         targetRole.trim(),
         targetOrganization.trim() || undefined
       );
-      saveGapAnalysis(user.id, analysis);
+      await saveGapAnalysis(user.id, analysis);
       setGapResult(analysis);
       toast({
         title: 'Gap analysis ready',
@@ -113,7 +124,7 @@ const ProfileRecommendations: React.FC = () => {
         industryPreference: industryPreference.trim() || undefined,
         openToCareerSwitch,
       });
-      saveCareerForesight(user.id, analysis);
+      await saveCareerForesight(user.id, analysis);
       setForesightResult(analysis);
       toast({
         title: 'Stay-ahead guidance ready',
@@ -193,6 +204,25 @@ const ProfileRecommendations: React.FC = () => {
             reshapes work.
           </p>
         </div>
+
+        <Card className="border-talendeur-navy/15 bg-talendeur-navy/[0.03]">
+          <CardContent className="py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <p className="text-sm text-muted-foreground">
+              After reviewing recommendations, explore matches to find opportunities that fit you.
+            </p>
+            <Button
+              asChild
+              size="sm"
+              variant="outline"
+              className="bg-white/70 text-talendeur-navy hover:bg-talendeur-navy hover:text-white border-talendeur-navy transition-colors shrink-0"
+            >
+              <Link to="/matches">
+                <Briefcase className="h-4 w-4 mr-1.5" />
+                Explore matches
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2">

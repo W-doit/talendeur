@@ -36,6 +36,8 @@ interface JobSeekerDashboardProps {
   aiProficiencyData?: unknown;
   aiToolsData?: unknown;
   dashboardRef?: React.RefObject<HTMLDivElement | null>;
+  /** Show download buttons on visual cards. Off on public profiles. */
+  allowDownload?: boolean;
 }
 
 const getVideoEmbedUrl = (url: string) => {
@@ -74,13 +76,17 @@ export const JobSeekerDashboard: React.FC<JobSeekerDashboardProps> = ({
   aiProficiencyData,
   aiToolsData,
   dashboardRef,
+  allowDownload,
 }) => {
   const [isVideoOpen, setIsVideoOpen] = useState(false);
   const normalized = normalizeDashboardLayout(layout);
+  // Public profile passes accessTokenOverride={null}; own profile omits it
+  const canDownload = allowDownload ?? accessTokenOverride === undefined;
 
   const sharedProps = {
     ...(userId ? { userId } : {}),
     ...(accessTokenOverride !== undefined ? { accessTokenOverride } : {}),
+    allowDownload: canDownload,
   };
 
   const renderSection = (id: DashboardSectionId): React.ReactNode => {
@@ -139,7 +145,13 @@ export const JobSeekerDashboard: React.FC<JobSeekerDashboardProps> = ({
           </Card>
         );
       case 'ai_proficiency':
-        return <AIProficiencyChart data={aiProficiencyData} tools={aiToolsData as never} />;
+        return (
+          <AIProficiencyChart
+            data={aiProficiencyData}
+            tools={aiToolsData as never}
+            allowDownload={canDownload}
+          />
+        );
       case 'portfolio':
         if (!portfolioUrl) return null;
         return (

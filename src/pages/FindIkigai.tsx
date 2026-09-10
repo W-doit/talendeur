@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
@@ -16,6 +16,7 @@ import {
   type IkigaiResult,
 } from '@/lib/ikigai';
 import { ArrowLeft, ArrowRight, Compass, RefreshCw } from 'lucide-react';
+import { DownloadCardButton } from '@/components/ui/DownloadCardButton';
 
 const IkigaiDiagram: React.FC<{ result: IkigaiResult }> = ({ result }) => {
   const circles: Array<{
@@ -129,6 +130,7 @@ const FindIkigai: React.FC = () => {
   const [result, setResult] = useState<IkigaiResult | null>(null);
   const [phase, setPhase] = useState<'intro' | 'questions' | 'result'>('intro');
   const [hydrated, setHydrated] = useState(false);
+  const resultRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!loading && !user) navigate('/login');
@@ -319,6 +321,14 @@ const FindIkigai: React.FC = () => {
 
         {phase === 'result' && result && (
           <div className="space-y-6">
+            <div className="flex justify-end">
+              <DownloadCardButton
+                targetRef={resultRef}
+                filename="talendeur-ikigai"
+                label="Download image"
+              />
+            </div>
+            <div ref={resultRef} className="space-y-6 rounded-xl bg-white p-1">
             <Card className="border-talendeur-navy/30">
               <CardHeader>
                 <CardTitle className="text-talendeur-navy">Your ikigai map</CardTitle>
@@ -363,6 +373,7 @@ const FindIkigai: React.FC = () => {
                 ))}
               </CardContent>
             </Card>
+            </div>
 
             <div className="flex flex-wrap gap-2">
               <Button

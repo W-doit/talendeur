@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { LogOut, User, Building, Menu, X, Briefcase } from 'lucide-react';
+import { LogOut, User, Building, Menu, X, Briefcase, LogIn, UserPlus } from 'lucide-react';
 import PwaInstallButton from '@/components/PwaInstallButton';
 
 const Navbar: React.FC = () => {
@@ -54,11 +54,13 @@ const Navbar: React.FC = () => {
         <>
           <Link to="/login" onClick={() => setMenuOpen(false)} className="w-full sm:w-auto">
             <Button variant="outline" className={navBtnClass}>
+              <LogIn className="mr-2 h-5 w-5" />
               Login
             </Button>
           </Link>
           <Link to="/register" onClick={() => setMenuOpen(false)} className="w-full sm:w-auto">
             <Button variant="outline" className={navBtnClass}>
+              <UserPlus className="mr-2 h-5 w-5" />
               Register
             </Button>
           </Link>

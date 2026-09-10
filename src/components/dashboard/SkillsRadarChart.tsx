@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { DownloadCardButton } from '@/components/ui/DownloadCardButton';
 
 interface SkillsDimensions {
   creativity: number;
@@ -30,12 +31,18 @@ interface ChartDataPoint {
 interface SkillsRadarChartProps {
   userId?: string;
   accessTokenOverride?: string | null;
+  allowDownload?: boolean;
 }
 
-export const SkillsRadarChart = ({ userId, accessTokenOverride }: SkillsRadarChartProps = {}) => {
+export const SkillsRadarChart = ({
+  userId,
+  accessTokenOverride,
+  allowDownload = true,
+}: SkillsRadarChartProps = {}) => {
   const { user, accessToken } = useAuth();
   const [skillsData, setSkillsData] = useState<ChartDataPoint[]>([]);
   const [loading, setLoading] = useState(true);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchSkills = async () => {
@@ -123,12 +130,17 @@ export const SkillsRadarChart = ({ userId, accessTokenOverride }: SkillsRadarCha
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Skills Profile</CardTitle>
-        <CardDescription>
-          Comprehensive analysis across 15 key competency dimensions
-        </CardDescription>
+    <Card ref={cardRef}>
+      <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
+        <div className="space-y-1.5">
+          <CardTitle>Skills Profile</CardTitle>
+          <CardDescription>
+            Comprehensive analysis across 15 key competency dimensions
+          </CardDescription>
+        </div>
+        {allowDownload && (
+          <DownloadCardButton targetRef={cardRef} filename="talendeur-skills-profile" />
+        )}
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={500}>
