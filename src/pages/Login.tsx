@@ -8,6 +8,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import { MfaChallenge } from '@/components/auth/MfaChallenge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
+import { LogIn } from 'lucide-react';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -68,7 +69,10 @@ const Login: React.FC = () => {
         ) : (
           <Card className="w-full">
             <CardHeader className="space-y-1">
-              <CardTitle className="text-2xl text-center">Login to Talendeur</CardTitle>
+              <CardTitle className="text-2xl text-center flex items-center justify-center gap-2">
+                <LogIn className="h-6 w-6 text-talendeur-navy" />
+                Login to Talendeur
+              </CardTitle>
               <CardDescription className="text-center">
                 {timedOut
                   ? 'Your session expired due to inactivity. Please sign in again.'
@@ -114,7 +118,14 @@ const Login: React.FC = () => {
                   className="w-full bg-talendeur-primary hover:bg-talendeur-primary-dark text-white"
                   disabled={isSubmitting}
                 >
-                  {isSubmitting ? 'Signing in...' : 'Sign In'}
+                  {isSubmitting ? (
+                    'Signing in...'
+                  ) : (
+                    <>
+                      <LogIn className="mr-2 h-4 w-4" />
+                      Sign In
+                    </>
+                  )}
                 </Button>
                 <div className="text-sm text-center text-muted-foreground">
                   Don't have an account?{" "}

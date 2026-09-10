@@ -1,8 +1,9 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import Wordcloud from '@visx/wordcloud/lib/Wordcloud';
 import { Text } from '@visx/text';
+import { DownloadCardButton } from '@/components/ui/DownloadCardButton';
 
 interface WordData {
   text: string;
@@ -60,11 +61,17 @@ const tokenizeText = (text: string): string[] => {
 interface BiographyWordCloudProps {
   userId?: string;
   accessTokenOverride?: string | null;
+  allowDownload?: boolean;
 }
 
-export const BiographyWordCloud = ({ userId, accessTokenOverride }: BiographyWordCloudProps = {}) => {
+export const BiographyWordCloud = ({
+  userId,
+  accessTokenOverride,
+  allowDownload = true,
+}: BiographyWordCloudProps = {}) => {
   const { user, accessToken } = useAuth();
   const [words, setWords] = useState<WordData[]>([]);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchProfileData = async () => {
@@ -191,12 +198,17 @@ export const BiographyWordCloud = ({ userId, accessTokenOverride }: BiographyWor
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>You in a Wordcloud</CardTitle>
-        <CardDescription>
-          Top {words.length} words from your bio, interests, experience, education, and certifications
-        </CardDescription>
+    <Card ref={cardRef}>
+      <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
+        <div className="space-y-1.5">
+          <CardTitle>You in a Wordcloud</CardTitle>
+          <CardDescription>
+            Top {words.length} words from your bio, interests, experience, education, and certifications
+          </CardDescription>
+        </div>
+        {allowDownload && (
+          <DownloadCardButton targetRef={cardRef} filename="talendeur-wordcloud" />
+        )}
       </CardHeader>
       <CardContent className="py-4">
         <div className="relative bg-gradient-to-br from-blue-50/30 via-purple-50/20 to-pink-50/30 rounded-lg border border-gray-200 p-3">

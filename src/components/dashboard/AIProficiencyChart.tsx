@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Sparkles } from 'lucide-react';
+import { DownloadCardButton } from '@/components/ui/DownloadCardButton';
 import {
   ComposedChart,
   Bar,
@@ -58,6 +59,7 @@ interface AIToolsUsed {
 interface AIProficiencyChartProps {
   data: AIFluencyData | AIProficiencyData | null;
   tools?: AIToolsUsed[] | AIToolsData;
+  allowDownload?: boolean;
 }
 
 interface CategoryData {
@@ -166,11 +168,12 @@ const LEGACY_CATEGORY_INFO: Record<string, { color: string }> = {
   ai_ethics_governance: { color: '#9EBC9E' },
 };
 
-export const AIProficiencyChart = ({ data, tools = [] }: AIProficiencyChartProps) => {
+export const AIProficiencyChart = ({ data, tools = [], allowDownload = true }: AIProficiencyChartProps) => {
   const [chartData, setChartData] = useState<CategoryData[]>([]);
   const [categoryDetails, setCategoryDetails] = useState<any[]>([]);
   const [aiTools, setAITools] = useState<string[]>([]);
   const [isLegacyData, setIsLegacyData] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!data) return;
@@ -329,17 +332,22 @@ export const AIProficiencyChart = ({ data, tools = [] }: AIProficiencyChartProps
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-talendeur-navy" />
-          AI Fluency Overview
-        </CardTitle>
-        <CardDescription>
-          {isLegacyData
-            ? 'Your AI levels vs typical industry needs'
-            : 'Your AI usage frequency vs indicative industry needs — the gap shows where to catch up or lean in'}
-        </CardDescription>
+    <Card ref={cardRef}>
+      <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
+        <div className="space-y-1.5">
+          <CardTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-talendeur-navy" />
+            AI Fluency Overview
+          </CardTitle>
+          <CardDescription>
+            {isLegacyData
+              ? 'Your AI levels vs typical industry needs'
+              : 'Your AI usage frequency vs indicative industry needs — the gap shows where to catch up or lean in'}
+          </CardDescription>
+        </div>
+        {allowDownload && (
+          <DownloadCardButton targetRef={cardRef} filename="talendeur-ai-fluency" />
+        )}
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
