@@ -362,6 +362,7 @@ const PublicProfile: React.FC = () => {
               layout={(profile as JobSeekerProfile).dashboardLayout}
               userId={profile.id}
               accessTokenOverride={null}
+              allowDownload={false}
               videoUrl={(profile as JobSeekerProfile).videoUrl}
               portfolioUrl={(profile as JobSeekerProfile).portfolioUrl}
               interests={(profile as JobSeekerProfile).interests}

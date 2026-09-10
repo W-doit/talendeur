@@ -1,9 +1,10 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, Cell } from 'recharts';
 import { Brain } from 'lucide-react';
+import { DownloadCardButton } from '@/components/ui/DownloadCardButton';
 
 interface PersonalityTraits {
   openness: number;
@@ -47,13 +48,19 @@ const TRAIT_INFO = {
 interface PersonalityVisualizationProps {
   userId?: string;
   accessTokenOverride?: string | null;
+  allowDownload?: boolean;
 }
 
-export const PersonalityVisualization = ({ userId, accessTokenOverride }: PersonalityVisualizationProps = {}) => {
+export const PersonalityVisualization = ({
+  userId,
+  accessTokenOverride,
+  allowDownload = true,
+}: PersonalityVisualizationProps = {}) => {
   const { user, accessToken } = useAuth();
   const [traits, setTraits] = useState<PersonalityTraits | null>(null);
   const [facets, setFacets] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   const splitTraitLabel = (label: string) => {
     if (label.length <= 12) return [label];
@@ -226,15 +233,20 @@ export const PersonalityVisualization = ({ userId, accessTokenOverride }: Person
     .slice(0, 6) : [];
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Brain className="h-5 w-5 text-talendeur-primary" />
-          Big Five Personality Profile
-        </CardTitle>
-        <CardDescription>
-          Your personality traits based on the OCEAN model
-        </CardDescription>
+    <Card ref={cardRef}>
+      <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
+        <div className="space-y-1.5">
+          <CardTitle className="flex items-center gap-2">
+            <Brain className="h-5 w-5 text-talendeur-primary" />
+            Big Five Personality Profile
+          </CardTitle>
+          <CardDescription>
+            Your personality traits based on the OCEAN model
+          </CardDescription>
+        </div>
+        {allowDownload && (
+          <DownloadCardButton targetRef={cardRef} filename="talendeur-big-five" />
+        )}
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

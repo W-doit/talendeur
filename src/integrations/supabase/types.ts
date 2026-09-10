@@ -220,6 +220,8 @@ export type Database = {
           portfolio_url: string | null
           dashboard_layout: Json | null
           ikigai_result: Json | null
+          gap_analysis_result: Json | null
+          career_foresight_result: Json | null
           open_to_relocation: boolean | null
           target_organizations: string[] | null
           user_type: string
@@ -236,6 +238,8 @@ export type Database = {
           portfolio_url?: string | null
           dashboard_layout?: Json | null
           ikigai_result?: Json | null
+          gap_analysis_result?: Json | null
+          career_foresight_result?: Json | null
           open_to_relocation?: boolean | null
           target_organizations?: string[] | null
           user_type: string
@@ -252,6 +256,8 @@ export type Database = {
           portfolio_url?: string | null
           dashboard_layout?: Json | null
           ikigai_result?: Json | null
+          gap_analysis_result?: Json | null
+          career_foresight_result?: Json | null
           open_to_relocation?: boolean | null
           target_organizations?: string[] | null
           user_type?: string

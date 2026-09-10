@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth, type JobSeekerProfile } from '@/contexts/AuthContext';
 import MainLayout from '@/components/layout/MainLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,12 @@ import {
   type JobMatchesResult,
   type JobMatchesOptions,
 } from '@/lib/job-matches';
+import {
+  getProfileCompletion,
+  markMatchesExplored,
+  PROFILE_READY_THRESHOLD,
+  type ProfileCompletion,
+} from '@/lib/profile-completion';
 import {
   ArrowLeft,
   Briefcase,
@@ -59,6 +65,7 @@ const Matches: React.FC = () => {
 
   const [result, setResult] = useState<JobMatchesResult | null>(null);
   const [loadingMatches, setLoadingMatches] = useState(false);
+  const [profileCompletion, setProfileCompletion] = useState<ProfileCompletion | null>(null);
 
   useEffect(() => {
     if (!loading && !user) navigate('/login');
@@ -68,8 +75,27 @@ const Matches: React.FC = () => {
   useEffect(() => {
     if (!user?.id || user.userType !== 'jobseeker') return;
     const cached = loadJobMatchesCache(user.id);
-    if (cached) setResult(cached);
+    if (cached) {
+      setResult(cached);
+      markMatchesExplored(user.id);
+    }
   }, [user?.id, user?.userType]);
+
+  useEffect(() => {
+    if (!user?.id || user.userType !== 'jobseeker' || !user.profile) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const completion = await getProfileCompletion(user.id, user.profile as JobSeekerProfile);
+        if (!cancelled) setProfileCompletion(completion);
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, user?.userType, user?.profile]);
 
   const buildOptions = (): JobMatchesOptions => ({
     keywords: keywords.trim() || undefined,
@@ -93,13 +119,22 @@ const Matches: React.FC = () => {
 
     if (!force) {
       const cached = loadJobMatchesCache(user.id, opts);
-      if (cached) { setResult(cached); return; }
+      if (cached) {
+        setResult(cached);
+        markMatchesExplored(user.id);
+        toast({
+          title: 'Showing saved matches',
+          description: `From ${new Date(cached.generated_at).toLocaleString()}. Change filters or refresh for new results.`,
+        });
+        return;
+      }
     }
 
     setLoadingMatches(true);
     try {
       const data = await fetchJobMatches(user.id, opts);
       setResult(data);
+      markMatchesExplored(user.id);
       toast({
         title: data.matches.length ? 'Matches ready' : 'No openings found',
         description: data.matches.length
@@ -161,6 +196,25 @@ const Matches: React.FC = () => {
           Job matches
         </h1>
 
+        {profileCompletion && !profileCompletion.isReady && (
+          <Card className="border-amber-200 bg-amber-50/70">
+            <CardContent className="py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <p className="text-sm text-amber-900">
+                Your profile is {profileCompletion.percent}% complete. Fuller profiles usually get
+                better matches — aim for {PROFILE_READY_THRESHOLD}%+.
+              </p>
+              <Button
+                asChild
+                size="sm"
+                variant="outline"
+                className="bg-white text-talendeur-navy hover:bg-talendeur-navy hover:text-white border-talendeur-navy transition-colors shrink-0"
+              >
+                <Link to="/profile">Improve profile</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         <Card>
           <CardHeader>
             <CardTitle className="text-lg text-talendeur-navy flex items-center gap-2">
@@ -174,7 +228,7 @@ const Matches: React.FC = () => {
           <CardContent>
             <form
               className="space-y-6"
-              onSubmit={(e) => { e.preventDefault(); runSearch(true); }}
+              onSubmit={(e) => { e.preventDefault(); runSearch(false); }}
             >
               {/* Section 1: core search */}
               <div className="grid gap-4 sm:grid-cols-2">
@@ -306,17 +360,39 @@ const Matches: React.FC = () => {
                 </div>
               </div>
 
-              <Button
-                type="submit"
-                disabled={loadingMatches}
-                className="bg-talendeur-navy hover:bg-talendeur-navy/90 text-white"
-              >
-                {result ? (
-                  <><RefreshCw className={`mr-2 h-4 w-4 ${loadingMatches ? 'animate-spin' : ''}`} />Refresh matches</>
-                ) : (
-                  'Find matches'
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="submit"
+                  disabled={loadingMatches}
+                  className="bg-talendeur-navy hover:bg-talendeur-navy/90 text-white"
+                >
+                  {loadingMatches ? (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                      Finding matches…
+                    </>
+                  ) : (
+                    'Find matches'
+                  )}
+                </Button>
+                {result && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={loadingMatches}
+                    onClick={() => runSearch(true)}
+                    className="border-talendeur-navy text-talendeur-navy hover:bg-talendeur-navy hover:text-white"
+                  >
+                    <RefreshCw className={`mr-2 h-4 w-4 ${loadingMatches ? 'animate-spin' : ''}`} />
+                    Refresh now
+                  </Button>
                 )}
-              </Button>
+              </div>
+              {result && (
+                <p className="text-xs text-muted-foreground">
+                  Saved matches are reused for 12 hours when filters are unchanged. Use Refresh now for a fresh search.
+                </p>
+              )}
             </form>
           </CardContent>
         </Card>

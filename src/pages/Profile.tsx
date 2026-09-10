@@ -29,6 +29,14 @@ import { useToast } from '@/components/ui/use-toast';
 import { Pencil, Share2, Sparkles, Heart, Briefcase } from 'lucide-react';
 import { generateDashboardPreview } from '@/lib/dashboard-screenshot';
 import { normalizeDashboardLayout, type DashboardSectionConfig } from '@/lib/dashboard-layout';
+import {
+  getJourneyProgress,
+  getProfileCompletion,
+  type JourneyProgress,
+  type ProfileCompletion,
+  type ProfileEditTab,
+} from '@/lib/profile-completion';
+import { ProfileCompletionBanner, ProfileNextSteps } from '@/components/profile/ProfileNextSteps';
 
 const Profile: React.FC = () => {
   const { user, createProfile, loading, updateProfile, accessToken } = useAuth();
@@ -46,6 +54,11 @@ const Profile: React.FC = () => {
   const [aiToolsData, setAIToolsData] = useState<any>(null);
   const [mfaRequired, setMfaRequired] = useState(false);
   const [mfaChecked, setMfaChecked] = useState(false);
+  const [profileCompletion, setProfileCompletion] = useState<ProfileCompletion | null>(null);
+  const [journeyProgress, setJourneyProgress] = useState<JourneyProgress>({
+    recommendationsReviewed: false,
+    matchesExplored: false,
+  });
   const dashboardRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
@@ -180,6 +193,33 @@ const Profile: React.FC = () => {
     
     fetchAIProficiency();
   }, [user, refreshTrigger]);
+
+  React.useEffect(() => {
+    if (!user?.id || user.userType !== 'jobseeker' || !user.profile) {
+      setProfileCompletion(null);
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const completion = await getProfileCompletion(
+          user.id,
+          user.profile as JobSeekerProfile
+        );
+        if (!cancelled) {
+          setProfileCompletion(completion);
+          setJourneyProgress(getJourneyProgress(user.id));
+        }
+      } catch (error) {
+        console.error('Failed to load profile completion:', error);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, user?.userType, user?.profile, refreshTrigger, isEditMode]);
   
   // Redirect to login if no user (only after loading is complete)
   React.useEffect(() => {
@@ -306,6 +346,18 @@ const Profile: React.FC = () => {
           {hasCompleteProfile && !isEditMode ? (
             // View Mode - Show profile information
             <>
+              {user.userType === 'jobseeker' && profileCompletion && (
+                <ProfileNextSteps
+                  completion={profileCompletion}
+                  journey={journeyProgress}
+                  onEditProfile={(tab?: ProfileEditTab) => {
+                    if (tab) setActiveTab(tab);
+                    setIsEditMode(true);
+                  }}
+                  onOpenRecommendations={() => navigate('/profilerecommendations')}
+                  onOpenMatches={() => navigate('/matches')}
+                />
+              )}
               {/* Profile header */}
               <div className="p-6">
                 <div className="flex flex-col md:flex-row items-center gap-6">
@@ -361,15 +413,6 @@ const Profile: React.FC = () => {
                         {user.userType === 'jobseeker' && (
                           <div className="mt-auto pt-3 flex flex-wrap justify-center md:justify-start gap-2">
                             <Button
-                              onClick={() => navigate('/matches')}
-                              size="sm"
-                              variant="outline"
-                              className="bg-white/70 text-talendeur-navy hover:bg-talendeur-navy hover:text-white border-talendeur-navy transition-colors"
-                            >
-                              <Briefcase className="mr-1.5 h-4 w-4" />
-                              Matches
-                            </Button>
-                            <Button
                               onClick={() => navigate('/profilerecommendations')}
                               size="sm"
                               variant="outline"
@@ -377,6 +420,15 @@ const Profile: React.FC = () => {
                             >
                               <Sparkles className="mr-1.5 h-4 w-4" />
                               Profile recommendations
+                            </Button>
+                            <Button
+                              onClick={() => navigate('/matches')}
+                              size="sm"
+                              variant="outline"
+                              className="bg-white/70 text-talendeur-navy hover:bg-talendeur-navy hover:text-white border-talendeur-navy transition-colors"
+                            >
+                              <Briefcase className="mr-1.5 h-4 w-4" />
+                              Matches
                             </Button>
                             <Button
                               onClick={() => navigate('/ikigai')}
@@ -520,7 +572,9 @@ const Profile: React.FC = () => {
                   <div>
                     <CardTitle>{hasCompleteProfile ? 'Edit Profile' : 'Complete Your Profile'}</CardTitle>
                     <CardDescription>
-                      {hasCompleteProfile ? 'Update your information' : 'Fill in your details to start matching'}
+                      {hasCompleteProfile
+                        ? 'Update your information'
+                        : 'Fill in your details — then review recommendations and explore matches'}
                     </CardDescription>
                   </div>
                   {hasCompleteProfile && (
@@ -538,6 +592,11 @@ const Profile: React.FC = () => {
                     </Button>
                   )}
                 </CardHeader>
+                {user.userType === 'jobseeker' && profileCompletion && (
+                  <CardContent className="pt-0">
+                    <ProfileCompletionBanner completion={profileCompletion} />
+                  </CardContent>
+                )}
               </Card>
 
               {user.userType === 'jobseeker' ? (

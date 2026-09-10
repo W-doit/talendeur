@@ -443,7 +443,7 @@ export async function analyzeProfileGaps(
   return analyzeProfileGapsLocal(snapshot, targetRole, targetOrganization);
 }
 
-export function saveGapAnalysis(userId: string, result: GapAnalysisResult): void {
+export function saveGapAnalysisLocal(userId: string, result: GapAnalysisResult): void {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     const all = raw ? JSON.parse(raw) : {};
@@ -454,6 +454,7 @@ export function saveGapAnalysis(userId: string, result: GapAnalysisResult): void
   }
 }
 
+/** Sync local cache only — used for quick journey checks. Prefer loadGapAnalysis for UI. */
 export function loadSavedGapAnalysis(userId: string): GapAnalysisResult | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -463,4 +464,36 @@ export function loadSavedGapAnalysis(userId: string): GapAnalysisResult | null {
   } catch {
     return null;
   }
+}
+
+export async function saveGapAnalysis(userId: string, result: GapAnalysisResult): Promise<void> {
+  saveGapAnalysisLocal(userId, result);
+  const { error } = await supabase
+    .from('profile')
+    .update({ gap_analysis_result: result as unknown as Record<string, unknown> })
+    .eq('user_id', userId);
+  if (error) {
+    console.error('Could not save gap analysis to profile:', error);
+  }
+}
+
+export async function loadGapAnalysis(userId: string): Promise<GapAnalysisResult | null> {
+  const cached = loadSavedGapAnalysis(userId);
+  const { data, error } = await supabase
+    .from('profile')
+    .select('gap_analysis_result')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (error) {
+    console.error('Could not load gap analysis from profile:', error);
+    return cached;
+  }
+
+  const remote = data?.gap_analysis_result as GapAnalysisResult | null;
+  if (remote && typeof remote === 'object' && remote.targetRole) {
+    saveGapAnalysisLocal(userId, remote);
+    return remote;
+  }
+  return cached;
 }

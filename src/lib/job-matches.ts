@@ -42,7 +42,7 @@ export interface JobMatchesOptions {
 }
 
 const STORAGE_KEY = 'talendeur_job_matches';
-const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+const CACHE_TTL_MS = 12 * 60 * 60 * 1000; // 12 hours
 
 const TECHNICAL_SUMMARY_PATTERNS = [
   /local heuristic/i,
@@ -194,11 +194,13 @@ export function normalizeJobMatchesResult(result: JobMatchesResult): JobMatchesR
   };
 }
 
+/** Do not persist empty results — they block retries for the full TTL. */
 export function saveJobMatchesCache(
   userId: string,
   result: JobMatchesResult,
   options: JobMatchesOptions = {}
 ): void {
+  if (!result.matches?.length) return;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     const all = raw ? JSON.parse(raw) : {};
@@ -226,6 +228,7 @@ export function loadJobMatchesCache(
     if (!cached?.result || !cached.savedAt) return null;
     if (Date.now() - cached.savedAt > CACHE_TTL_MS) return null;
     if (cached.optionsKey !== optionsKey(options)) return null;
+    if (!cached.result.matches?.length) return null;
     return normalizeJobMatchesResult(cached.result);
   } catch {
     return null;

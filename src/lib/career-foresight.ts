@@ -397,7 +397,7 @@ export async function analyzeCareerForesight(
   return analyzeCareerForesightLocal(snapshot, options);
 }
 
-export function saveCareerForesight(userId: string, result: CareerForesightResult): void {
+export function saveCareerForesightLocal(userId: string, result: CareerForesightResult): void {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     const all = raw ? JSON.parse(raw) : {};
@@ -408,6 +408,7 @@ export function saveCareerForesight(userId: string, result: CareerForesightResul
   }
 }
 
+/** Sync local cache only — used for quick journey checks. Prefer loadCareerForesight for UI. */
 export function loadSavedCareerForesight(userId: string): CareerForesightResult | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -417,4 +418,39 @@ export function loadSavedCareerForesight(userId: string): CareerForesightResult 
   } catch {
     return null;
   }
+}
+
+export async function saveCareerForesight(
+  userId: string,
+  result: CareerForesightResult
+): Promise<void> {
+  saveCareerForesightLocal(userId, result);
+  const { error } = await supabase
+    .from('profile')
+    .update({ career_foresight_result: result as unknown as Record<string, unknown> })
+    .eq('user_id', userId);
+  if (error) {
+    console.error('Could not save career foresight to profile:', error);
+  }
+}
+
+export async function loadCareerForesight(userId: string): Promise<CareerForesightResult | null> {
+  const cached = loadSavedCareerForesight(userId);
+  const { data, error } = await supabase
+    .from('profile')
+    .select('career_foresight_result')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (error) {
+    console.error('Could not load career foresight from profile:', error);
+    return cached;
+  }
+
+  const remote = data?.career_foresight_result as CareerForesightResult | null;
+  if (remote && typeof remote === 'object' && remote.positioningThesis) {
+    saveCareerForesightLocal(userId, remote);
+    return remote;
+  }
+  return cached;
 }

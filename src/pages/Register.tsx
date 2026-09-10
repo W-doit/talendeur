@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MainLayout from '@/components/layout/MainLayout';
 import { PasswordStrengthIndicator } from '@/components/auth/PasswordStrengthIndicator';
 import { getPasswordValidation } from '@/lib/password-validation';
+import { UserPlus } from 'lucide-react';
 
 const Register: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -64,7 +65,10 @@ const Register: React.FC = () => {
       <div className="container max-w-md mx-auto py-16 px-4">
         <Card className="w-full">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl text-center">Create an account</CardTitle>
+            <CardTitle className="text-2xl text-center flex items-center justify-center gap-2">
+              <UserPlus className="h-6 w-6 text-talendeur-navy" />
+              Create an account
+            </CardTitle>
           </CardHeader>
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4">
@@ -143,7 +147,14 @@ const Register: React.FC = () => {
                 className="w-full bg-talendeur-primary hover:bg-talendeur-primary-dark text-white"
                 disabled={isSubmitting || !getPasswordValidation(password).isValid}
               >
-                {isSubmitting ? 'Creating account...' : 'Create account'}
+                {isSubmitting ? (
+                  'Creating account...'
+                ) : (
+                  <>
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Create account
+                  </>
+                )}
               </Button>
               <div className="text-sm text-center text-muted-foreground">
                 Already have an account?{" "}
