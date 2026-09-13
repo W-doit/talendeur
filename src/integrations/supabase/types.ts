@@ -181,6 +181,53 @@ export type Database = {
           created_at?: string | null
         }
       }
+      saved_job_matches: {
+        Row: {
+          id: string
+          user_id: string
+          job_id: string
+          title: string
+          company: string | null
+          location: string | null
+          url: string
+          description_snippet: string | null
+          source: string | null
+          score: number | null
+          why_fit: string | null
+          gaps: string[] | null
+          saved_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          job_id: string
+          title: string
+          company?: string | null
+          location?: string | null
+          url: string
+          description_snippet?: string | null
+          source?: string | null
+          score?: number | null
+          why_fit?: string | null
+          gaps?: string[] | null
+          saved_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          job_id?: string
+          title?: string
+          company?: string | null
+          location?: string | null
+          url?: string
+          description_snippet?: string | null
+          source?: string | null
+          score?: number | null
+          why_fit?: string | null
+          gaps?: string[] | null
+          saved_at?: string
+        }
+      }
       organization_details: {
         Row: {
           organization_id: string
@@ -223,6 +270,7 @@ export type Database = {
           gap_analysis_result: Json | null
           career_foresight_result: Json | null
           open_to_relocation: boolean | null
+          country_of_residence: string | null
           target_organizations: string[] | null
           user_type: string
         }
@@ -241,6 +289,7 @@ export type Database = {
           gap_analysis_result?: Json | null
           career_foresight_result?: Json | null
           open_to_relocation?: boolean | null
+          country_of_residence?: string | null
           target_organizations?: string[] | null
           user_type: string
         }
@@ -259,6 +308,7 @@ export type Database = {
           gap_analysis_result?: Json | null
           career_foresight_result?: Json | null
           open_to_relocation?: boolean | null
+          country_of_residence?: string | null
           target_organizations?: string[] | null
           user_type?: string
         }

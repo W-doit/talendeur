@@ -364,7 +364,7 @@ export function analyzeProfileGapsLocal(
 
   if (targetOrganization) {
     recommendations.push({
-      action: `Tailor your headline and bio toward ${targetOrganization}’s domain and product language`,
+      action: `Tailor your headline and bio towards ${targetOrganization}’s domain and product language`,
       why: 'Company-specific framing improves perceived fit beyond generic role matching.',
       effort: 'quick win',
     });

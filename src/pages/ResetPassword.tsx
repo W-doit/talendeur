@@ -216,7 +216,7 @@ const ResetPassword: React.FC = () => {
                 onClick={() => navigate('/login')}
                 className="w-full bg-talendeur-primary hover:bg-talendeur-primary-dark text-white"
               >
-                Go to Login
+                Go to log in
               </Button>
             </CardFooter>
           </Card>

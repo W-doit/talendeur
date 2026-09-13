@@ -61,7 +61,14 @@ const StarRating = ({
   );
 };
 
-export default function FeedbackButton({ inFooter = false }: { inFooter?: boolean }) {
+export default function FeedbackButton({
+  inFooter = false,
+  hideFloating = false,
+}: {
+  inFooter?: boolean;
+  /** Hide the floating FAB (e.g. while a mascot coach prompt is visible) */
+  hideFloating?: boolean;
+}) {
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasSubmitted, setHasSubmitted] = useState(false);
@@ -200,13 +207,16 @@ export default function FeedbackButton({ inFooter = false }: { inFooter?: boolea
           Give Feedback
         </button>
       ) : (
+        !hideFloating && (
         <button
           onClick={() => setIsOpen(true)}
           className={`fixed bottom-6 right-6 z-50 rounded-full shadow-2xl hover:shadow-3xl transition-all duration-300 flex items-center gap-2 group overflow-hidden ${
-            isVisible ? 'translate-x-0 opacity-100' : 'translate-x-20 opacity-0'
+            isVisible ? 'translate-x-0 opacity-100' : 'translate-x-20 opacity-0 pointer-events-none'
           }`}
           style={{ backgroundColor: '#9EBC9E', color: '#FFFFFF' }}
           aria-label="Give us feedback"
+          aria-hidden={!isVisible}
+          tabIndex={isVisible ? 0 : -1}
         >
           <div className="p-4 flex items-center gap-2">
             <MessageSquare size={24} className="group-hover:rotate-12 transition-transform flex-shrink-0" />
@@ -215,6 +225,7 @@ export default function FeedbackButton({ inFooter = false }: { inFooter?: boolea
             </span>
           </div>
         </button>
+        )
       )}
 
       {/* Feedback Dialog - Shared by both versions */}

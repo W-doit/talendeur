@@ -355,7 +355,7 @@ const ProfileRecommendations: React.FC = () => {
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg">Recommended next steps</CardTitle>
-                    <CardDescription>Actionable ways to close the gap toward your target role</CardDescription>
+                    <CardDescription>Actionable ways to close the gap towards your target role</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     {gapResult.recommendations.map((rec) => (

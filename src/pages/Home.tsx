@@ -26,17 +26,17 @@ const Home: React.FC = () => {
                 Let perfect opportunities <span className="text-white drop-shadow-lg">discover you</span> with Talendeur
               </h1>
               <p className="text-lg md:text-xl mb-8 text-white/90">
-                Talendeur connects organisations with individuals based their unique talent, skills and experience creating a place for fostering meaningful connections
+                Talendeur connects organisations with individuals based on their unique talent, skills and experience, creating a place that fosters meaningful connections.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-end">
                 <Link to="/register">
                   <Button size="lg" variant="outline" className="bg-transparent border-white text-white hover:bg-white/10">
-                    Get Started
+                    Get started
                   </Button>
                 </Link>
                 <Link to="/login">
                   <Button size="lg" variant="outline" className="bg-transparent border-white text-white hover:bg-white/10">
-                    Sign In
+                    Log in
                   </Button>
                 </Link>
               </div>
@@ -49,34 +49,34 @@ const Home: React.FC = () => {
       <section className="py-20 px-4 bg-white dark:bg-talendeur-dark">
         <div className="container mx-auto max-w-7xl">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">How Talendeur Works</h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">How Talendeur works</h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Talendeur makes you stand out from crowd by highlighting your uniqueness based on your skills, competencies and experience. Get started with 3 simple steps
+              Talendeur helps you stand out from the crowd by highlighting your uniqueness based on your skills, competencies and experience. Get started with three simple steps.
             </p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="bg-muted/30 rounded-xl p-6 text-center">
               <div className="w-16 h-16 bg-talendeur-primary rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">1</div>
-              <h3 className="text-xl font-bold mb-3">Create Your Profile</h3>
+              <h3 className="text-xl font-bold mb-3">Create your profile</h3>
               <p className="text-muted-foreground">
-                Create your profile with a easy click by uploading CV or your LinkedIn profile. Upload your 2 min video to describe your superpowers. Complete your profile to get discovered
+                Create your profile in a click by uploading your CV or LinkedIn profile. Upload a 2-minute video describing your strengths. Complete your profile to get discovered.
               </p>
             </div>
             
             <div className="bg-muted/30 rounded-xl p-6 text-center">
               <div className="w-16 h-16 bg-talendeur-orange rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">2</div>
-              <h3 className="text-xl font-bold mb-3">Share Your Profile</h3>
+              <h3 className="text-xl font-bold mb-3">Share your profile</h3>
               <p className="text-muted-foreground">
-                Share your Talendeur profile with a simple click on LinkedIn and other social platforms. Your unique snapshot preview showcases your skills and experience, making you stand out when opportunities come knocking
+                Share your Talendeur profile on LinkedIn and other social platforms with one click. Your unique snapshot preview showcases your skills and experience, helping you stand out when opportunities arise.
               </p>
             </div>
             
             <div className="bg-muted/30 rounded-xl p-6 text-center">
               <div className="w-16 h-16 bg-talendeur-primary rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">3</div>
-              <h3 className="text-xl font-bold mb-3">Discover and Get Discovered</h3>
+              <h3 className="text-xl font-bold mb-3">Discover and get discovered</h3>
               <p className="text-muted-foreground">
-                Browse through potential opportunities and show interest, and also notice the organisations showing interest in your profile at the same time
+                Browse opportunities and show interest — and see which organisations are interested in you at the same time.
               </p>
             </div>
           </div>
@@ -87,7 +87,7 @@ const Home: React.FC = () => {
       <section className="py-20 px-4 bg-muted/30">
         <div className="container mx-auto max-w-7xl">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Success Stories</h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Success stories</h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               See how Talendeur has helped professionals and organisations find their perfect match.
             </p>
@@ -134,13 +134,13 @@ const Home: React.FC = () => {
       {/* CTA */}
       <section className="bg-gradient-to-r from-white via-talendeur-orange to-talendeur-primary py-20 px-4 text-white">
         <div className="container mx-auto max-w-7xl text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to Find Your Perfect Match?</h2>
+          <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to find your perfect match?</h2>
           <p className="text-xl mb-8 text-white/90 max-w-2xl mx-auto">
             Join Talendeur today and revolutionise the way you connect in the professional world.
           </p>
           <Link to="/register">
             <Button size="lg" variant="outline" className="bg-transparent border-white text-white hover:bg-white/10">
-              Get Started Now
+              Get started now
             </Button>
           </Link>
         </div>

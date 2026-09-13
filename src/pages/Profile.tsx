@@ -36,7 +36,11 @@ import {
   type ProfileCompletion,
   type ProfileEditTab,
 } from '@/lib/profile-completion';
-import { ProfileCompletionBanner, ProfileNextSteps } from '@/components/profile/ProfileNextSteps';
+import {
+  ProfileCompletionBanner,
+  ProfileCompletenessMeter,
+  ProfileJourneyCoach,
+} from '@/components/profile/ProfileNextSteps';
 
 const Profile: React.FC = () => {
   const { user, createProfile, loading, updateProfile, accessToken } = useAuth();
@@ -59,6 +63,8 @@ const Profile: React.FC = () => {
     recommendationsReviewed: false,
     matchesExplored: false,
   });
+  const [coachHighlight, setCoachHighlight] = useState<'recommendations' | 'matches' | null>(null);
+  const [coachVisible, setCoachVisible] = useState(false);
   const dashboardRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
@@ -307,18 +313,18 @@ const Profile: React.FC = () => {
                 </TabsList>
                 <TabsContent value="jobseeker" className="pt-4">
                   <div className="space-y-2">
-                    <h3 className="font-semibold">Job Seeker Profile</h3>
+                    <h3 className="font-semibold">Individual profile</h3>
                     <p className="text-sm text-muted-foreground">
                       Create your professional profile to showcase your skills and experience. 
-                      Get matched with organizations looking for talent like you.
+                      Get matched with organisations looking for talent like you.
                     </p>
                   </div>
                 </TabsContent>
                 <TabsContent value="organization" className="pt-4">
                   <div className="space-y-2">
-                    <h3 className="font-semibold">Organization Profile</h3>
+                    <h3 className="font-semibold">Organisation profile</h3>
                     <p className="text-sm text-muted-foreground">
-                      Create your organization profile to find the perfect candidates. 
+                      Create your organisation profile to find the perfect candidates. 
                       Connect with skilled professionals who match your needs.
                     </p>
                   </div>
@@ -346,18 +352,6 @@ const Profile: React.FC = () => {
           {hasCompleteProfile && !isEditMode ? (
             // View Mode - Show profile information
             <>
-              {user.userType === 'jobseeker' && profileCompletion && (
-                <ProfileNextSteps
-                  completion={profileCompletion}
-                  journey={journeyProgress}
-                  onEditProfile={(tab?: ProfileEditTab) => {
-                    if (tab) setActiveTab(tab);
-                    setIsEditMode(true);
-                  }}
-                  onOpenRecommendations={() => navigate('/profilerecommendations')}
-                  onOpenMatches={() => navigate('/matches')}
-                />
-              )}
               {/* Profile header */}
               <div className="p-6">
                 <div className="flex flex-col md:flex-row items-center gap-6">
@@ -411,12 +405,16 @@ const Profile: React.FC = () => {
                           </p>
                         )}
                         {user.userType === 'jobseeker' && (
-                          <div className="mt-auto pt-3 flex flex-wrap justify-center md:justify-start gap-2">
+                          <div className="mt-auto pt-3 flex flex-wrap items-center justify-center md:justify-start gap-2">
                             <Button
                               onClick={() => navigate('/profilerecommendations')}
                               size="sm"
                               variant="outline"
-                              className="bg-white/70 text-talendeur-navy hover:bg-talendeur-navy hover:text-white border-talendeur-navy transition-colors"
+                              className={`bg-white/70 text-talendeur-navy hover:bg-talendeur-navy hover:text-white border-talendeur-navy transition-colors ${
+                                coachHighlight === 'recommendations'
+                                  ? 'ring-2 ring-talendeur-navy ring-offset-2 animate-pulse'
+                                  : ''
+                              }`}
                             >
                               <Sparkles className="mr-1.5 h-4 w-4" />
                               Profile recommendations
@@ -425,7 +423,11 @@ const Profile: React.FC = () => {
                               onClick={() => navigate('/matches')}
                               size="sm"
                               variant="outline"
-                              className="bg-white/70 text-talendeur-navy hover:bg-talendeur-navy hover:text-white border-talendeur-navy transition-colors"
+                              className={`bg-white/70 text-talendeur-navy hover:bg-talendeur-navy hover:text-white border-talendeur-navy transition-colors ${
+                                coachHighlight === 'matches'
+                                  ? 'ring-2 ring-talendeur-navy ring-offset-2 animate-pulse'
+                                  : ''
+                              }`}
                             >
                               <Briefcase className="mr-1.5 h-4 w-4" />
                               Matches
@@ -439,6 +441,16 @@ const Profile: React.FC = () => {
                               <Heart className="mr-1.5 h-4 w-4" />
                               Find your ikigai
                             </Button>
+                            {profileCompletion && (
+                              <ProfileCompletenessMeter
+                                completion={profileCompletion}
+                                onClick={() => {
+                                  const tab = profileCompletion.nextIncomplete?.editTab;
+                                  if (tab) setActiveTab(tab);
+                                  setIsEditMode(true);
+                                }}
+                              />
+                            )}
                           </div>
                         )}
                       </div>
@@ -513,14 +525,14 @@ const Profile: React.FC = () => {
                     {(user.profile as any).videoUrl && (
                       <Card>
                         <CardHeader>
-                          <CardTitle>Organization Video</CardTitle>
+                          <CardTitle>Organisation video</CardTitle>
                         </CardHeader>
                         <CardContent>
                           <div className="relative w-full overflow-hidden rounded-lg border border-gray-200">
                             <div className="aspect-video">
                               <iframe
                                 src={(user.profile as any).videoUrl}
-                                title="Organization video"
+                                title="Organisation video"
                                 className="h-full w-full"
                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                 allowFullScreen
@@ -594,7 +606,12 @@ const Profile: React.FC = () => {
                 </CardHeader>
                 {user.userType === 'jobseeker' && profileCompletion && (
                   <CardContent className="pt-0">
-                    <ProfileCompletionBanner completion={profileCompletion} />
+                    <ProfileCompletionBanner
+                      completion={profileCompletion}
+                      onContinue={(tab?: ProfileEditTab) => {
+                        if (tab) setActiveTab(tab);
+                      }}
+                    />
                   </CardContent>
                 )}
               </Card>
@@ -824,7 +841,22 @@ const Profile: React.FC = () => {
           )}
         </div>
       </div>
-      <FeedbackButton />
+      {user.userType === 'jobseeker' && user.id && profileCompletion && (
+        <ProfileJourneyCoach
+          userId={user.id}
+          completion={profileCompletion}
+          journey={journeyProgress}
+          onEditProfile={(tab?: ProfileEditTab) => {
+            if (tab) setActiveTab(tab);
+            setIsEditMode(true);
+          }}
+          onOpenRecommendations={() => navigate('/profilerecommendations')}
+          onOpenMatches={() => navigate('/matches')}
+          onHighlightChange={setCoachHighlight}
+          onVisibilityChange={setCoachVisible}
+        />
+      )}
+      <FeedbackButton hideFloating={coachVisible} />
     </MainLayout>
   );
 };

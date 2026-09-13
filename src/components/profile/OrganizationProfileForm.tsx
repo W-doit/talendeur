@@ -188,7 +188,7 @@ const OrganizationProfileForm: React.FC<OrganizationProfileFormProps> = ({ onSav
       // Show success toast - stay on form for review
       toast({
         title: 'Profile saved',
-        description: 'Your organization profile has been updated successfully.',
+        description: 'Your organisation profile has been updated successfully.',
         duration: 3000,
       });
     } catch (error) {
@@ -204,13 +204,13 @@ const OrganizationProfileForm: React.FC<OrganizationProfileFormProps> = ({ onSav
         <CardContent className="pt-6">
           <div className="space-y-4">
             <div>
-              <label htmlFor="name" className="block text-sm font-medium mb-1">Organization Name</label>
+              <label htmlFor="name" className="block text-sm font-medium mb-1">Organisation name</label>
               <Input
                 id="name"
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
-                placeholder="Your organization's name"
+                placeholder="Your organisation's name"
                 required
               />
             </div>
@@ -235,13 +235,13 @@ const OrganizationProfileForm: React.FC<OrganizationProfileFormProps> = ({ onSav
                 name="about"
                 value={formData.about}
                 onChange={handleChange}
-                placeholder="Tell us about your organization, its mission, and culture"
+                placeholder="Tell us about your organisation, its mission, and culture"
                 rows={4}
               />
             </div>
             
             <div>
-              <label htmlFor="videoUrl" className="block text-sm font-medium mb-1">Organization Video (Optional)</label>
+              <label htmlFor="videoUrl" className="block text-sm font-medium mb-1">Organisation video (optional)</label>
               <Input
                 id="videoUrl"
                 name="videoUrl"
@@ -263,7 +263,7 @@ const OrganizationProfileForm: React.FC<OrganizationProfileFormProps> = ({ onSav
                 placeholder="https://yourcompany.com/projects or https://github.com/yourorg"
                 type="url"
               />
-              <p className="text-xs text-gray-500 mt-1">Add a link to showcase your organization's projects, case studies, or portfolio</p>
+              <p className="text-xs text-gray-500 mt-1">Add a link to showcase your organisation's projects, case studies, or portfolio</p>
             </div>
             
             <div>
@@ -273,12 +273,12 @@ const OrganizationProfileForm: React.FC<OrganizationProfileFormProps> = ({ onSav
                 name="website"
                 value={formData.website}
                 onChange={handleChange}
-                placeholder="https://your-organization.com"
+                placeholder="https://your-organisation.com"
               />
             </div>
             
             <div>
-              <label className="block text-sm font-medium mb-3">Organization Logo</label>
+              <label className="block text-sm font-medium mb-3">Organisation logo</label>
               <ImageUpload
                 currentImageUrl={formData.logo}
                 onImageChange={handleLogoChange}
@@ -294,8 +294,8 @@ const OrganizationProfileForm: React.FC<OrganizationProfileFormProps> = ({ onSav
 
       <Card>
         <CardContent className="pt-6">
-          <h3 className="text-lg font-semibold mb-4">Contact Persons</h3>
-          <p className="text-sm text-gray-600 mb-4">Add one or more contact persons for your organization. The first contact will be marked as primary by default.</p>
+          <h3 className="text-lg font-semibold mb-4">Contacts</h3>
+          <p className="text-sm text-gray-600 mb-4">Add one or more contacts for your organisation. The first contact will be marked as primary by default.</p>
           
           {/* Existing contacts list */}
           {formData.contacts && formData.contacts.length > 0 && (
