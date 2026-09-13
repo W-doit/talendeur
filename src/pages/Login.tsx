@@ -26,7 +26,7 @@ const Login: React.FC = () => {
     if (session?.user) {
       // Profile load is handled by AuthContext auth listener after MFA upgrades session
       toast({
-        title: 'Login successful',
+        title: 'Signed in successfully',
         description: 'Welcome to Talendeur!',
       });
     }
@@ -71,12 +71,12 @@ const Login: React.FC = () => {
             <CardHeader className="space-y-1">
               <CardTitle className="text-2xl text-center flex items-center justify-center gap-2">
                 <LogIn className="h-6 w-6 text-talendeur-navy" />
-                Login to Talendeur
+                Log in to Talendeur
               </CardTitle>
               <CardDescription className="text-center">
                 {timedOut
-                  ? 'Your session expired due to inactivity. Please sign in again.'
-                  : 'Enter your email and password to sign in'}
+                  ? 'Your session expired due to inactivity. Please log in again.'
+                  : 'Enter your email and password to log in'}
               </CardDescription>
             </CardHeader>
             <form onSubmit={handleSubmit}>
@@ -119,11 +119,11 @@ const Login: React.FC = () => {
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? (
-                    'Signing in...'
+                    'Logging in...'
                   ) : (
                     <>
                       <LogIn className="mr-2 h-4 w-4" />
-                      Sign In
+                      Log in
                     </>
                   )}
                 </Button>

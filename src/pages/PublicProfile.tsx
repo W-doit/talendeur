@@ -233,7 +233,7 @@ const PublicProfile: React.FC = () => {
     const keywords = [
       'Talendeur',
       name,
-      isJobSeeker ? 'job seeker' : 'organization',
+      isJobSeeker ? 'job seeker' : 'organisation',
       'talent matching',
       'professional profile',
       'career opportunities'
@@ -378,14 +378,14 @@ const PublicProfile: React.FC = () => {
                 {profile.videoUrl && (
                   <Card>
                     <CardHeader>
-                      <CardTitle>Organization Video</CardTitle>
+                      <CardTitle>Organisation video</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="relative w-full overflow-hidden rounded-lg border border-gray-200">
                         <div className="aspect-video">
                           <iframe
                             src={profile.videoUrl}
-                            title="Organization video"
+                            title="Organisation video"
                             className="h-full w-full"
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                             allowFullScreen

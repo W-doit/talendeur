@@ -29,11 +29,11 @@ const TRAIT_INFO = {
   },
   conscientiousness: {
     color: '#CFC6B8',
-    description: 'Organization, responsibility, and self-discipline'
+    description: 'Organisation, responsibility, and self-discipline'
   },
   extraversion: {
     color: '#FFCFD2',
-    description: 'Sociability, assertiveness, and energetic behavior'
+    description: 'Sociability, assertiveness, and energetic behaviour'
   },
   agreeableness: {
     color: '#FFAFC5',
@@ -41,7 +41,7 @@ const TRAIT_INFO = {
   },
   neuroticism: {
     color: '#AA778A',
-    description: 'Emotional stability and tendency toward negative emotions'
+    description: 'Emotional stability and tendency towards negative emotions'
   },
 };
 

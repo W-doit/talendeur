@@ -95,7 +95,7 @@ function updateOrCreateMetaTag(
 export function resetMetaTags() {
   updateMetaTags({
     title: 'Talendeur - Match Your Talent',
-    description: 'Modern talent matching platform connecting job seekers with organizations',
+    description: 'Modern talent matching platform connecting job seekers with organisations',
     image: '/Talendeur_logo.png',
     type: 'website',
   });

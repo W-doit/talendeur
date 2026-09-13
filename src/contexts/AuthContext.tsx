@@ -26,6 +26,7 @@ export interface JobSeekerProfile {
   };
   bio: string;
   openToRelocation?: boolean;
+  countryOfResidence?: string;
   targetOrganizations?: string[];
   dashboardLayout?: DashboardSectionConfig[];
 }
@@ -200,6 +201,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           },
           bio: profileData.bio || '',
           openToRelocation: !!profileData.open_to_relocation,
+          countryOfResidence: profileData.country_of_residence || undefined,
           targetOrganizations: Array.isArray(profileData.target_organizations)
             ? profileData.target_organizations
             : [],
@@ -446,7 +448,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (!response.ok) {
         console.error('Login error:', data);
         toast({
-          title: "Login failed",
+          title: "Sign-in failed",
           description: data.error_description || data.msg || "Invalid email or password",
           variant: "destructive",
         });
@@ -456,7 +458,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (!data.user) {
         console.error('No user in response data');
         toast({
-          title: "Login failed",
+          title: "Sign-in failed",
           description: "No user data returned",
           variant: "destructive",
         });
@@ -519,7 +521,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         });
 
         toast({
-          title: "Login successful",
+          title: "Signed in successfully",
           description: "Welcome to Talendeur!",
         });
       }
@@ -608,13 +610,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       supabase.auth.signOut().catch(err => console.warn('SignOut warning:', err));
       
       toast({
-        title: "Logged out",
-        description: "You have been successfully logged out",
+        title: "Signed out",
+        description: "You have been signed out successfully",
       });
     } catch (error: any) {
       toast({
-        title: "Logout failed",
-        description: error.message || "Could not log out",
+        title: "Sign-out failed",
+        description: error.message || "Could not sign out",
         variant: "destructive",
       });
     } finally {
@@ -629,7 +631,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (!user) {
       toast({
         title: "Update failed",
-        description: "You must be logged in",
+        description: "You must be signed in",
         variant: "destructive",
       });
       return;
@@ -680,6 +682,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       if ('openToRelocation' in profileData) {
         profileUpdate.open_to_relocation = !!(profileData as JobSeekerProfile).openToRelocation;
+      }
+
+      if ('countryOfResidence' in profileData) {
+        const country = ((profileData as JobSeekerProfile).countryOfResidence || '').trim();
+        profileUpdate.country_of_residence = country || null;
       }
 
       if ('targetOrganizations' in profileData) {
@@ -748,12 +755,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // Drop unknown preference columns if migration not applied yet
       if (
         profileError &&
-        (/open_to_relocation|target_organizations/i.test(profileError.message || ''))
+        (/open_to_relocation|target_organizations|country_of_residence/i.test(profileError.message || ''))
       ) {
         console.warn('Preference columns missing; retrying without them');
         const {
           open_to_relocation: _a,
           target_organizations: _b,
+          country_of_residence: _c,
           ...withoutPrefs
         } = profileUpdate;
         const retry = await supabase

@@ -47,7 +47,7 @@ const Navbar: React.FC = () => {
 
           <Button variant="outline" className={navBtnClass} onClick={handleLogout}>
             <LogOut className="h-5 w-5 sm:mr-0 mr-2" />
-            <span className="sm:hidden">Log out</span>
+            <span className="sm:hidden">Sign out</span>
           </Button>
         </>
       ) : (
@@ -55,7 +55,7 @@ const Navbar: React.FC = () => {
           <Link to="/login" onClick={() => setMenuOpen(false)} className="w-full sm:w-auto">
             <Button variant="outline" className={navBtnClass}>
               <LogIn className="mr-2 h-5 w-5" />
-              Login
+              Log in
             </Button>
           </Link>
           <Link to="/register" onClick={() => setMenuOpen(false)} className="w-full sm:w-auto">
