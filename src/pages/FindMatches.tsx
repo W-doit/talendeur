@@ -41,7 +41,7 @@ const FindMatches: React.FC = () => {
           </CardHeader>
           <CardContent className="text-center space-y-6">
             <p className="text-muted-foreground">
-              We're working hard to bring you an amazing experience to find {user.userType === 'jobseeker' ? 'organizations' : 'talented professionals'}. 
+              We're working hard to bring you an amazing experience to find {user.userType === 'jobseeker' ? 'organisations' : 'talented professionals'}. 
               Stay tuned!
             </p>
             <div className="space-y-3">

@@ -111,7 +111,7 @@ export const LinkedInImport: React.FC<LinkedInImportProps> = ({ onImport, curren
               <li>Once downloaded, upload the PDF file below</li>
             </ol>
             <div className="mt-3 pt-3 border-t">
-              <strong>Or upload your existing CV/Resume (PDF format)</strong>
+              <strong>Or upload your existing CV (PDF format)</strong>
             </div>
           </AlertDescription>
         </Alert>

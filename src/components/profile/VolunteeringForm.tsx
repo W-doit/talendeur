@@ -198,7 +198,7 @@ export const VolunteeringForm = ({ onSaveComplete }: VolunteeringFormProps = {})
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <Label>Organization</Label>
+                <Label>Organisation</Label>
                 <Input
                   value={entry.organization_name}
                   onChange={(e) => updateEntry(index, 'organization_name', e.target.value)}

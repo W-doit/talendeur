@@ -82,12 +82,13 @@ export async function getProfileCompletion(
   const hasName = filled(profile.name);
   const hasHeadline = filled(profile.headline);
   const hasPhoto = filled(profile.profilePic);
-  const basicsComplete = hasName && hasHeadline && hasPhoto;
+  const hasCountry = filled(profile.countryOfResidence);
+  const basicsComplete = hasName && hasHeadline && hasPhoto && hasCountry;
 
   const sections: CompletionSection[] = [
     {
       id: 'basics',
-      label: 'Basics (name, headline, photo)',
+      label: 'Basics (name, headline, photo, country)',
       weight: 20,
       complete: basicsComplete,
       editTab: 'basic',
@@ -216,4 +217,41 @@ export function getActiveJourneyStep(
   if (!journey.recommendationsReviewed) return 'recommendations';
   if (!journey.matchesExplored) return 'matches';
   return null;
+}
+
+const COACH_DISMISS_KEY = 'talendeur_coach_dismiss';
+
+export type CoachPromptId = JourneyStepId | 'complete';
+
+function readCoachDismiss(userId: string): Partial<Record<CoachPromptId, boolean>> {
+  try {
+    const raw = localStorage.getItem(COACH_DISMISS_KEY);
+    if (!raw) return {};
+    const all = JSON.parse(raw);
+    return (all[userId] || {}) as Partial<Record<CoachPromptId, boolean>>;
+  } catch {
+    return {};
+  }
+}
+
+export function isCoachDismissed(userId: string, promptId: CoachPromptId): boolean {
+  return Boolean(readCoachDismiss(userId)[promptId]);
+}
+
+export function dismissCoachPrompt(userId: string, promptId: CoachPromptId): void {
+  try {
+    const raw = localStorage.getItem(COACH_DISMISS_KEY);
+    const all = raw ? JSON.parse(raw) : {};
+    all[userId] = { ...readCoachDismiss(userId), [promptId]: true };
+    localStorage.setItem(COACH_DISMISS_KEY, JSON.stringify(all));
+  } catch {
+    /* ignore */
+  }
+}
+
+export function getCoachPromptId(
+  completion: ProfileCompletion,
+  journey: JourneyProgress
+): CoachPromptId {
+  return getActiveJourneyStep(completion, journey) ?? 'complete';
 }

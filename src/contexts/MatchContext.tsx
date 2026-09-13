@@ -110,7 +110,7 @@ const allJobSeekers: JobSeekerProfile[] = [
       feedback: 85,
       learning: 92
     },
-    bio: 'Data scientist with expertise in machine learning and predictive modeling. Experienced in turning complex data into actionable insights for business growth.'
+    bio: 'Data scientist with expertise in machine learning and predictive modelling. Experienced in turning complex data into actionable insights for business growth.'
   }
 ];
 

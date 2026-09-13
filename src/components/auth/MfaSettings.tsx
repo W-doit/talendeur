@@ -163,7 +163,7 @@ export const MfaSettings: React.FC = () => {
         </CardTitle>
         <CardDescription>
           Protect your account with an authenticator app (Google Authenticator, 1Password, Authy, etc.).
-          MFA is managed by Supabase Auth — enable TOTP in the Supabase Dashboard if enrollment fails.
+          MFA is managed by Supabase Auth — enable TOTP in the Supabase Dashboard if enrolment fails.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

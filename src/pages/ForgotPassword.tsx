@@ -63,7 +63,7 @@ const ForgotPassword: React.FC = () => {
               <Link to="/login" className="w-full">
                 <Button variant="outline" className="w-full">
                   <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back to Login
+                  Back to log in
                 </Button>
               </Link>
               <div className="text-sm text-center text-muted-foreground">
@@ -126,7 +126,7 @@ const ForgotPassword: React.FC = () => {
               <Link to="/login" className="w-full">
                 <Button variant="outline" className="w-full">
                   <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back to Login
+                  Back to log in
                 </Button>
               </Link>
             </CardFooter>

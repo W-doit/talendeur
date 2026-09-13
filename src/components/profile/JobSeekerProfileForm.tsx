@@ -55,6 +55,7 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({
     videoUrl: profile?.videoUrl || '',
     portfolioUrl: profile?.portfolioUrl || '',
     openToRelocation: profile?.openToRelocation || false,
+    countryOfResidence: profile?.countryOfResidence || '',
     targetOrganizations: profile?.targetOrganizations || [],
   });
   const [targetOrgsInput, setTargetOrgsInput] = useState(
@@ -105,6 +106,7 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({
       videoUrl: profile.videoUrl || '',
       portfolioUrl: profile.portfolioUrl || '',
       openToRelocation: profile.openToRelocation || false,
+      countryOfResidence: profile.countryOfResidence || '',
       targetOrganizations: profile.targetOrganizations || [],
     }));
     setTargetOrgsInput((profile.targetOrganizations || []).join(', '));
@@ -117,6 +119,7 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({
     profile?.videoUrl,
     profile?.portfolioUrl,
     profile?.openToRelocation,
+    profile?.countryOfResidence,
     profile?.targetOrganizations,
   ]);
 
@@ -222,6 +225,7 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({
         profilePic: profilePicUrl,
         cv: cvUrl,
         openToRelocation: !!formData.openToRelocation,
+        countryOfResidence: (formData.countryOfResidence || '').trim(),
         targetOrganizations: targetOrgsInput
           .split(',')
           .map((s) => s.trim())
@@ -515,6 +519,22 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({
               <p className="text-xs text-gray-500 mt-1">Add a link to your portfolio, GitHub, Behance, or personal website</p>
             </div>
 
+            <div>
+              <label htmlFor="countryOfResidence" className="block text-sm font-medium mb-1">
+                Country of residence
+              </label>
+              <Input
+                id="countryOfResidence"
+                name="countryOfResidence"
+                value={formData.countryOfResidence || ''}
+                onChange={handleChange}
+                placeholder="e.g. United Kingdom, Germany, Spain"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Used as the default location when searching for matches (unless you choose Remote or another place)
+              </p>
+            </div>
+
             <div className="flex items-center gap-2 pt-2">
               <Checkbox
                 id="openToRelocation"
@@ -528,7 +548,7 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({
 
             <div>
               <label htmlFor="targetOrganizations" className="block text-sm font-medium mb-1">
-                Looking to connect with (organizations / sectors)
+                Looking to connect with (organisations / sectors)
               </label>
               <Input
                 id="targetOrganizations"
@@ -536,7 +556,7 @@ const JobSeekerProfileForm: React.FC<JobSeekerProfileFormProps> = ({
                 onChange={(e) => setTargetOrgsInput(e.target.value)}
                 placeholder="e.g., UNESCO, renewable energy startups, NGOs"
               />
-              <p className="text-xs text-gray-500 mt-1">Comma-separated list of organizations or sectors</p>
+              <p className="text-xs text-gray-500 mt-1">Comma-separated list of organisations or sectors</p>
             </div>
             
             <div>
