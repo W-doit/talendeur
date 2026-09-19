@@ -23,10 +23,10 @@ const Home: React.FC = () => {
             </div>
             <div className="flex-1 text-center md:text-right order-1 md:order-2">
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
-                Let perfect opportunities <span className="text-white drop-shadow-lg">discover you</span> with Talendeur
+                Stop searching. Start becoming.
               </h1>
               <p className="text-lg md:text-xl mb-8 text-white/90">
-                Talendeur connects organisations with individuals based on their unique talent, skills and experience, creating a place that fosters meaningful connections.
+                Talendeur helps you see yourself in a whole new light. Uncover talents you didn&apos;t know you had, get pointed toward opportunities that fit who you&apos;re growing into, and keep leveling up as you go.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-end">
                 <Link to="/register">
@@ -50,82 +50,46 @@ const Home: React.FC = () => {
         <div className="container mx-auto max-w-7xl">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">How Talendeur works</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-2">
+              Your uniqueness, unlocked.
+            </p>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Talendeur helps you stand out from the crowd by highlighting your uniqueness based on your skills, competencies and experience. Get started with three simple steps.
+              Talendeur digs into what makes you you — your skills, your strengths, your story — and puts it front and center. Three steps in, you&apos;re already standing out.
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-muted/30 rounded-xl p-6 text-center">
-              <div className="w-16 h-16 bg-talendeur-primary rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">1</div>
-              <h3 className="text-xl font-bold mb-3">Create your profile</h3>
-              <p className="text-muted-foreground">
-                Create your profile in a click by uploading your CV or LinkedIn profile. Upload a 2-minute video describing your strengths. Complete your profile to get discovered.
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
+            <div className="bg-muted/30 rounded-xl p-6 flex flex-col h-full text-left">
+              <div className="w-16 h-16 bg-talendeur-primary rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4 shrink-0">1</div>
+              <h3 className="text-xl font-bold mb-2 text-center">Create profile</h3>
+              <p className="text-talendeur-navy font-semibold mb-3">
+                Build a profile that actually sounds like you.
+              </p>
+              <p className="text-muted-foreground text-sm leading-relaxed flex-1">
+                Skip the blank page — upload your CV or LinkedIn and you&apos;re in. Drop a short video and let your strengths do the talking. Then watch it come alive: ikigai maps what drives you, your word cloud shows what you&apos;re about. Complete it, and let the right people find you.
               </p>
             </div>
             
-            <div className="bg-muted/30 rounded-xl p-6 text-center">
-              <div className="w-16 h-16 bg-talendeur-orange rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">2</div>
-              <h3 className="text-xl font-bold mb-3">Share your profile</h3>
-              <p className="text-muted-foreground">
-                Share your Talendeur profile on LinkedIn and other social platforms with one click. Your unique snapshot preview showcases your skills and experience, helping you stand out when opportunities arise.
+            <div className="bg-muted/30 rounded-xl p-6 flex flex-col h-full text-left">
+              <div className="w-16 h-16 bg-talendeur-orange rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4 shrink-0">2</div>
+              <h3 className="text-xl font-bold mb-2 text-center">Share profile</h3>
+              <p className="text-talendeur-navy font-semibold mb-3">
+                One click. Everywhere.
+              </p>
+              <p className="text-muted-foreground text-sm leading-relaxed flex-1">
+                Share your Talendeur profile straight to LinkedIn and beyond. Your snapshot preview does the talking — skills, strengths, story — so you&apos;re already standing out before the conversation even starts.
               </p>
             </div>
             
-            <div className="bg-muted/30 rounded-xl p-6 text-center">
-              <div className="w-16 h-16 bg-talendeur-primary rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">3</div>
-              <h3 className="text-xl font-bold mb-3">Discover and get discovered</h3>
-              <p className="text-muted-foreground">
-                Browse opportunities and show interest — and see which organisations are interested in you at the same time.
+            <div className="bg-muted/30 rounded-xl p-6 flex flex-col h-full text-left">
+              <div className="w-16 h-16 bg-talendeur-primary rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4 shrink-0">3</div>
+              <h3 className="text-xl font-bold mb-2 text-center">Discover and get discovered</h3>
+              <p className="text-talendeur-navy font-semibold mb-3">
+                It goes both ways. And it never stops.
               </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials */}
-      <section className="py-20 px-4 bg-muted/30">
-        <div className="container mx-auto max-w-7xl">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Success stories</h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              See how Talendeur has helped professionals and organisations find their perfect match.
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="bg-white dark:bg-talendeur-dark rounded-xl p-8 shadow-md">
-              <p className="text-lg mb-6 italic">
-                "Talendeur completely changed my job search. Instead of sending out countless applications, I was able to connect with companies that truly valued my specific skill set."
+              <p className="text-muted-foreground text-sm leading-relaxed flex-1">
+                Browse what&apos;s out there and raise your hand. Opportunities are raising theirs for you too. Along the way, learn, get mentored, and level up — so every match finds you a little more ready than the last.
               </p>
-              <div className="flex items-center">
-                <img 
-                  src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=1000&auto=format&fit=crop" 
-                  alt="Sarah T." 
-                  className="w-12 h-12 rounded-full mr-4"
-                />
-                <div>
-                  <h4 className="font-bold">Sarah T.</h4>
-                  <p className="text-sm text-muted-foreground">UX Designer</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-white dark:bg-talendeur-dark rounded-xl p-8 shadow-md">
-              <p className="text-lg mb-6 italic">
-                "As a fast-growing startup, finding the right talent was our biggest challenge. Talendeur helped us connect with professionals who were not just qualified, but also aligned with our mission."
-              </p>
-              <div className="flex items-center">
-                <img 
-                  src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1000&auto=format&fit=crop" 
-                  alt="Michael R." 
-                  className="w-12 h-12 rounded-full mr-4"
-                />
-                <div>
-                  <h4 className="font-bold">Michael R.</h4>
-                  <p className="text-sm text-muted-foreground">CTO at TechInnovate</p>
-                </div>
-              </div>
             </div>
           </div>
         </div>
