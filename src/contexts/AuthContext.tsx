@@ -571,6 +571,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           }
         }
 
+        void import('@/lib/product-analytics').then(({ trackEvent }) =>
+          trackEvent('registration', { user_type: userType })
+        );
+
         toast({
           title: "Registration successful",
           description: "Your account has been created. You can now complete your profile.",

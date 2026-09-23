@@ -17,6 +17,7 @@ import {
 } from '@/lib/ikigai';
 import { ArrowLeft, ArrowRight, Compass, RefreshCw } from 'lucide-react';
 import { DownloadCardButton } from '@/components/ui/DownloadCardButton';
+import { trackFeatureClick } from '@/lib/product-analytics';
 
 const IkigaiDiagram: React.FC<{ result: IkigaiResult }> = ({ result }) => {
   const circles: Array<{
@@ -135,6 +136,10 @@ const FindIkigai: React.FC = () => {
   useEffect(() => {
     if (!loading && !user) navigate('/login');
   }, [user, loading, navigate]);
+
+  useEffect(() => {
+    void trackFeatureClick('ikigai_page');
+  }, []);
 
   useEffect(() => {
     if (!user?.id) return;
