@@ -24,6 +24,7 @@ import {
 } from '@/lib/career-foresight';
 import { ArrowLeft, Briefcase, Compass, Sparkles, Target, TrendingUp } from 'lucide-react';
 import { markRecommendationsReviewed } from '@/lib/profile-completion';
+import { trackFeatureClick } from '@/lib/product-analytics';
 
 const severityClass: Record<string, string> = {
   high: 'bg-red-100 text-red-800',
@@ -55,6 +56,10 @@ const ProfileRecommendations: React.FC = () => {
       navigate('/login');
     }
   }, [user, loading, navigate]);
+
+  useEffect(() => {
+    void trackFeatureClick('recommendations_page');
+  }, []);
 
   useEffect(() => {
     if (!user?.id) return;

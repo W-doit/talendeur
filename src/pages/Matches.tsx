@@ -36,6 +36,7 @@ import {
   RefreshCw,
   Sparkles,
 } from 'lucide-react';
+import { trackFeatureClick } from '@/lib/product-analytics';
 
 const scoreClass = (score: number) => {
   if (score >= 80) return 'text-green-700 bg-green-50 border-green-200';
@@ -92,6 +93,10 @@ const Matches: React.FC = () => {
     if (!loading && !user) navigate('/login');
     else if (!loading && user && !user.profile) navigate('/profile');
   }, [user, loading, navigate]);
+
+  useEffect(() => {
+    void trackFeatureClick('matches_page');
+  }, []);
 
   // Default Matches location from country of residence (once)
   useEffect(() => {

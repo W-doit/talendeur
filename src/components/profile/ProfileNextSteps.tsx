@@ -183,18 +183,18 @@ export const ProfileJourneyCoach: React.FC<ProfileJourneyCoachProps> = ({
 
   return (
     <div
-      className="fixed top-[62%] right-4 z-40 w-[min(calc(100vw-5.5rem),24rem)] -translate-y-1/2 animate-in fade-in slide-in-from-right-3 duration-300 sm:right-8"
+      className="fixed bottom-24 left-3 right-3 z-40 w-auto max-w-none animate-in fade-in slide-in-from-bottom-3 duration-300 sm:bottom-auto sm:left-auto sm:top-[62%] sm:right-8 sm:w-[min(calc(100vw-5.5rem),24rem)] sm:-translate-y-1/2 sm:slide-in-from-right-3"
       role="dialog"
       aria-label="Talendeur tip"
     >
-      <div className="relative flex items-end gap-3">
+      <div className="relative flex items-end gap-2 sm:gap-3">
         <img
           src="/mascothead.png"
           alt=""
-          className="h-20 w-20 sm:h-[5.5rem] sm:w-[5.5rem] shrink-0 object-contain drop-shadow-md select-none"
+          className="h-14 w-14 sm:h-[5.5rem] sm:w-[5.5rem] shrink-0 object-contain drop-shadow-md select-none"
           draggable={false}
         />
-        <div className="relative min-w-0 flex-1 rounded-2xl rounded-bl-sm border border-talendeur-orange/40 bg-talendeur-orange px-3.5 py-3 shadow-lg shadow-talendeur-navy/15">
+        <div className="relative min-w-0 flex-1 rounded-2xl rounded-bl-sm border border-talendeur-orange/40 bg-talendeur-orange px-3 py-2.5 sm:px-3.5 sm:py-3 shadow-lg shadow-talendeur-navy/15">
           <button
             type="button"
             onClick={dismiss}

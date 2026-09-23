@@ -9,6 +9,7 @@ import Imprint from "./pages/Imprint";
 import CookiePolicy from "./pages/CookiePolicy";
 import CookieConsentBanner from "./components/CookieConsentBanner";
 import SessionTimeoutGuard from "./components/SessionTimeoutGuard";
+import ProductAnalyticsListener from "./components/ProductAnalyticsListener";
 
 // Context Providers
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -42,6 +43,7 @@ const App = () => (
           <BrowserRouter>
             <CookieConsentBanner />
             <SessionTimeoutGuard />
+            <ProductAnalyticsListener />
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login />} />
