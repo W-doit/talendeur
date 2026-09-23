@@ -39,7 +39,7 @@ const Footer: React.FC = () => {
             <ul className="space-y-2">
               <li><FeedbackButton inFooter={true} /></li>
               <li><a href="mailto:info@talendeur.com" className="text-sm text-gray-300 hover:text-white">info@talendeur.com</a></li>
-              <li className="text-sm text-gray-300">8 Saffron House, 43 Camborne Road, Sutton, SM2 6RF. United Kingdom</li>
+              <li className="text-sm text-gray-300">UK company registration number 12980032</li>
             </ul>
             <div className="mt-4 flex space-x-4">
               <a

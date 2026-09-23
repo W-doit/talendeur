@@ -41,6 +41,7 @@ import {
   ProfileCompletenessMeter,
   ProfileJourneyCoach,
 } from '@/components/profile/ProfileNextSteps';
+import { trackEvent, trackFeatureClick, trackShare } from '@/lib/product-analytics';
 
 const Profile: React.FC = () => {
   const { user, createProfile, loading, updateProfile, accessToken } = useAuth();
@@ -65,6 +66,7 @@ const Profile: React.FC = () => {
   });
   const [coachHighlight, setCoachHighlight] = useState<'recommendations' | 'matches' | null>(null);
   const [coachVisible, setCoachVisible] = useState(false);
+  const profileReadyTracked = React.useRef(false);
   const dashboardRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
@@ -97,6 +99,7 @@ const Profile: React.FC = () => {
     if (!publicProfileUrl) return;
     try {
       await navigator.clipboard.writeText(publicProfileUrl);
+      void trackShare('copy_link');
       toast({ title: 'Profile link copied' });
     } catch (error) {
       console.error('Failed to copy profile URL:', error);
@@ -117,6 +120,7 @@ const Profile: React.FC = () => {
       // Open LinkedIn sharing dialog with the profile link
       const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(publicProfileUrl)}&text=${encodeURIComponent(`Check out my professional profile on Talendeur! #Talendeur ${publicProfileUrl}`)}`;
       window.open(linkedInUrl, '_blank', 'noopener,noreferrer');
+      void trackShare('linkedin', { has_preview: Boolean(imageUrl) });
       
       toast({
         title: 'Sharing to LinkedIn',
@@ -216,6 +220,10 @@ const Profile: React.FC = () => {
         if (!cancelled) {
           setProfileCompletion(completion);
           setJourneyProgress(getJourneyProgress(user.id));
+          if (completion.isReady && !profileReadyTracked.current) {
+            profileReadyTracked.current = true;
+            void trackEvent('profile_ready', { percent: completion.percent });
+          }
         }
       } catch (error) {
         console.error('Failed to load profile completion:', error);
@@ -407,20 +415,26 @@ const Profile: React.FC = () => {
                         {user.userType === 'jobseeker' && (
                           <div className="mt-auto pt-3 flex flex-wrap items-center justify-center md:justify-start gap-2">
                             <Button
-                              onClick={() => navigate('/profilerecommendations')}
+                              onClick={() => {
+                                void trackFeatureClick('recommendations');
+                                navigate('/profilerecommendations');
+                              }}
                               size="sm"
                               variant="outline"
-                              className={`bg-white/70 text-talendeur-navy hover:bg-talendeur-navy hover:text-white border-talendeur-navy transition-colors ${
+                              className={`bg-white/70 text-talendeur-navy hover:bg-talendeur-navy hover:text-white border-talendeur-navy transition-colors max-w-full ${
                                 coachHighlight === 'recommendations'
                                   ? 'ring-2 ring-talendeur-navy ring-offset-2 animate-pulse'
                                   : ''
                               }`}
                             >
-                              <Sparkles className="mr-1.5 h-4 w-4" />
-                              Profile recommendations
+                              <Sparkles className="mr-1.5 h-4 w-4 shrink-0" />
+                              <span className="truncate">Profile recommendations</span>
                             </Button>
                             <Button
-                              onClick={() => navigate('/matches')}
+                              onClick={() => {
+                                void trackFeatureClick('matches');
+                                navigate('/matches');
+                              }}
                               size="sm"
                               variant="outline"
                               className={`bg-white/70 text-talendeur-navy hover:bg-talendeur-navy hover:text-white border-talendeur-navy transition-colors ${
@@ -429,17 +443,20 @@ const Profile: React.FC = () => {
                                   : ''
                               }`}
                             >
-                              <Briefcase className="mr-1.5 h-4 w-4" />
+                              <Briefcase className="mr-1.5 h-4 w-4 shrink-0" />
                               Matches
                             </Button>
                             <Button
-                              onClick={() => navigate('/ikigai')}
+                              onClick={() => {
+                                void trackFeatureClick('ikigai');
+                                navigate('/ikigai');
+                              }}
                               size="sm"
                               variant="outline"
-                              className="bg-white/70 text-talendeur-navy hover:bg-talendeur-navy hover:text-white border-talendeur-navy transition-colors"
+                              className="bg-white/70 text-talendeur-navy hover:bg-talendeur-navy hover:text-white border-talendeur-navy transition-colors max-w-full"
                             >
-                              <Heart className="mr-1.5 h-4 w-4" />
-                              Find your ikigai
+                              <Heart className="mr-1.5 h-4 w-4 shrink-0" />
+                              <span className="truncate">Find your ikigai</span>
                             </Button>
                             {profileCompletion && (
                               <ProfileCompletenessMeter
@@ -617,20 +634,22 @@ const Profile: React.FC = () => {
               </Card>
 
               {user.userType === 'jobseeker' ? (
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" key={isEditMode ? 'edit' : 'view'}>
-                  <TabsList className="grid w-full grid-cols-8">
-                    <TabsTrigger value="basic">Basic Info</TabsTrigger>
-                    <TabsTrigger value="security">Security</TabsTrigger>
-                    <TabsTrigger value="work">Work</TabsTrigger>
-                    <TabsTrigger value="education">Education</TabsTrigger>
-                    <TabsTrigger value="volunteering">Volunteering</TabsTrigger>
-                    <TabsTrigger value="languages">Languages</TabsTrigger>
-                    <TabsTrigger value="certifications">Certifications</TabsTrigger>
-                    <TabsTrigger value="references">References</TabsTrigger>
-                    <TabsTrigger value="skills-profile">Skills Profile</TabsTrigger>
-                    <TabsTrigger value="ai-skills">AI Fluency</TabsTrigger>
-                    <TabsTrigger value="personality">Personality</TabsTrigger>
-                  </TabsList>
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full min-w-0" key={isEditMode ? 'edit' : 'view'}>
+                  <div className="w-full overflow-x-auto pb-1 -mx-1 px-1">
+                    <TabsList className="inline-flex h-auto min-h-10 w-max max-w-none justify-start gap-1 p-1">
+                      <TabsTrigger value="basic" className="shrink-0 text-xs sm:text-sm">Basic Info</TabsTrigger>
+                      <TabsTrigger value="security" className="shrink-0 text-xs sm:text-sm">Security</TabsTrigger>
+                      <TabsTrigger value="work" className="shrink-0 text-xs sm:text-sm">Work</TabsTrigger>
+                      <TabsTrigger value="education" className="shrink-0 text-xs sm:text-sm">Education</TabsTrigger>
+                      <TabsTrigger value="volunteering" className="shrink-0 text-xs sm:text-sm">Volunteering</TabsTrigger>
+                      <TabsTrigger value="languages" className="shrink-0 text-xs sm:text-sm">Languages</TabsTrigger>
+                      <TabsTrigger value="certifications" className="shrink-0 text-xs sm:text-sm">Certifications</TabsTrigger>
+                      <TabsTrigger value="references" className="shrink-0 text-xs sm:text-sm">References</TabsTrigger>
+                      <TabsTrigger value="skills-profile" className="shrink-0 text-xs sm:text-sm">Skills Profile</TabsTrigger>
+                      <TabsTrigger value="ai-skills" className="shrink-0 text-xs sm:text-sm">AI Fluency</TabsTrigger>
+                      <TabsTrigger value="personality" className="shrink-0 text-xs sm:text-sm">Personality</TabsTrigger>
+                    </TabsList>
+                  </div>
 
                   <TabsContent value="basic" className="mt-6">
                     <Card>
