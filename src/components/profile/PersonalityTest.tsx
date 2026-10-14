@@ -14,6 +14,22 @@ interface Question {
   reverse: boolean;
 }
 
+const IpipCitation = () => (
+  <p className="text-xs text-muted-foreground leading-relaxed border-t pt-4 mt-2">
+    This assessment is based on the Big Five personality model and uses items adapted from the{' '}
+    <a
+      href="https://ipip.ori.org/"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="underline hover:text-talendeur-navy"
+    >
+      International Personality Item Pool (IPIP)
+    </a>
+    , a public-domain item set. Goldberg, L. R. (1992). The development of markers for the Big-Five
+    factor structure. <em>Psychological Assessment, 4</em>(1), 26–42.
+  </p>
+);
+
 const QUESTIONS: Question[] = [
   // Openness (10 questions)
   { id: 1, text: "I have a vivid imagination", trait: "openness", facet: "imagination", reverse: false },
@@ -393,13 +409,14 @@ export const PersonalityTest = ({ onSaveAndExit }: PersonalityTestProps = {}) =>
             Your results have been saved and will appear in your profile visualization.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <Button 
             onClick={() => window.location.reload()}
             className="bg-talendeur-primary hover:bg-talendeur-primary-dark"
           >
             View My Profile
           </Button>
+          <IpipCitation />
         </CardContent>
       </Card>
     );
@@ -505,6 +522,8 @@ export const PersonalityTest = ({ onSaveAndExit }: PersonalityTestProps = {}) =>
             )}
           </div>
         </div>
+
+        <IpipCitation />
       </CardContent>
     </Card>
   );

@@ -331,6 +331,19 @@ export const PersonalityVisualization = ({
             </ResponsiveContainer>
           </div>
         )}
+
+        <p className="text-xs text-muted-foreground leading-relaxed border-t pt-4 mt-8">
+          Based on the Big Five model using items adapted from the{' '}
+          <a
+            href="https://ipip.ori.org/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-talendeur-navy"
+          >
+            International Personality Item Pool (IPIP)
+          </a>
+          ; Goldberg, L. R. (1992).
+        </p>
       </CardContent>
     </Card>
   );
